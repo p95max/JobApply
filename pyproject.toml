@@ -1,17 +1,24 @@
-[project]
+[tool.poetry]
 name = "jobapply"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "maxx",email = "m.petrykin@gmx.de"}
-]
-readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "django (>=6.0,<7.0)"
-]
+description = "JobApply - online job applications manager"
+authors = ["maxx <m.petrykin@gmx.de>"]
+package-mode = false
 
+[tool.poetry.dependencies]
+python = "^3.13"
+Django = "^5.2"
+psycopg = {version="^3.2", extras=["binary"]}
+python-dotenv = "^1.0.1"
+django-allauth = "^65.0.0"
+django-widget-tweaks = "^1.5.0"
+openpyxl = "^3.1.5"
+google-auth = "^2.33.0"
+google-auth-oauthlib = "^1.2.1"
+google-api-python-client = "^2.141.0"
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.9"
+
+[tool.ruff]
+line-length = 100
