@@ -1,0 +1,29 @@
+# IDE / venv
+.idea/
+.venv/
+.pyenv/
+.python-version
+
+# Python
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+
+# Django static
+staticfiles/
+media/
+
+.env
+.env.*
+!.env.example
+
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+.DS_Store
+ТЗ.txt
+TODO.md
