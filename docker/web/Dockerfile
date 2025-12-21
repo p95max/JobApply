@@ -16,3 +16,6 @@ RUN poetry config virtualenvs.create false \
   && poetry install --no-interaction --no-ansi
 
 COPY . /app
+RUN chmod +x /app/docker/web/entrypoint.sh
+
+ENTRYPOINT ["/app/docker/web/entrypoint.sh"]
