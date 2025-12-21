@@ -11,6 +11,10 @@ def ensure_profile(user: User) -> UserProfile:
     profile, _ = UserProfile.objects.get_or_create(user=user)
     return profile
 
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect("applications:list")
+    return render(request, "landing.html")
 
 @login_required
 def home(request):

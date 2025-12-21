@@ -22,6 +22,9 @@ poetry run python manage.py makemigrations --noinput
 echo "[entrypoint] Migrate..."
 poetry run python manage.py migrate --noinput
 
+echo "[entrypoint] Create social account(env, idempotent)..."
+poetry run python manage.py create_google_socialapp_if_not_exists
+
 echo "[entrypoint] Create superuser (env, idempotent)..."
 poetry run python manage.py create_superuser_if_not_exists
 
