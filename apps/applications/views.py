@@ -1,13 +1,13 @@
 from __future__ import annotations
-
-from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect, render
-
+from django.shortcuts import get_object_or_404, redirect
 from .forms import JobApplicationForm
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from datetime import datetime
 from django.contrib.auth.decorators import login_required
-
+from django.db.models import Q
+from django.shortcuts import render
+from django.utils import timezone
 from .models import JobApplication
 
 
@@ -17,15 +17,48 @@ def list_applications(request):
 
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status") or "").strip()
+    month = (request.GET.get("month") or "").strip()
+    sort = (request.GET.get("sort") or "-applied_at").strip()
 
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(company__icontains=q) | Q(location__icontains=q))
+        qs = qs.filter(
+            Q(title__icontains=q)
+            | Q(company__icontains=q)
+            | Q(location__icontains=q)
+        )
+
     if status:
         qs = qs.filter(status=status)
 
-    qs = qs[:200] 
+    if month:
+        try:
+            year, mon = map(int, month.split("-"))
+            start = timezone.make_aware(datetime(year, mon, 1, 0, 0, 0))
+            if mon == 12:
+                end = timezone.make_aware(datetime(year + 1, 1, 1, 0, 0, 0))
+            else:
+                end = timezone.make_aware(datetime(year, mon + 1, 1, 0, 0, 0))
+            qs = qs.filter(applied_at__gte=start, applied_at__lt=end)
+        except ValueError:
+            pass
 
-    return render(request, "applications/list.html", {"items": qs, "q": q, "status": status})
+    allowed_sorts = {"applied_at", "-applied_at", "updated_at", "-updated_at"}
+    if sort not in allowed_sorts:
+        sort = "-applied_at"
+
+    qs = qs.order_by(sort)[:200]
+
+    return render(
+        request,
+        "applications/list.html",
+        {
+            "items": qs,
+            "q": q,
+            "status": status,
+            "month": month,
+            "sort": sort,
+        },
+    )
 
 
 @login_required

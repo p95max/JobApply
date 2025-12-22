@@ -8,7 +8,7 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
       <h1 class="h4 mb-1">Applications</h1>
-      <div class="text-body-secondary small">Your last 200 items (filtered)</div>
+      <div class="text-body-secondary small">Filtered view</div>
     </div>
 
     <div class="d-flex gap-2">
@@ -23,7 +23,7 @@
     <div class="card-body p-3">
       <form class="row g-2 align-items-end" method="get">
 
-        <div class="col-12 col-lg-7">
+        <div class="col-12 col-lg-4">
           <label class="form-label small text-body-secondary mb-1">Search</label>
           <input
             type="text"
@@ -34,10 +34,10 @@
           />
         </div>
 
-        <div class="col-12 col-lg-3">
+        <div class="col-12 col-lg-2">
           <label class="form-label small text-body-secondary mb-1">Status</label>
           <select class="form-select" name="status">
-            <option value="">All</option>
+            <option value="" {% if not status %}selected{% endif %}>All</option>
             <option value="applied" {% if status == "applied" %}selected{% endif %}>Applied</option>
             <option value="screen" {% if status == "screen" %}selected{% endif %}>HR Screen</option>
             <option value="interview" {% if status == "interview" %}selected{% endif %}>Interview</option>
@@ -46,8 +46,28 @@
           </select>
         </div>
 
+        <div class="col-12 col-lg-2">
+          <label class="form-label small text-body-secondary mb-1">Month</label>
+          <input
+            type="month"
+            name="month"
+            value="{{ month|default:'' }}"
+            class="form-control"
+          />
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <label class="form-label small text-body-secondary mb-1">Sort</label>
+          <select class="form-select" name="sort">
+            <option value="-applied_at" {% if sort == "-applied_at" %}selected{% endif %}>Applied ↓</option>
+            <option value="applied_at" {% if sort == "applied_at" %}selected{% endif %}>Applied ↑</option>
+            <option value="-updated_at" {% if sort == "-updated_at" %}selected{% endif %}>Updated ↓</option>
+            <option value="updated_at" {% if sort == "updated_at" %}selected{% endif %}>Updated ↑</option>
+          </select>
+        </div>
+
         <div class="col-12 col-lg-2 d-grid d-lg-flex gap-2">
-          <button class="btn btn-outline-primary w-100" type="submit">Filter</button>
+          <button class="btn btn-outline-primary w-100" type="submit">Apply</button>
           <a class="btn btn-outline-secondary w-100" href="{% url 'applications:list' %}">Reset</a>
         </div>
 
@@ -61,19 +81,17 @@
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
 
-          <!-- STATIC HEADER -->
           <thead class="table-light">
             <tr>
-              <th style="min-width:120px;">Applied</th>
-              <th style="min-width:220px;">Title</th>
-              <th style="min-width:180px;">Company</th>
-              <th style="min-width:160px;">Location</th>
-              <th style="min-width:160px;">Status</th>
-              <th class="text-end" style="min-width:170px;">Actions</th>
+              <th style="min-width: 160px;">Applied</th>
+              <th style="min-width: 220px;">Title</th>
+              <th style="min-width: 180px;">Company</th>
+              <th style="min-width: 160px;">Location</th>
+              <th style="min-width: 170px;">Status</th>
+              <th class="text-end" style="min-width: 170px;">Actions</th>
             </tr>
           </thead>
 
-          <!-- DYNAMIC BODY -->
           <tbody>
             {% for app in items %}
               <tr
@@ -82,7 +100,6 @@
               >
                 <td class="text-body-secondary">
                   {{ app.applied_at|date:"H:i - d.m.Y" }}
-
                 </td>
 
                 <td class="fw-semibold">
@@ -116,7 +133,7 @@
                        href="{% url 'applications:edit' app.pk %}">
                       Edit
                     </a>
-                    <a class="btn btn-sm btn-outline-warning"
+                    <a class="btn btn-sm btn-outline-danger"
                        href="{% url 'applications:delete' app.pk %}">
                       Delete
                     </a>
@@ -145,12 +162,12 @@
 
 </div>
 
-<!-- JS -->
 <script>
 document.addEventListener("click", function (e) {
   const row = e.target.closest(".js-row-link");
   if (!row) return;
 
+  // ignore clicks on controls
   if (
     e.target.closest("select") ||
     e.target.closest("a") ||
@@ -192,12 +209,8 @@ function getCookie(name) {
 </script>
 
 <style>
-.js-row-link {
-  cursor: pointer;
-}
-.js-row-link:hover {
-  background-color: rgba(0,0,0,0.03);
-}
+.js-row-link { cursor: pointer; }
+.js-row-link:hover { background-color: rgba(0,0,0,0.03); }
 </style>
 
 {% endblock %}
