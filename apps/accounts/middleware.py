@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.db.utils import ProgrammingError
 
 
 class ConsentRequiredMiddleware:
@@ -14,6 +15,7 @@ class ConsentRequiredMiddleware:
         "/admin/",
         "/accounts/",
         "/static/",
+        "/media/",
     )
 
     def __init__(self, get_response):
@@ -25,13 +27,22 @@ class ConsentRequiredMiddleware:
         if any(path.startswith(p) for p in self.EXEMPT_PATH_PREFIXES):
             return self.get_response(request)
 
-        if request.user.is_authenticated:
-            from apps.accounts.views import ensure_profile
+        if not request.user.is_authenticated:
+            return self.get_response(request)
 
+        consent_url = reverse("accounts:consent")
+
+        if path == consent_url:
+            return self.get_response(request)
+
+        from apps.accounts.views import ensure_profile
+
+        try:
             profile = ensure_profile(request.user)
+        except ProgrammingError:
+            return self.get_response(request)
 
-            consent_url = reverse("accounts:consent")
-            if not profile.google_data_access_consent and path != consent_url:
-                return redirect(consent_url)
+        if not profile.google_data_access_consent:
+            return redirect(consent_url)
 
         return self.get_response(request)

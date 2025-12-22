@@ -22,6 +22,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      DJANGO_AUTOMIGRATE: "1"
     ports:
       - "8000:8000"
     volumes:

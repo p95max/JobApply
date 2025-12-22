@@ -1,5 +1,3 @@
-console.log("navbar.js loaded", new Date().toISOString());
-
 (function () {
   function onEnter(e) {
     const el = e.currentTarget;

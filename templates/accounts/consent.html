@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-2">Consent</h1>
+
+      <p class="text-body-secondary">
+        - To use JobApply, you must confirm that you agree to give access to your Google account for authentication;<br>
+        - The administration is not responsible for storing your personal data.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" value="1" id="consent" name="consent" required>
+          <label class="form-check-label" for="consent">
+            I agree
+          </label>
+        </div>
+
+        <button class="btn btn-primary w-100" type="submit">
+          Continue
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

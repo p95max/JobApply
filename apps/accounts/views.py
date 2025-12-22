@@ -31,7 +31,7 @@ def consent(request):
     profile = ensure_profile(request.user)
 
     if request.method == "POST":
-        accepted = request.POST.get("consent") == "on"
+        accepted = bool(request.POST.get("consent"))
         if accepted:
             profile.accept_consent()
             return redirect("applications:list")
