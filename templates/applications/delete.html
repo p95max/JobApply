@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h5 mb-2">Delete application</h1>
+
+      <p class="text-body-secondary mb-4">
+        This action cannot be undone.
+      </p>
+
+      <div class="p-3 rounded border mb-4">
+        <div class="fw-semibold">{{ obj.title }}</div>
+        <div class="text-body-secondary small">
+          {{ obj.company }}{% if obj.location %} • {{ obj.location }}{% endif %}
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger" type="submit">Yes, delete</button>
+          <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
