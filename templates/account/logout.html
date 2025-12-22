@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-2">Sign out</h1>
+
+      <p class="text-body-secondary mb-4">
+        Are you sure you want to sign out?
+      </p>
+
+      <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">
+            Sign out
+          </button>
+          <a href="/applications/" class="btn btn-outline-secondary">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+      <div class="mt-3 small text-body-secondary">
+        Tip: if you sign out, you’ll need Google OAuth to sign in again.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
