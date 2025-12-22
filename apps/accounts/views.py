@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
-
+from allauth.socialaccount.providers.google.views import oauth2_login
 from .models import UserProfile
 
 
@@ -11,10 +11,15 @@ def ensure_profile(user: User) -> UserProfile:
     profile, _ = UserProfile.objects.get_or_create(user=user)
     return profile
 
-def landing(request):
+def google_login_landing(request):
     if request.user.is_authenticated:
         return redirect("applications:list")
     return render(request, "landing.html")
+
+def root(request):
+    if request.user.is_authenticated:
+        return redirect("/applications/")
+    return oauth2_login(request)
 
 @login_required
 def home(request):
