@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import JobApplicationForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+
 from .models import JobApplication
 
 
@@ -64,3 +67,35 @@ def delete_application(request, pk: int):
         return redirect("applications:list")
 
     return render(request, "applications/delete.html", {"obj": obj})
+
+
+
+@require_POST
+@login_required
+def update_status(request, pk):
+    status = request.POST.get("status")
+
+    if status not in {
+        "applied", "screen", "interview", "offer", "rejected"
+    }:
+        return JsonResponse({"error": "Invalid status"}, status=400)
+
+    app = JobApplication.objects.get(pk=pk, user=request.user)
+    app.status = status
+    app.save(update_fields=["status"])
+
+    return JsonResponse({"ok": True, "status": status})
+
+@login_required
+def application_detail(request, pk):
+    app = get_object_or_404(
+        JobApplication,
+        pk=pk,
+        user=request.user,
+    )
+
+    return render(
+        request,
+        "applications/detail.html",
+        {"app": app},
+    )
