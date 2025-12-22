@@ -8,7 +8,7 @@
     <div>
       <h1 class="h4 mb-1">{{ app.title }}</h1>
       <div class="text-body-secondary">
-        {{ app.company }}{% if app.location %} • {{ app.location }}{% endif %}
+        {{ app.company }}{% if app.location %}{% endif %}
       </div>
     </div>
 
@@ -19,65 +19,60 @@
       <a class="btn btn-primary" href="{% url 'applications:edit' app.pk %}">
         Edit
       </a>
+       <a class="btn btn-warning" href="{% url 'applications:delete' app.pk %}">
+        Delete
+      </a>
     </div>
   </div>
 
   <div class="row g-3">
 
-    <div class="col-12 col-lg-8">
-      <div class="card border-0 shadow-sm glass-card">
-        <div class="card-body p-4">
+    <h2 class="h6 mb-3">Details</h2>
 
-          <h2 class="h6 mb-3">Details</h2>
+<dl class="row mb-0">
+  <dt class="col-sm-4 text-body-secondary">Applied</dt>
+  <dd class="col-sm-8">
+    {{ app.applied_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
 
-          <dl class="row mb-0">
-            <dt class="col-sm-4 text-body-secondary">Status</dt>
-            <dd class="col-sm-8">
-              <span class="badge bg-secondary">{{ app.status }}</span>
-            </dd>
+  <dt class="col-sm-4 text-body-secondary">HR reply</dt>
+  <dd class="col-sm-8">
+    {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
 
-            <dt class="col-sm-4 text-body-secondary">Applied</dt>
-            <dd class="col-sm-8">
-              {{ app.applied_at|date:"d.m.Y" }}
-            </dd>
+  <dt class="col-sm-4 text-body-secondary">Last update</dt>
+  <dd class="col-sm-8">
+    {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
 
-            <dt class="col-sm-4 text-body-secondary">Source</dt>
-            <dd class="col-sm-8">
-              {{ app.source|default:"—" }}
-            </dd>
-          </dl>
+  <dt class="col-sm-4 text-body-secondary">Status</dt>
+  <dd class="col-sm-8">
+    <span class="badge bg-secondary">{{ app.status }}</span>
+  </dd>
 
-          {% if app.notes %}
-            <hr>
-            <h2 class="h6 mb-2">Notes</h2>
-            <div class="text-body-secondary">
-              {{ app.notes|linebreaksbr }}
-            </div>
-          {% endif %}
+  <dt class="col-sm-4 text-body-secondary">Location</dt>
+  <dd class="col-sm-8">
+    {{ app.location|default:"—" }}
+  </dd>
 
-        </div>
-      </div>
-    </div>
+  <dt class="col-sm-4 text-body-secondary">Source</dt>
+  <dd class="col-sm-8">
+    {{ app.source|default:"—" }}
+  </dd>
 
-    <div class="col-12 col-lg-4">
-      <div class="card border-0 shadow-sm glass-card">
-        <div class="card-body p-4">
+  <dt class="col-sm-4 text-body-secondary">Notes</dt>
+  <dd class="col-sm-8">
+    {{ app.notes|default:"—" }}
+  </dd>
+</dl>
 
-          <h2 class="h6 mb-3">Actions</h2>
-
-          <div class="d-grid gap-2">
-            <a class="btn btn-outline-primary" href="{% url 'applications:edit' app.pk %}">
-              Edit application
-            </a>
-
-            <a class="btn btn-outline-danger" href="{% url 'applications:delete' app.pk %}">
-              Delete application
-            </a>
-          </div>
-
-        </div>
-      </div>
-    </div>
+{% if app.notes %}
+  <hr>
+  <h2 class="h6 mb-2">Notes</h2>
+  <div class="text-body-secondary">
+    {{ app.notes|linebreaksbr }}
+  </div>
+{% endif %}
 
   </div>
 

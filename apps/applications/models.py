@@ -23,8 +23,8 @@ class JobApplication(models.Model):
     source = models.CharField(max_length=100, blank=True)  
     status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.APPLIED)
 
-    applied_at = models.DateField(default=timezone.now)
-    recruiter_reply_at = models.DateField(null=True, blank=True)
+    applied_at = models.DateTimeField(default=timezone.now)
+    recruiter_reply_at = models.DateTimeField(null=True, blank=True)
 
     notes = models.TextField(blank=True)
 

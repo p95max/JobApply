@@ -81,7 +81,8 @@
                 data-href="{% url 'applications:detail' app.pk %}"
               >
                 <td class="text-body-secondary">
-                  {{ app.applied_at|date:"d.m.Y" }}
+                  {{ app.applied_at|date:"H:i - d.m.Y" }}
+
                 </td>
 
                 <td class="fw-semibold">
@@ -115,7 +116,7 @@
                        href="{% url 'applications:edit' app.pk %}">
                       Edit
                     </a>
-                    <a class="btn btn-sm btn-outline-danger"
+                    <a class="btn btn-sm btn-outline-warning"
                        href="{% url 'applications:delete' app.pk %}">
                       Delete
                     </a>
