@@ -11,20 +11,11 @@ def ensure_profile(user: User) -> UserProfile:
     profile, _ = UserProfile.objects.get_or_create(user=user)
     return profile
 
-def google_login_landing(request):
-    if request.user.is_authenticated:
-        return redirect("applications:list")
-    return render(request, "landing.html")
 
 def root(request):
     if request.user.is_authenticated:
         return redirect("/applications/")
     return oauth2_login(request)
-
-@login_required
-def home(request):
-    return redirect("applications:list")
-
 
 @login_required
 def consent(request):
