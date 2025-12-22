@@ -33,24 +33,29 @@
 
         <div class="row g-3">
           {% for field in form %}
-            <div class="col-12 {% if field.name in 'title company location status source'.split %}col-lg-6{% endif %}">
-              <label class="form-label" for="{{ field.id_for_label }}">
-                {{ field.label }}
-                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-              </label>
+            <div class="col-12 {% if field.name == 'title' or field.name == 'company' or field.name == 'location' or field.name == 'status' or field.name == 'source' %}col-lg-6{% endif %}">
+  <label class="form-label mb-1" for="{{ field.id_for_label }}">
+    {{ field.label }}
+    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+  </label>
 
-              {{ field }}
+  <div class="form-control-wrap">
+    {{ field }}
+  </div>
 
-              {% if field.help_text %}
-                <div class="form-text">{{ field.help_text }}</div>
-              {% endif %}
+  <div class="form-text min-h-24">
+    {% if field.help_text %}
+      {{ field.help_text }}
+    {% endif %}
+  </div>
 
-              {% if field.errors %}
-                <div class="invalid-feedback d-block">
-                  {{ field.errors|striptags }}
-                </div>
-              {% endif %}
-            </div>
+  {% if field.errors %}
+    <div class="invalid-feedback d-block">
+      {{ field.errors|striptags }}
+    </div>
+  {% endif %}
+</div>
+
           {% endfor %}
         </div>
 
