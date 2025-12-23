@@ -17,14 +17,22 @@
     {% endblock %}
 
 
-    <main class="container py-4">
-      {% if messages %}
-        <div class="mb-3">
-          {% for m in messages %}
-            <div class="alert alert-info">{{ m }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
+    {% if messages %}
+      <div class="container mt-3" style="max-width: 920px;">
+        {% for message in messages %}
+          {% ifchanged message|stringformat:"s" %}
+            <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">
+              {{ message }}
+            </div>
+          {% endifchanged %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+
+
+
       {% block content %}{% endblock %}
     </main>
 

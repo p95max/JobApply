@@ -13,9 +13,6 @@
           <h1 class="h3 mb-2">JobApply</h1>
 
           {% if request.user.is_authenticated %}
-            <p class="text-body-secondary mb-3">
-              Successfully signed in as <span class="fw-semibold">{{ request.user.get_username }}</span>.
-            </p>
 
             <a href="{% url 'applications:list' %}" class="btn btn-primary w-100">
               Go to dashboard
