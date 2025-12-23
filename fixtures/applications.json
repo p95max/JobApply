@@ -1,0 +1,191 @@
+[
+  {
+    "model": "auth.user",
+    "pk": 1,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "maxx",
+      "first_name": "",
+      "last_name": "",
+      "email": "user1@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-12-01T10:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+
+  {
+    "model": "applications.jobapplication",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "title": "Python Backend Developer (Werkstudent)",
+      "company": "BRC Solar GmbH",
+      "location": "Ettlingen, DE",
+      "source": "LinkedIn",
+      "status": "replied",
+      "applied_at": "2025-12-10T09:20:00Z",
+      "recruiter_reply_at": "2025-12-12T14:05:00Z",
+      "notes": "Recruiter replied. Waiting for next step / scheduling.",
+      "created_at": "2025-12-10T09:20:00Z",
+      "updated_at": "2025-12-12T14:05:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 2,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python/Django)",
+      "company": "Security Robotics Development and Solutions GmbH",
+      "location": "Leipzig, DE",
+      "source": "Company site",
+      "status": "interview",
+      "applied_at": "2025-12-05T11:10:00Z",
+      "recruiter_reply_at": "2025-12-09T08:45:00Z",
+      "notes": "Interview scheduled in Leipzig (onsite). Prepare portfolio + Docker demo.",
+      "created_at": "2025-12-05T11:10:00Z",
+      "updated_at": "2025-12-09T08:45:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 3,
+    "fields": {
+      "user": 1,
+      "title": "Python Developer Intern",
+      "company": "Fiindo GmbH",
+      "location": "Hamburg (Remote), DE",
+      "source": "Email",
+      "status": "applied",
+      "applied_at": "2025-12-18T16:30:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Sent application + GitHub links. Waiting.",
+      "created_at": "2025-12-18T16:30:00Z",
+      "updated_at": "2025-12-18T16:30:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 4,
+    "fields": {
+      "user": 1,
+      "title": "Junior Backend Developer",
+      "company": "Regio Software GmbH",
+      "location": "Chemnitz, DE",
+      "source": "Indeed",
+      "status": "rejected",
+      "applied_at": "2025-11-28T10:15:00Z",
+      "recruiter_reply_at": "2025-12-03T09:05:00Z",
+      "notes": "Rejection. Ask for feedback next time.",
+      "created_at": "2025-11-28T10:15:00Z",
+      "updated_at": "2025-12-03T09:05:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 5,
+    "fields": {
+      "user": 1,
+      "title": "Django Developer (Werkstudent)",
+      "company": "Startup Studio",
+      "location": "Berlin (Remote), DE",
+      "source": "StepStone",
+      "status": "applied",
+      "applied_at": "2025-12-20T12:00:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Applied via StepStone. Mention Docker + Postgres + pytest.",
+      "created_at": "2025-12-20T12:00:00Z",
+      "updated_at": "2025-12-20T12:00:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 6,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python)",
+      "company": "Energy Corporation",
+      "location": "Germany (Hybrid)",
+      "source": "Referral",
+      "status": "replied",
+      "applied_at": "2025-12-02T13:40:00Z",
+      "recruiter_reply_at": "2025-12-04T10:25:00Z",
+      "notes": "HR replied. Next: technical screen, clarify stack expectations.",
+      "created_at": "2025-12-02T13:40:00Z",
+      "updated_at": "2025-12-04T10:25:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 7,
+    "fields": {
+      "user": 1,
+      "title": "Python Backend Engineer",
+      "company": "IN4NOVA",
+      "location": "Remote",
+      "source": "LinkedIn",
+      "status": "interview",
+      "applied_at": "2025-12-08T09:00:00Z",
+      "recruiter_reply_at": "2025-12-10T15:20:00Z",
+      "notes": "Online interview planned. Review async + Postgres + CI topics.",
+      "created_at": "2025-12-08T09:00:00Z",
+      "updated_at": "2025-12-10T15:20:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 8,
+    "fields": {
+      "user": 1,
+      "title": "Backend Developer (Django)",
+      "company": "Robert Half (Agency)",
+      "location": "Leipzig, DE",
+      "source": "Agency",
+      "status": "applied",
+      "applied_at": "2025-12-14T10:10:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Agency submission. Need follow-up after 5 business days.",
+      "created_at": "2025-12-14T10:10:00Z",
+      "updated_at": "2025-12-14T10:10:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 9,
+    "fields": {
+      "user": 1,
+      "title": "Python Developer",
+      "company": "Trood (Internship)",
+      "location": "Remote",
+      "source": "GitHub",
+      "status": "offer",
+      "applied_at": "2025-11-20T09:30:00Z",
+      "recruiter_reply_at": "2025-11-25T11:00:00Z",
+      "notes": "Offer received (revenue-share). Evaluate risks and time investment.",
+      "created_at": "2025-11-20T09:30:00Z",
+      "updated_at": "2025-11-25T11:00:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 10,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python) - Part-time",
+      "company": "Local IT Services",
+      "location": "Chemnitz, DE",
+      "source": "Email",
+      "status": "archived",
+      "applied_at": "2025-10-15T08:00:00Z",
+      "recruiter_reply_at": "2025-10-22T12:15:00Z",
+      "notes": "Archived: role closed / not a match.",
+      "created_at": "2025-10-15T08:00:00Z",
+      "updated_at": "2025-10-22T12:15:00Z"
+    }
+  }
+]

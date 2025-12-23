@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Your Interviews</h1>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'interviews:create' %}">
+         ✚ Schedule interview
+      </a>
+    </div>
+  </div>
+
+  {% if items %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+
+          <thead class="table-light">
+            <tr>
+              <th style="min-width: 210px;">Time</th>
+              <th style="min-width: 260px;">Application</th>
+              <th style="min-width: 180px;">Location</th>
+              <th style="min-width: 240px;">Notes</th>
+              <th class="text-end" style="min-width: 140px;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for it in items %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    {{ it.starts_at|date:"H:i - d.m.Y" }}
+                  </div>
+                  <div class="text-body-secondary small">
+                    → {{ it.ends_at|date:"H:i - d.m.Y" }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="fw-semibold">
+                    {{ it.application.title }}
+                  </div>
+                  <div class="text-body-secondary small">
+                    {{ it.application.company }}{% if it.application.location %} • {{ it.application.location }}{% endif %}
+                  </div>
+                </td>
+
+                <td class="text-body-secondary">
+                  {{ it.location|default:"—" }}
+                </td>
+
+                <td class="text-body-secondary">
+                  {% if it.notes %}
+                    {{ it.notes|truncatechars:80 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-danger"
+                     href="{% url 'interviews:delete' it.pk %}">
+                    Delete
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="card-body text-center py-5">
+        <h2 class="h5 mb-2">No interviews scheduled</h2>
+        <p class="text-body-secondary mb-3">
+          You can schedule an interview only for applications with status <span class="badge bg-secondary">Interview</span>.
+        </p>
+        <a class="btn btn-primary" href="{% url 'interviews:create' %}">
+           ✚ Schedule interview
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+<script>
+(function () {
+  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
+  if (!fields.length) return;
+
+  function ensureCounter(el) {
+    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
+    el.id = id;
+
+    let counter = document.querySelector(`[data-counter-for="${id}"]`);
+    if (counter) return counter;
+
+    counter = document.createElement("div");
+    counter.className = "form-text d-flex justify-content-end mt-1";
+    counter.dataset.counterFor = id;
+
+    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
+      el.parentElement.insertAdjacentElement("afterend", counter);
+    } else {
+      el.insertAdjacentElement("afterend", counter);
+    }
+    return counter;
+  }
+
+  function update(el) {
+    const max = parseInt(el.dataset.maxlen, 10);
+    if (!max) return;
+
+    const counter = ensureCounter(el);
+    const len = (el.value || "").length;
+
+    counter.textContent = `${len} / ${max}`;
+
+    el.classList.remove("is-invalid", "is-valid");
+    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
+
+    if (len > max) {
+      el.classList.add("is-invalid");
+      counter.classList.add("text-danger");
+    } else if (len >= Math.floor(max * 0.9)) {
+      counter.classList.add("text-warning");
+    } else {
+      counter.classList.add("text-body-secondary");
+      el.classList.add("is-valid");
+    }
+  }
+
+  fields.forEach((el) => {
+    update(el);
+    el.addEventListener("input", () => update(el));
+    el.addEventListener("change", () => update(el));
+  });
+})();
+</script>
