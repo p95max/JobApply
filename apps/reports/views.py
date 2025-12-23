@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
+from allauth.socialaccount.models import SocialAccount
+from .drive import get_drive_status, list_backups, ensure_jobapply_folder
 from apps.applications.models import JobApplication
 
 from .drive import (
@@ -61,32 +64,39 @@ def import_view(request):
 
 @login_required
 def drive_backups(request):
-    status = get_drive_status(request.user)
+    drive_status = get_drive_status(request.user)
+
+    google_email = None
+    folder_url = None
+
+    acc = SocialAccount.objects.filter(user=request.user, provider="google").first()
+    if acc:
+        # чаще всего email есть и в User, и в extra_data — берём самое надёжное
+        google_email = (request.user.email or "") or (acc.extra_data.get("email") if acc.extra_data else None)
 
     backups = []
     error = None
 
-    if not status.get("connected") or not status.get("has_refresh_token"):
-        return render(
-            request,
-            "reports/drive_backups.html",
-            {
-                "drive_status": status,
-                "backups": [],
-                "error": None,
-            },
-        )
-
-    try:
-        backups = list_backups(request.user, limit=30)
-    except Exception as e:
-        error = str(e)
+    # Если есть offline access — можем гарантированно получить folder_id и ссылку
+    if drive_status.get("connected") and drive_status.get("has_refresh_token"):
+        try:
+            folder_id = ensure_jobapply_folder(
+                request.user,
+                root_name="JobApply",
+                subfolder="backups",  # если ты кладёшь прямо в JobApply — поставь None
+            )
+            folder_url = f"https://drive.google.com/drive/folders/{folder_id}"
+            backups = list_backups(request.user, limit=30, root_name="JobApply", subfolder="backups")
+        except Exception as e:
+            error = str(e)
 
     return render(
         request,
         "reports/drive_backups.html",
         {
-            "drive_status": status,
+            "drive_status": drive_status,
+            "google_email": google_email,
+            "folder_url": folder_url,
             "backups": backups,
             "error": error,
         },
