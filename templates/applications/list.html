@@ -85,9 +85,9 @@
               <th style="min-width: 160px;">Applied</th>
               <th style="min-width: 220px;">Title</th>
               <th style="min-width: 180px;">Company</th>
-              <th style="min-width: 160px;">Location</th>
-              <th style="min-width: 170px;">Status</th>
-              <th class="text-end" style="min-width: 170px;">Actions</th>
+              <th style="min-width: 160px; padding-left: 45px;">Location</th>
+              <th style="min-width: 170px; padding-left: 55px;">Status</th>
+              <th style="min-width: 170px; padding-left: 55px;">Actions</th>
             </tr>
           </thead>
 
@@ -113,18 +113,19 @@
                   {{ app.location }}
                 </td>
 
-                <td>
-                  <select
-                    class="form-select form-select-sm js-status-select"
-                    data-id="{{ app.id }}"
-                  >
-                    <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
-                    <option value="screen" {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
-                    <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
-                    <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
-                    <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
-                  </select>
-                </td>
+              <td>
+                <select
+                  class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }}"
+                  data-id="{{ app.id }}"
+                >
+                  <option value="applied"  {% if app.status == "applied" %}selected{% endif %}>Applied</option>
+                  <option value="screen"   {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
+                  <option value="interview"{% if app.status == "interview" %}selected{% endif %}>Interview</option>
+                  <option value="offer"    {% if app.status == "offer" %}selected{% endif %}>Offer</option>
+                  <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
+                </select>
+              </td>
+
 
                 <td class="text-end">
                   <div class="btn-group">
@@ -209,6 +210,14 @@ function getCookie(name) {
 <style>
 .js-row-link { cursor: pointer; }
 .js-row-link:hover { background-color: rgba(0,0,0,0.03); }
+
+.status-select { font-weight: 600; }
+.status-app-applied   { border-color: #0dcaf0; }
+.status-app-screen    { border-color: #6f42c1; }  /* purple */
+.status-app-interview { border-color: #ffc107; }
+.status-app-offer     { border-color: #198754; }
+.status-app-rejected  { border-color: #dc3545; }
+
 </style>
 
 {% endblock %}
