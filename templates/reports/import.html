@@ -4,52 +4,88 @@
 <div class="container mt-4" style="max-width: 920px;">
   {% include "reports/_nav.html" %}
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body">
-      <div class="fw-semibold mb-1">Import CSV</div>
-      <div class="text-muted small mb-3">
-        Expected header:
-        <span class="font-monospace">
-          id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
-        </span>
-      </div>
+  <div class="row g-3">
 
-      {% if error %}
-        <div class="alert alert-danger" role="alert">
-          {{ error }}
-        </div>
-      {% endif %}
+    <!-- Import card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Import CSV</div>
 
-      {% if result %}
-        <div class="alert alert-success" role="alert">
-          Import completed.
-          <div class="mt-2">
-            <span class="badge text-bg-success">Created: {{ result.created }}</span>
-            <span class="badge text-bg-primary">Updated: {{ result.updated }}</span>
+<div class="p-3 border rounded mb-3">
+  <div class="fw-semibold mb-2">Expected Header:</div>
+  <code class="d-block p-2 text-body-secondary bg-body-tertiary rounded">
+    id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
+  </code>
+</div>
+
+          {% if error %}
+            <div class="alert alert-danger" role="alert">
+              {{ error }}
+            </div>
+          {% endif %}
+
+          {% if result %}
+            <div class="alert alert-success" role="alert">
+              Import completed.
+              <div class="mt-2">
+                <span class="badge text-bg-success">Created: {{ result.created }}</span>
+                <span class="badge text-bg-primary">Updated: {{ result.updated }}</span>
+              </div>
+            </div>
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" class="d-grid gap-2">
+            {% csrf_token %}
+
+            <input class="form-control" type="file" name="file" accept=".csv,text/csv" required>
+
+            <button class="btn btn-primary" type="submit">
+              ⬆ Import
+            </button>
+          </form>
+
+          <div class="text-muted small mt-3">
+            Dedupe rule: if <span class="font-monospace">id</span> exists for your account → update, otherwise create new.
           </div>
         </div>
-      {% endif %}
-
-      <form method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
-        {% csrf_token %}
-
-        <input class="form-control" type="file" name="file" accept=".csv,text/csv" required>
-
-        <button class="btn btn-primary" type="submit">
-          ⬆ Import
-        </button>
-
-        <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
-          ⬇ Download CSV template
-        </a>
-      </form>
-
-      <hr class="my-4">
-
-      <div class="text-muted small">
-        Dedupe rule: if <span class="font-monospace">id</span> exists for your account → update, otherwise create new.
       </div>
     </div>
+
+    <!-- Export card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Export</div>
+          <div class="text-muted small mb-3">
+            Download your applications data or a CSV template.
+          </div>
+
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
+              ⬇ Export CSV
+            </a>
+
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'xlsx' %}">
+              ⬇ Export XLSX
+            </a>
+
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
+              🧾 CSV template
+            </a>
+
+          </div>
+
+          <div class="text-muted small mt-3">
+            Tip: for autosave/backups use
+            <a href="{% url 'reports:drive_backups' %}">
+      ☁ <span class="d-none d-sm-inline"> Cloud backups.</span>
+    </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

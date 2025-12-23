@@ -24,7 +24,6 @@
 
   document.querySelectorAll(".nav-anim").forEach((el) => {
     el.addEventListener("mouseenter", onEnter);
-    // Клик только если не дропдаун
     if (el.getAttribute("data-bs-toggle") !== "dropdown") {
       el.addEventListener("click", onClick);
     }
