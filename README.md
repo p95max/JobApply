@@ -247,8 +247,13 @@ docker compose exec web python manage.py assign_fixtures_owner --email you-googl
 ## Roadmap (next integration)
 
 - Google Calendar integration (create interview events, reminders, sync)
+- Django Paginator(fix list_applications qs = qs.order_by(sort)[:200])
+- Email notifications
+- Tech support form
+- Mobile version
+
+- Testing(pytest)
 - Stronger backup/restore workflows (one-click restore)
-- Django Paginator(list_applications qs = qs.order_by(sort)[:200])
 
 **Author:** Maksym Petrykin  
 Email: [m.petrykin@gmx.de](mailto:m.petrykin@gmx.de)  
