@@ -57,12 +57,16 @@
                 </td>
 
                 <td>
-                  <select class="form-select form-select-sm js-interview-status" data-id="{{ it.id }}">
+                  <select
+                    class="form-select form-select-sm js-interview-status status-select status-int-{{ it.status }}"
+                    data-id="{{ it.id }}"
+                  >
                     <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>Scheduled</option>
                     <option value="done" {% if it.status == "done" %}selected{% endif %}>Done</option>
                     <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>Canceled</option>
                   </select>
                 </td>
+
 
 
                 <td class="text-body-secondary">
@@ -114,6 +118,7 @@
 </div>
 {% endblock %}
 
+{% block page_scripts %}
 <script>
 (function () {
   const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
@@ -197,7 +202,17 @@ function getCookie(name) {
   return cookieValue;
 }
 </script>
+<script>
+document.addEventListener("change", function (e) {
+  const el = e.target.closest(".js-interview-status");
+  if (!el) return;
 
+  [...el.classList].forEach((c) => {
+    if (c.startsWith("status-int-")) el.classList.remove(c);
+  });
+  el.classList.add("status-int-" + el.value);
+});
+</script>
 
 <style>
 .table-wrap { overflow-x: hidden; }
@@ -210,9 +225,17 @@ function getCookie(name) {
 .table-wrap td:nth-child(2) .text-body-secondary,
 .table-wrap td:nth-child(4) { white-space: nowrap; }
 
+.status-select { font-weight: 600; }
+
+.status-int-scheduled { border-color: #0d6efd; } /* primary */
+.status-int-done      { border-color: #198754; } /* success */
+.status-int-canceled  { border-color: #dc3545; } /* danger */
+
+
 @media (max-width: 992px) {
   .table-wrap td:nth-child(4),
   .table-wrap th:nth-child(4) { display: none; }
 }
 </style>
+{% endblock %}
 

@@ -162,6 +162,9 @@
 
 </div>
 
+{% endblock %}
+
+{% block page_scripts %}
 <script>
 document.addEventListener("click", function (e) {
   const row = e.target.closest(".js-row-link");
@@ -219,5 +222,4 @@ function getCookie(name) {
 .status-app-rejected  { border-color: #dc3545; }
 
 </style>
-
 {% endblock %}
