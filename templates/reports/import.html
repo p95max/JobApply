@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+  {% include "reports/_nav.html" %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-1">Import CSV</div>
+      <div class="text-muted small mb-3">
+        Expected header:
+        <span class="font-monospace">
+          id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
+        </span>
+      </div>
+
+      {% if error %}
+        <div class="alert alert-danger" role="alert">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      {% if result %}
+        <div class="alert alert-success" role="alert">
+          Import completed.
+          <div class="mt-2">
+            <span class="badge text-bg-success">Created: {{ result.created }}</span>
+            <span class="badge text-bg-primary">Updated: {{ result.updated }}</span>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+        {% csrf_token %}
+
+        <input class="form-control" type="file" name="file" accept=".csv,text/csv" required>
+
+        <button class="btn btn-primary" type="submit">
+          ⬆ Import
+        </button>
+
+        <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
+          ⬇ Download CSV template
+        </a>
+      </form>
+
+      <hr class="my-4">
+
+      <div class="text-muted small">
+        Dedupe rule: if <span class="font-monospace">id</span> exists for your account → update, otherwise create new.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+  {% include "reports/_nav.html" %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Total applications</div>
+          <div class="fs-2 fw-bold">{{ stats.total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-semibold">By status</div>
+            <div class="text-muted small">Current snapshot</div>
+          </div>
+
+          {% if stats.by_status %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Status</th>
+                    <th class="text-end">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for status, count in stats.by_status.items %}
+                    <tr>
+                      <td>
+                        <span class="badge text-bg-secondary">{{ status }}</span>
+                      </td>
+                      <td class="text-end fw-semibold">{{ count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-secondary mb-0" role="alert">
+              No applications yet. Add one to see stats.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-2">What you can do</div>
+      <ul class="mb-0 text-muted">
+        <li>Export your data to CSV/XLSX for backup or analysis.</li>
+        <li>Import CSV to restore or migrate your applications.</li>
+        <li>Stats are per-user (isolated data).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

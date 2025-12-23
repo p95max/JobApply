@@ -1,0 +1,26 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">Reports</h1>
+    <div class="text-muted small">Statistics, export & import</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'reports:statistics' %}">
+      📊 Statistics
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'reports:import' %}">
+      ⬆ Import
+    </a>
+
+    <div class="btn-group">
+      <a class="btn btn-primary" href="{% url 'reports:export' 'csv' %}">
+        ⬇ Export CSV
+      </a>
+      <a class="btn btn-primary" href="{% url 'reports:export' 'xlsx' %}">
+        ⬇ Export XLSX
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'reports:drive_backups' %}">☁ Cloud backups</a>
+      
+    </div>
+  </div>
+</div>

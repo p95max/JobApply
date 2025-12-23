@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Cloud backups</h1>
+      <div class="text-muted small">Google Drive → JobApply/backups</div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'reports:statistics' %}">📊 Statistics</a>
+      <a class="btn btn-outline-secondary" href="{% url 'reports:import' %}">⬆ Local import</a>
+    </div>
+  </div>
+
+  {% if not drive_status.connected %}
+    <div class="alert alert-warning" role="alert">
+      Drive is not connected. Enable it to upload backups to your Google Drive.
+      <div class="mt-2">
+        <a class="btn btn-warning"
+           href="/accounts/google/login/?process=connect&access_type=offline&prompt=consent&next={% url 'reports:drive_backups' %}">
+          Enable Drive backups
+        </a>
+      </div>
+      <div class="text-muted small mt-2">
+        We request minimal permission: <span class="font-monospace">drive.file</span> (only files created by this app).
+      </div>
+    </div>
+  {% else %}
+    {% if drive_status.has_refresh_token %}
+      <div class="alert alert-success" role="alert">
+        Drive connected (offline access OK).
+      </div>
+    {% else %}
+      <div class="alert alert-warning" role="alert">
+        Drive connected, but offline access is missing. Backups may fail after the session expires.
+        <div class="mt-2">
+          <a class="btn btn-warning"
+             href="/accounts/google/login/?process=connect&access_type=offline&prompt=consent&next={% url 'reports:drive_backups' %}">
+            Reconnect to enable offline access
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a class="btn btn-primary" href="{% url 'reports:drive_export' 'csv' %}">☁ Upload CSV backup</a>
+      <a class="btn btn-primary" href="{% url 'reports:drive_export' 'xlsx' %}">☁ Upload XLSX backup</a>
+        <a class="btn btn-warning" href="{% url 'reports:drive_connect' %}">
+  Enable Drive backups
+</a>
+      <a class="btn btn-outline-danger ms-auto" href="{% url 'reports:drive_disconnect' %}">Disconnect</a>
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-2">Backups in Drive</div>
+
+      {% if backups %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>File</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in backups %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ f.name }}</div>
+                    <div class="text-muted small">{{ f.mime_type }}</div>
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:drive_restore' f.file_id %}">
+                      Restore
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-secondary mb-0">No backups yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
