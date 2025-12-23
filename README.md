@@ -223,6 +223,7 @@ docker compose exec web python manage.py assign_fixtures_owner --email you-googl
 ## Roadmap (next integration)
 
 - Google Calendar integration (create interview events, reminders, sync)
+- Google Drive Backups autosave
 - Stronger backup/restore workflows (one-click restore)
 
 **Author:** Maksym Petrykin  
