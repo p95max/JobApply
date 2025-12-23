@@ -98,7 +98,7 @@ def ensure_jobapply_folder(user, root_name: str = "JobApply", subfolder: str | N
     - if subfolder is provided -> creates it inside root_name.
     """
     service = _service(user)
-    root_id = get_or_create_folder(service, root_name, parent_id=None)  # My Drive root
+    root_id = get_or_create_folder(service, root_name, parent_id=None)  #
 
     if subfolder:
         return get_or_create_folder(service, subfolder, parent_id=root_id)
@@ -189,7 +189,7 @@ def upload_backup_rotate_3(
     user,
     content_bytes: bytes,
     mime_type: str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ext: str = "xlsx",
+    ext: str = "csv",
     root_name: str = "JobApply",
     subfolder: str | None = "backups",
 ) -> None:
@@ -208,9 +208,9 @@ def upload_backup_rotate_3(
     service = _service(user)
     folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
 
-    latest_name = f"latest.{ext}"
-    b1_name = f"backup-1.{ext}"
-    b2_name = f"backup-2.{ext}"
+    latest_name = f"autobackup_latest.{ext}"
+    b1_name = f"autobackup-1.{ext}"
+    b2_name = f"autobackup-2.{ext}"
 
     latest_id = _find_file_in_folder_by_name(service, folder_id, latest_name)
     b1_id = _find_file_in_folder_by_name(service, folder_id, b1_name)

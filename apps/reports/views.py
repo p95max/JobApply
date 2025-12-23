@@ -116,7 +116,7 @@ def drive_export(request, fmt: str):
 
     try:
         content = export_csv(qs)
-        filename = f"jobapply-{ts}.csv"
+        filename = f"manual_backup-{ts}.csv"
 
         upload_backup(
             request.user,
