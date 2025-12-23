@@ -13,28 +13,24 @@ from apps.reports.models import CloudBackupSettings
 from apps.reports.drive import get_drive_status, upload_backup_rotate_3
 from apps.reports.services import export_xlsx
 from apps.applications.models import JobApplication
-
-import logging
-logger = logging.getLogger(__name__)
-
 from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _ts() -> str:
     return timezone.localtime().strftime("%H:%M:%S %d-%m-%Y")
-
-
-
 
 INTERVAL_SECONDS = 30
 BACKUP_EVERY = timedelta(minutes=5)
 
 
 class Command(BaseCommand):
-    help = "Runs a lightweight loop that performs Google Drive auto backups (latest + 2) every 15 minutes."
+    help = "Runs a lightweight loop that performs Google Drive auto backups (latest + 2) every 5 minutes."
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS(f"{_ts()} Auto-backup worker started (tick=60s, backup=15m)."))
+        self.stdout.write(self.style.SUCCESS(f"{_ts()} Auto-backup worker started (tick=60s, backup=5m)."))
 
         self._wait_until_table_exists("reports_cloudbackupsettings", timeout_seconds=120)
 

@@ -175,8 +175,8 @@ def drive_disconnect(request):
 @require_POST
 def toggle_auto_backup(request):
     """
-    Enable/disable auto backups (every 15 minutes) to Google Drive.
-    Only allowed if Drive has refresh_token (offline access), иначе авто-бэкап будет падать.
+    Enable/disable auto backups (every 5 minutes) to Google Drive.
+    Only allowed if Drive has refresh_token (offline access)
     """
     drive_status = get_drive_status(request.user)
 
@@ -192,7 +192,7 @@ def toggle_auto_backup(request):
     settings_obj.save(update_fields=["enabled", "updated_at"])
 
     if enabled:
-        messages.success(request, "Auto backups enabled (every 15 minutes).")
+        messages.success(request, "Auto backups enabled (every 5 minutes).")
     else:
         messages.success(request, "Auto backups disabled.")
 
