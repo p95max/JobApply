@@ -8,9 +8,11 @@
       <h1 class="h4 mb-2">Consent</h1>
 
       <p class="text-body-secondary">
-        - To use JobApply, you must confirm that you agree to grant access to your Google account and, only when enabled, selected Google services (e.g., Google Sheets, Google Calendar) to provide the requested features;<br>
-        - The administration is not responsible for storing your personal data.
+        - To use JobApply, you must confirm that you agree to grant access to your Google account for authentication and, only when you enable them, selected Google services (e.g., Google Drive backups, Google Sheets, Google Calendar) to provide the requested features;<br>
+        - Google Drive access is optional and is only requested/used if you enable Cloud Backups to upload your backups to your own Drive;<br>
+        - The administration is not responsible for the storage and protection of your personal data.
       </p>
+
 
       <form method="post">
         {% csrf_token %}
