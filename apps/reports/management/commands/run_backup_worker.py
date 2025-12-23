@@ -14,7 +14,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-
 def _ts() -> str:
     return timezone.localtime().strftime("[%H:%M:%S %d-%m-%Y]")
 
@@ -36,7 +35,7 @@ class Command(BaseCommand):
             try:
                 self._tick()
             except Exception as e:
-                self.stderr.write(f"{_ts()} [worker] tick error: {e!r}")
+                self.stderr.write(f"{_ts()} tick error: {e!r}")
 
             time.sleep(INTERVAL_SECONDS)
 
@@ -54,12 +53,12 @@ class Command(BaseCommand):
                     )
                     ok = cursor.fetchone() is not None
                 if ok:
-                    self.stdout.write(f"{_ts()} [worker] migrations ready: table '{table_name}' exists")
+                    self.stdout.write(f"{_ts()} migrations ready: table '{table_name}' exists")
                     return
             except Exception:
                 pass
 
-            self.stdout.write(f"{_ts()} [worker] waiting for migrations...")
+            self.stdout.write(f"{_ts()} waiting for migrations...")
             time.sleep(2)
 
         raise RuntimeError(f"{_ts()} Timeout: table '{table_name}' did not appear in {timeout_seconds}s")
@@ -69,7 +68,7 @@ class Command(BaseCommand):
         qs = CloudBackupSettings.objects.select_related("user").filter(enabled=True)
 
         if not qs.exists():
-            self.stdout.write(f"{_ts()} [worker] no users with auto-backup enabled")
+            self.stdout.write(f"{_ts()} no users with auto-backup enabled")
             return
 
         for s in qs:
@@ -78,12 +77,12 @@ class Command(BaseCommand):
 
             if not due:
                 remaining = BACKUP_EVERY - (now - s.last_run_at)
-                self.stdout.write(f"{_ts()} [worker] user={user.id} skip (not due, remaining to next try={remaining})")
+                self.stdout.write(f"{_ts()} user={user.id} skip (not due, remaining to next try={remaining})")
                 continue
 
             drive_status = get_drive_status(user)
             if not (drive_status.get("connected") and drive_status.get("has_refresh_token")):
-                self.stdout.write(f"{_ts()} [worker] user={user.id} disabled (drive not connected)")
+                self.stdout.write(f"{_ts()} user={user.id} disabled (drive not connected)")
                 s.enabled = False
                 s.save(update_fields=["enabled", "updated_at"])
                 continue
@@ -103,7 +102,7 @@ class Command(BaseCommand):
                 s.last_run_at = now
                 s.save(update_fields=["last_run_at", "updated_at"])
 
-                self.stdout.write(f"{_ts()} [worker] user={user.id} OK uploaded + rotated")
+                self.stdout.write(f"{_ts()} user={user.id} OK uploaded + rotated")
             except Exception as e:
-                self.stderr.write(f"{_ts()} [worker] user={user.id} ERROR: {e!r}")
+                self.stderr.write(f"{_ts()} user={user.id} ERROR: {e!r}")
 
