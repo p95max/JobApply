@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 
 from apps.reports.models import CloudBackupSettings
 from apps.reports.drive import get_drive_status, upload_backup_rotate_3
-from apps.reports.services import export_xlsx
+from apps.reports.services import export_csv
 from apps.applications.models import JobApplication
 from django.utils import timezone
 import logging
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def _ts() -> str:
-    return timezone.localtime().strftime("%H:%M:%S %d-%m-%Y")
+    return timezone.localtime().strftime("[%H:%M:%S %d-%m-%Y]")
 
 INTERVAL_SECONDS = 30
-BACKUP_EVERY = timedelta(minutes=5)
+BACKUP_EVERY = timedelta(minutes=1)
 
 
 class Command(BaseCommand):
@@ -92,9 +92,15 @@ class Command(BaseCommand):
 
             try:
                 apps_qs = JobApplication.objects.filter(user=user).order_by("id")
-                content = export_xlsx(apps_qs)
 
-                upload_backup_rotate_3(user=user, content_bytes=content, ext="xlsx")
+                content = export_csv(apps_qs) # backup file type
+
+                upload_backup_rotate_3(
+                         user = user,
+                         content_bytes = content,
+                         ext = "csv",
+                         mime_type = "text/csv",
+                     )
 
                 s.last_run_at = now
                 s.save(update_fields=["last_run_at", "updated_at"])

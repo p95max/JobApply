@@ -108,43 +108,32 @@ def drive_backups(request):
 
 @login_required
 def drive_export(request, fmt: str):
+    if fmt != "csv":
+        return redirect("reports:drive_backups")
+
     qs = JobApplication.objects.filter(user=request.user).order_by("-applied_at")
     ts = timezone.now().strftime("%d-%m-%Y-%H-%M")
 
     try:
-        if fmt == "csv":
-            content = export_csv(qs)
-            filename = f"jobapply-{ts}.csv"
-            upload_backup(
-                request.user,
-                filename,
-                content,
-                "text/csv",
-                root_name="JobApply",
-                subfolder="backups",
-            )
-            messages.success(request, "Backup uploaded to Google Drive (CSV).")
-            return redirect("reports:drive_backups")
+        content = export_csv(qs)
+        filename = f"jobapply-{ts}.csv"
 
-        if fmt == "xlsx":
-            content = export_xlsx(qs)
-            filename = f"jobapply-{ts}.xlsx"
-            upload_backup(
-                request.user,
-                filename,
-                content,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                root_name="JobApply",
-                subfolder="backups",   # или None
-            )
-            messages.success(request, "Backup uploaded to Google Drive (XLSX).")
-            return redirect("reports:drive_backups")
+        upload_backup(
+            request.user,
+            filename,
+            content,
+            "text/csv",
+            root_name="JobApply",
+            subfolder="backups",
+        )
 
+        messages.success(request, "Backup uploaded to Google Drive (CSV).")
         return redirect("reports:drive_backups")
 
     except Exception as e:
         messages.error(request, f"Drive export failed: {e}")
         return redirect("reports:drive_backups")
+
 
 
 @login_required

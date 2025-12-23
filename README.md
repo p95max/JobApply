@@ -24,6 +24,8 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
   - Upload backups (CSV/XLSX)
   - List & download backup files
   - Disconnect Drive (revoke local tokens / unlink)
+  - Auto Backup to Google Drive (latest + 2 retention)
+  
 - Applications CRUD with statuses + filters
 - Interview planner (linked to applications)
 - Reports: local import/export + statistics
@@ -175,6 +177,28 @@ This is the minimal scope required for app-managed uploads in the user’s Drive
 
 ---
 
+### Auto Backup (Google Drive)
+
+JobApply can run **automatic backups to Google Drive** on a schedule.
+
+- **Runs every 15 minutes** (background worker)
+- Stores backups in your Drive under `JobApply/backups/`
+- **Retention policy:** keeps only **3 files**:
+  - `latest.xlsx` (most recent)
+  - `backup-1.xlsx`
+  - `backup-2.xlsx`
+- **Rotation logic** on each run:
+  - `backup-2` is removed
+  - `backup-1 → backup-2`
+  - `latest → backup-1`
+  - a new backup is uploaded as `latest`
+- **Per-user isolation:** each user can enable/disable auto backup independently
+- Requires Google Drive connection with **offline access** (`refresh_token`) and the **Drive API enabled** in Google Cloud Console
+
+> The feature is optional and controlled via the **Cloud Backups** toggle in the UI.
+
+---
+
 ## Local admin
 
 Django admin:
@@ -223,7 +247,6 @@ docker compose exec web python manage.py assign_fixtures_owner --email you-googl
 ## Roadmap (next integration)
 
 - Google Calendar integration (create interview events, reminders, sync)
-- Google Drive Backups autosave
 - Stronger backup/restore workflows (one-click restore)
 
 **Author:** Maksym Petrykin  
