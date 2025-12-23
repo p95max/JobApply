@@ -11,10 +11,12 @@
 
   function onClick(e) {
     const el = e.currentTarget;
+    // Не трогаем дропдауны
+    if (el.getAttribute("data-bs-toggle") === "dropdown") return;
+
     if (el.dataset.disabled === "1") {
       e.preventDefault();
       el.classList.remove("shake");
-      // reflow to restart animation
       void el.offsetWidth;
       el.classList.add("shake");
     }
@@ -22,6 +24,9 @@
 
   document.querySelectorAll(".nav-anim").forEach((el) => {
     el.addEventListener("mouseenter", onEnter);
-    el.addEventListener("click", onClick);
+    // Клик только если не дропдаун
+    if (el.getAttribute("data-bs-toggle") !== "dropdown") {
+      el.addEventListener("click", onClick);
+    }
   });
 })();

@@ -1,26 +1,38 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
-    <h1 class="h4 mb-1">Reports</h1>
-    <div class="text-muted small">Statistics, export & import</div>
+    <h1 class="h4 mb-1">Services</h1>
+    <div class="text-muted small">Statistics, export & import, cloud backups</div>
   </div>
 
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="{% url 'reports:statistics' %}">
-      📊 Statistics
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+    <!-- Обычные кнопки -->
+    <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:statistics' %}">
+      📊 <span class="d-none d-sm-inline">Statistics</span>
     </a>
-    <a class="btn btn-outline-secondary" href="{% url 'reports:import' %}">
-      ⬆ Import
+    <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:import' %}">
+      ⬆ <span class="d-none d-sm-inline">Import</span>
+    </a>
+    <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:drive_backups' %}">
+      ☁ <span class="d-none d-sm-inline">Cloud</span>
     </a>
 
-    <div class="btn-group">
-      <a class="btn btn-primary" href="{% url 'reports:export' 'csv' %}">
-        ⬇ Export CSV
-      </a>
-      <a class="btn btn-primary" href="{% url 'reports:export' 'xlsx' %}">
-        ⬇ Export XLSX
-      </a>
-      <a class="btn btn-outline-secondary" href="{% url 'reports:drive_backups' %}">☁ Cloud backups</a>
-      
+    <!-- Дропдаун — используем .dropdown, а НЕ .btn-group -->
+    <div class="dropdown d-inline-block">
+      <button
+        class="btn btn-primary dropdown-toggle nav-anim"
+        type="button"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        ⬇ Export
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'reports:export' 'csv' %}">⬇ Export CSV</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:export' 'xlsx' %}">⬇ Export XLSX</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'reports:drive_export' 'csv' %}">☁ Upload CSV to Drive</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:drive_export' 'xlsx' %}">☁ Upload XLSX to Drive</a></li>
+      </ul>
     </div>
   </div>
 </div>

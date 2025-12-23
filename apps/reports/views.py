@@ -66,8 +66,6 @@ def drive_backups(request):
     backups = []
     error = None
 
-    # Если Drive не подключён или нет refresh/access token — не лезем в API.
-    # Просто показываем страницу с кнопкой Connect/Reconnect.
     if not status.get("connected") or not status.get("has_refresh_token"):
         return render(
             request,
@@ -110,7 +108,7 @@ def drive_export(request, fmt: str):
                 content,
                 "text/csv",
                 root_name="JobApply",
-                subfolder="backups",   # или None чтобы класть прямо в JobApply
+                subfolder="backups",
             )
             messages.success(request, "Backup uploaded to Google Drive (CSV).")
             return redirect("reports:drive_backups")
