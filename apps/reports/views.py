@@ -104,7 +104,14 @@ def drive_export(request, fmt: str):
         if fmt == "csv":
             content = export_csv(qs)
             filename = f"jobapply-{ts}.csv"
-            upload_backup(request.user, filename, content, "text/csv")
+            upload_backup(
+                request.user,
+                filename,
+                content,
+                "text/csv",
+                root_name="JobApply",
+                subfolder="backups",   # или None чтобы класть прямо в JobApply
+            )
             messages.success(request, "Backup uploaded to Google Drive (CSV).")
             return redirect("reports:drive_backups")
 
@@ -116,6 +123,8 @@ def drive_export(request, fmt: str):
                 filename,
                 content,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                root_name="JobApply",
+                subfolder="backups",   # или None
             )
             messages.success(request, "Backup uploaded to Google Drive (XLSX).")
             return redirect("reports:drive_backups")

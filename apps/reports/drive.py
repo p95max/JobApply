@@ -21,26 +21,7 @@ class DriveFile:
     mime_type: str
 
 
-def _get_google_account(user) -> SocialAccount:
-    acc = SocialAccount.objects.filter(user=user, provider="google").first()
-    if not acc:
-        raise PermissionDenied("Google account is not connected.")
-    return acc
-
-
-def _get_google_token(account: SocialAccount) -> SocialToken:
-    tok = SocialToken.objects.filter(account=account).select_related("app").first()
-    if not tok:
-        raise PermissionDenied("Google token not found. Reconnect Google Drive.")
-    return tok
-
-
 def get_drive_status(user) -> dict:
-    """
-    Returns:
-      connected: bool
-      has_refresh_token: bool
-    """
     acc = SocialAccount.objects.filter(user=user, provider="google").first()
     if not acc:
         return {"connected": False, "has_refresh_token": False}
@@ -54,17 +35,22 @@ def get_drive_status(user) -> dict:
 
 
 def _credentials_from_allauth(user) -> Credentials:
-    account = _get_google_account(user)
-    token = _get_google_token(account)
+    acc = SocialAccount.objects.filter(user=user, provider="google").first()
+    if not acc:
+        raise PermissionDenied("Google account is not connected.")
 
-    app = token.app or SocialApp.objects.filter(provider="google").first()
+    tok = SocialToken.objects.filter(account=acc).select_related("app").first()
+    if not tok:
+        raise PermissionDenied("Google token not found. Reconnect Google Drive.")
+
+    app = tok.app or SocialApp.objects.filter(provider="google").first()
     if not app:
         raise PermissionDenied("Google SocialApp is not configured.")
 
-    access_token = token.token
-    refresh_token = (token.token_secret or "").strip() or None
+    access_token = tok.token
+    refresh_token = (tok.token_secret or "").strip() or None
 
-    creds = Credentials(
+    return Credentials(
         token=access_token,
         refresh_token=refresh_token,
         token_uri=TOKEN_URI,
@@ -72,24 +58,23 @@ def _credentials_from_allauth(user) -> Credentials:
         client_secret=app.secret,
         scopes=[SCOPE],
     )
-    return creds
 
 
 def _service(user):
-    creds = _credentials_from_allauth(user)
-    return build("drive", "v3", credentials=creds)
+    return build("drive", "v3", credentials=_credentials_from_allauth(user))
 
 
-def _find_or_create_folder(service, name: str, parent_id: str | None = None) -> str:
+def _find_folder(service, name: str, parent_id: str | None) -> str | None:
     q = f"name='{name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
     if parent_id:
         q += f" and '{parent_id}' in parents"
 
-    res = service.files().list(q=q, fields="files(id,name)").execute()
+    res = service.files().list(q=q, fields="files(id,name)", pageSize=1).execute()
     files = res.get("files", [])
-    if files:
-        return files[0]["id"]
+    return files[0]["id"] if files else None
 
+
+def _create_folder(service, name: str, parent_id: str | None) -> str:
     meta = {"name": name, "mimeType": "application/vnd.google-apps.folder"}
     if parent_id:
         meta["parents"] = [parent_id]
@@ -97,36 +82,63 @@ def _find_or_create_folder(service, name: str, parent_id: str | None = None) -> 
     return created["id"]
 
 
-def upload_backup(user, filename: str, content_bytes: bytes, mime_type: str) -> DriveFile:
-    service = _service(user)
+def get_or_create_folder(service, name: str, parent_id: str | None = None) -> str:
+    folder_id = _find_folder(service, name=name, parent_id=parent_id)
+    if folder_id:
+        return folder_id
+    return _create_folder(service, name=name, parent_id=parent_id)
 
-    root_id = _find_or_create_folder(service, "JobApply")
-    backups_id = _find_or_create_folder(service, "backups", parent_id=root_id)
+
+def ensure_jobapply_folder(user, root_name: str = "JobApply", subfolder: str | None = "backups") -> str:
+    """
+    Returns folder_id where backups should be stored.
+    - root_name is created in My Drive root.
+    - if subfolder is provided -> creates it inside root_name.
+    """
+    service = _service(user)
+    root_id = get_or_create_folder(service, root_name, parent_id=None)  # My Drive root
+
+    if subfolder:
+        return get_or_create_folder(service, subfolder, parent_id=root_id)
+
+    return root_id
+
+
+def upload_backup(
+    user,
+    filename: str,
+    content_bytes: bytes,
+    mime_type: str,
+    root_name: str = "JobApply",
+    subfolder: str | None = "backups",
+) -> DriveFile:
+    service = _service(user)
+    folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
 
     media = MediaInMemoryUpload(content_bytes, mimetype=mime_type, resumable=False)
-    meta = {"name": filename, "parents": [backups_id]}
+    meta = {"name": filename, "parents": [folder_id]}
 
     created = service.files().create(body=meta, media_body=media, fields="id,name,mimeType").execute()
     return DriveFile(file_id=created["id"], name=created["name"], mime_type=created["mimeType"])
 
 
-def list_backups(user, limit: int = 30) -> list[DriveFile]:
+def list_backups(
+    user,
+    limit: int = 30,
+    root_name: str = "JobApply",
+    subfolder: str | None = "backups",
+) -> list[DriveFile]:
     service = _service(user)
-
-    root_id = _find_or_create_folder(service, "JobApply")
-    backups_id = _find_or_create_folder(service, "backups", parent_id=root_id)
+    folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
 
     res = service.files().list(
-        q=f"'{backups_id}' in parents and trashed=false",
+        q=f"'{folder_id}' in parents and trashed=false",
         orderBy="createdTime desc",
         pageSize=limit,
         fields="files(id,name,mimeType)",
     ).execute()
 
-    out: list[DriveFile] = []
-    for f in res.get("files", []):
-        out.append(DriveFile(file_id=f["id"], name=f["name"], mime_type=f["mimeType"]))
-    return out
+    return [DriveFile(file_id=f["id"], name=f["name"], mime_type=f["mimeType"]) for f in res.get("files", [])]
 
 
 def download_file(user, file_id: str) -> bytes:
@@ -135,18 +147,18 @@ def download_file(user, file_id: str) -> bytes:
     req = service.files().get_media(fileId=file_id)
     buf = io.BytesIO()
     downloader = MediaIoBaseDownload(buf, req)
-
     done = False
     while not done:
         _, done = downloader.next_chunk()
 
     return buf.getvalue()
 
+from allauth.socialaccount.models import SocialAccount, SocialToken
+
 
 def disconnect_drive(user) -> None:
     """
-    Removes stored allauth tokens for Google (access/refresh),
-    and keeps SocialAccount (optional). You can also delete SocialAccount if you want.
+    Removes stored allauth tokens for Google (access/refresh).
     """
     acc = SocialAccount.objects.filter(user=user, provider="google").first()
     if not acc:
