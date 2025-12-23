@@ -9,6 +9,8 @@ from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaInMemoryUpload, MediaIoBaseDownload
+from typing import Optional
+from googleapiclient.errors import HttpError
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 SCOPE = "https://www.googleapis.com/auth/drive.file"
@@ -164,3 +166,79 @@ def disconnect_drive(user) -> None:
     if not acc:
         return
     SocialToken.objects.filter(account=acc).delete()
+
+def _find_file_in_folder_by_name(service, folder_id: str, name: str) -> Optional[str]:
+    q = (
+        f"'{folder_id}' in parents and trashed=false "
+        f"and name='{name}'"
+    )
+    res = service.files().list(q=q, fields="files(id,name)", pageSize=1).execute()
+    files = res.get("files", [])
+    return files[0]["id"] if files else None
+
+
+def _rename_file(service, file_id: str, new_name: str) -> None:
+    service.files().update(fileId=file_id, body={"name": new_name}).execute()
+
+
+def _delete_file(service, file_id: str) -> None:
+    service.files().delete(fileId=file_id).execute()
+
+
+def upload_backup_rotate_3(
+    user,
+    content_bytes: bytes,
+    mime_type: str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ext: str = "xlsx",
+    root_name: str = "JobApply",
+    subfolder: str | None = "backups",
+) -> None:
+    """
+    Uploads a new backup as 'latest.<ext>' and keeps only 3 backups in Drive:
+      - latest.<ext>
+      - backup-1.<ext>
+      - backup-2.<ext>
+
+    Rotation:
+      backup-2 <- deleted
+      backup-1 -> backup-2
+      latest   -> backup-1
+      new      -> latest
+    """
+    service = _service(user)
+    folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
+
+    latest_name = f"latest.{ext}"
+    b1_name = f"backup-1.{ext}"
+    b2_name = f"backup-2.{ext}"
+
+    latest_id = _find_file_in_folder_by_name(service, folder_id, latest_name)
+    b1_id = _find_file_in_folder_by_name(service, folder_id, b1_name)
+    b2_id = _find_file_in_folder_by_name(service, folder_id, b2_name)
+
+    if b2_id:
+        try:
+            _delete_file(service, b2_id)
+        except HttpError:
+            pass
+
+    if b1_id:
+        try:
+            _rename_file(service, b1_id, b2_name)
+        except HttpError:
+            pass
+
+    if latest_id:
+        try:
+            _rename_file(service, latest_id, b1_name)
+        except HttpError:
+            pass
+
+    upload_backup(
+        user=user,
+        filename=latest_name,
+        content_bytes=content_bytes,
+        mime_type=mime_type,
+        root_name=root_name,
+        subfolder=subfolder,
+    )

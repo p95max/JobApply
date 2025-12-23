@@ -1,0 +1,3891 @@
+================================================
+FILE: README.md
+================================================
+---
+
+## Fixtures (dev testdata)
+
+1. Upload fixtures into the Docker test DB `(replace you-google-email@gmail.com)`
+```bash
+# upload testdata + move to your account
+docker compose exec web python manage.py loaddata fixtures/applications.json \
+  && docker compose exec web python manage.py assign_fixtures_owner --email you-google-email@gmail.com --from-user-id 1
+```
+2. Verify fixtures are assigned to your account (dry-run)
+```bash
+# check record in your account (dry-run)
+docker compose exec web python manage.py assign_fixtures_owner --email you-google-email@gmail.com --from-user-id 1 --dry-run
+```
+
+---
+
+
+================================================
+FILE: docker-compose.yml
+================================================
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jobapply}
+      POSTGRES_USER: ${POSTGRES_USER:-jobapply}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobapply}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobapply} -d ${POSTGRES_DB:-jobapply}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_AUTOMIGRATE: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+
+
+volumes:
+  pgdata:
+
+
+
+================================================
+FILE: manage.py
+================================================
+#!/usr/bin/env python
+"""Django's command-line utility for administrative tasks."""
+import os
+import sys
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+================================================
+FILE: pyproject.toml
+================================================
+[tool.poetry]
+name = "jobapply"
+version = "0.1.0"
+description = "JobApply - online job applications manager"
+authors = ["maxx <m.petrykin@gmx.de>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+Django = "^5.2"
+psycopg = {version="^3.2", extras=["binary"]}
+python-dotenv = "^1.0.1"
+django-allauth = "^65.0.0"
+django-widget-tweaks = "^1.5.0"
+openpyxl = "^3.1.5"
+google-auth = "^2.33.0"
+google-auth-oauthlib = "^1.2.1"
+google-api-python-client = "^2.141.0"
+pyjwt = "^2.10.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.9"
+
+[tool.ruff]
+line-length = 100
+
+
+
+================================================
+FILE: .env.example
+================================================
+DJANGO_SECRET_KEY=change-me
+DJANGO_DEBUG=1
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+
+POSTGRES_DB=jobapply
+POSTGRES_USER=jobapply
+POSTGRES_PASSWORD=jobapply
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+DJANGO_SUPERUSER_PASSWORD=admin12345
+
+# allauth / google
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+
+
+================================================
+FILE: apps/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/accounts/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/accounts/adapters.py
+================================================
+from __future__ import annotations
+
+from allauth.account.adapter import DefaultAccountAdapter
+from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+
+
+class NoSignupAccountAdapter(DefaultAccountAdapter):
+    """
+    Google OAuth-only project:
+    - block local (email/password) signup
+    - allow social signup (Google) so new users can be created on first login
+    """
+
+    def is_open_for_signup(self, request):
+        if getattr(request, "path", "").startswith("/accounts/google/"):
+            return True
+
+        if getattr(request, "path", "") == "/accounts/signup/":
+            return False
+
+        return True
+
+
+class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    def get_connect_redirect_url(self, request, socialaccount):
+        url = request.session.pop("drive_connect_next", None)
+        if url:
+            return url
+        return super().get_connect_redirect_url(request, socialaccount)
+
+
+
+
+
+================================================
+FILE: apps/accounts/forms.py
+================================================
+from __future__ import annotations
+
+from allauth.account.forms import SignupForm
+from django import forms
+from django.core.exceptions import ValidationError
+
+
+class DisabledSignupForm(SignupForm):
+    """
+    Hard-disable local signup. Project uses Google OAuth only.
+    """
+    def clean(self):
+        raise ValidationError("Sign up is disabled. Please use Google sign-in.")
+
+
+
+================================================
+FILE: apps/accounts/middleware.py
+================================================
+from __future__ import annotations
+
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.db.utils import ProgrammingError
+
+
+class ConsentRequiredMiddleware:
+    """
+    Enforces mandatory consent acceptance after OAuth login.
+    If user is authenticated but has not accepted consent -> redirect to consent page.
+    """
+
+    EXEMPT_PATH_PREFIXES = (
+        "/admin/",
+        "/accounts/",
+        "/static/",
+        "/media/",
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path
+
+        if any(path.startswith(p) for p in self.EXEMPT_PATH_PREFIXES):
+            return self.get_response(request)
+
+        if not request.user.is_authenticated:
+            return self.get_response(request)
+
+        consent_url = reverse("accounts:consent")
+
+        if path == consent_url:
+            return self.get_response(request)
+
+        from apps.accounts.views import ensure_profile
+
+        try:
+            profile = ensure_profile(request.user)
+        except ProgrammingError:
+            return self.get_response(request)
+
+        if not profile.google_data_access_consent:
+            return redirect(consent_url)
+
+        return self.get_response(request)
+
+
+
+================================================
+FILE: apps/accounts/models.py
+================================================
+from __future__ import annotations
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    google_data_access_consent = models.BooleanField(default=False)
+    consent_accepted_at = models.DateTimeField(null=True, blank=True)
+
+    def accept_consent(self) -> None:
+        self.google_data_access_consent = True
+        self.consent_accepted_at = timezone.now()
+        self.save(update_fields=["google_data_access_consent", "consent_accepted_at"])
+
+
+
+================================================
+FILE: apps/accounts/urls.py
+================================================
+from django.urls import path
+
+from . import views
+
+app_name = "accounts"
+
+urlpatterns = [
+    path("", views.root, name="root"),
+    path("consent/", views.consent, name="consent"),
+]
+
+
+
+================================================
+FILE: apps/accounts/views.py
+================================================
+from __future__ import annotations
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.shortcuts import redirect, render
+from allauth.socialaccount.providers.google.views import oauth2_login
+from .models import UserProfile
+
+
+def ensure_profile(user: User) -> UserProfile:
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    return profile
+
+
+def root(request):
+    if request.user.is_authenticated:
+        return redirect("/applications/")
+    return oauth2_login(request)
+
+@login_required
+def consent(request):
+    profile = ensure_profile(request.user)
+
+    if request.method == "POST":
+        accepted = bool(request.POST.get("consent"))
+        if accepted:
+            profile.accept_consent()
+            return redirect("applications:list")
+
+    return render(
+        request,
+        "accounts/consent.html",
+        {
+            "profile": profile,
+            "consent_text_1": "I agree to provide access to my Google account for authentication purposes.",
+            "consent_text_2": "Administration is not responsible for storing personal data beyond reasonable security measures.",
+        },
+    )
+
+
+
+================================================
+FILE: apps/accounts/management/commands/create_google_socialapp_if_not_exists.py
+================================================
+from __future__ import annotations
+
+import os
+
+from django.core.management.base import BaseCommand
+from django.db import transaction
+
+from allauth.socialaccount.models import SocialApp
+from django.contrib.sites.models import Site
+
+
+class Command(BaseCommand):
+    help = "Create/update Site and Google SocialApp from env vars (idempotent)."
+
+    @transaction.atomic
+    def handle(self, *args, **options):
+        client_id = os.getenv("GOOGLE_CLIENT_ID")
+        secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        domain = os.getenv("DJANGO_SITE_DOMAIN", "localhost:8000")
+        name = os.getenv("DJANGO_SITE_NAME", "JobApply")
+
+        if not client_id or not secret:
+            self.stdout.write("GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not set; skipping SocialApp.")
+            return
+
+        site, _ = Site.objects.get_or_create(id=1, defaults={"domain": domain, "name": name})
+        changed = False
+        if site.domain != domain:
+            site.domain = domain
+            changed = True
+        if site.name != name:
+            site.name = name
+            changed = True
+        if changed:
+            site.save(update_fields=["domain", "name"])
+            self.stdout.write(f"Site updated: {site.domain}")
+
+        app = SocialApp.objects.filter(provider="google").first()
+        if not app:
+            app = SocialApp.objects.create(
+                provider="google",
+                name="Google",
+                client_id=client_id,
+                secret=secret,
+            )
+            app.sites.add(site)
+            self.stdout.write("Google SocialApp created.")
+            return
+
+        # update existing
+        upd = False
+        if app.client_id != client_id:
+            app.client_id = client_id
+            upd = True
+        if app.secret != secret:
+            app.secret = secret
+            upd = True
+        if app.name != "Google":
+            app.name = "Google"
+            upd = True
+        if upd:
+            app.save()
+        app.sites.add(site)
+        self.stdout.write("Google SocialApp ensured/updated.")
+
+
+
+================================================
+FILE: apps/accounts/management/commands/create_superuser_if_not_exists.py
+================================================
+from __future__ import annotations
+
+import os
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+
+
+class Command(BaseCommand):
+    help = "Create a superuser from env vars if it does not exist (idempotent)."
+
+    def handle(self, *args, **options):
+        username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+        email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+        password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+
+        if not username or not email or not password:
+            self.stdout.write("Superuser env vars are not fully set; skipping.")
+            return
+
+        User = get_user_model()
+
+        if User.objects.filter(username=username).exists():
+            self.stdout.write(f"Superuser '{username}' already exists; skipping.")
+            return
+
+        User.objects.create_superuser(username=username, email=email, password=password)
+        self.stdout.write(f"Superuser '{username}' created.")
+
+
+
+================================================
+FILE: apps/accounts/migrations/0001_initial.py
+================================================
+# Generated by Django 5.2.9 on 2025-12-22 13:11
+
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='UserProfile',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('google_data_access_consent', models.BooleanField(default=False)),
+                ('consent_accepted_at', models.DateTimeField(blank=True, null=True)),
+                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+    ]
+
+
+
+================================================
+FILE: apps/accounts/migrations/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/applications/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/applications/forms.py
+================================================
+from django import forms
+
+from apps.applications.models import JobApplication
+
+
+class JobApplicationForm(forms.ModelForm):
+    # field limits
+    TITLE_MAX = 50
+    COMPANY_MAX = 50
+    LOCATION_MAX = 70
+    SOURCE_MAX = 50
+    NOTES_MAX = 1000
+
+    title = forms.CharField(
+        max_length=TITLE_MAX,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control w-100",
+                "maxlength": str(TITLE_MAX),
+                "data-maxlen": str(TITLE_MAX),
+            }
+        ),
+        help_text=f"Max {TITLE_MAX} characters.",
+    )
+    company = forms.CharField(
+        max_length=COMPANY_MAX,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control w-100",
+                "maxlength": str(COMPANY_MAX),
+                "data-maxlen": str(COMPANY_MAX),
+            }
+        ),
+        help_text=f"Max {COMPANY_MAX} characters.",
+    )
+    location = forms.CharField(
+        required=False,
+        max_length=LOCATION_MAX,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control w-100",
+                "maxlength": str(LOCATION_MAX),
+                "data-maxlen": str(LOCATION_MAX),
+            }
+        ),
+        help_text=f"Max {LOCATION_MAX} characters.",
+    )
+    source = forms.CharField(
+        required=False,
+        max_length=SOURCE_MAX,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control w-100",
+                "maxlength": str(SOURCE_MAX),
+                "data-maxlen": str(SOURCE_MAX),
+                "placeholder": "LinkedIn / Indeed / Email / Referral...",
+            }
+        ),
+        help_text=f"Max {SOURCE_MAX} characters.",
+    )
+    notes = forms.CharField(
+        required=False,
+        max_length=NOTES_MAX,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control w-100",
+                "rows": 4,
+                "maxlength": str(NOTES_MAX),
+                "data-maxlen": str(NOTES_MAX),
+            }
+        ),
+        help_text=f"Max {NOTES_MAX} characters.",
+    )
+
+    class Meta:
+        model = JobApplication
+        fields = [
+            "title",
+            "company",
+            "location",
+            "source",
+            "status",
+            "applied_at",
+            "recruiter_reply_at",
+            "notes",
+        ]
+        widgets = {
+            "status": forms.Select(attrs={"class": "form-select w-100"}),
+            "applied_at": forms.DateInput(
+                attrs={"class": "form-control w-100", "type": "date"}
+            ),
+            "recruiter_reply_at": forms.DateInput(
+                attrs={"class": "form-control w-100", "type": "date"}
+            ),
+        }
+
+    def clean_title(self) -> str:
+        value = (self.cleaned_data.get("title") or "").strip()
+        if not value:
+            raise forms.ValidationError("Title is required.")
+        if len(value) > self.TITLE_MAX:
+            raise forms.ValidationError(
+                f"Title must be {self.TITLE_MAX} characters or less."
+            )
+        return value
+
+    def clean_company(self) -> str:
+        value = (self.cleaned_data.get("company") or "").strip()
+        if not value:
+            raise forms.ValidationError("Company is required.")
+        if len(value) > self.COMPANY_MAX:
+            raise forms.ValidationError(
+                f"Company must be {self.COMPANY_MAX} characters or less."
+            )
+        return value
+
+    def clean_location(self) -> str:
+        value = (self.cleaned_data.get("location") or "").strip()
+        if len(value) > self.LOCATION_MAX:
+            raise forms.ValidationError(
+                f"Location must be {self.LOCATION_MAX} characters or less."
+            )
+        return value
+
+    def clean_source(self) -> str:
+        value = (self.cleaned_data.get("source") or "").strip()
+        if len(value) > self.SOURCE_MAX:
+            raise forms.ValidationError(
+                f"Source must be {self.SOURCE_MAX} characters or less."
+            )
+        return value
+
+    def clean_notes(self) -> str:
+        value = (self.cleaned_data.get("notes") or "").strip()
+        if len(value) > self.NOTES_MAX:
+            raise forms.ValidationError(
+                f"Notes must be {self.NOTES_MAX} characters or less."
+            )
+        return value
+
+
+
+================================================
+FILE: apps/applications/models.py
+================================================
+from __future__ import annotations
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
+class ApplicationStatus(models.TextChoices):
+    APPLIED = "applied", "Applied"
+    REPLIED = "replied", "Recruiter replied"
+    INTERVIEW = "interview", "Interview"
+    OFFER = "offer", "Offer"
+    REJECTED = "rejected", "Rejected"
+    ARCHIVED = "archived", "Archived"
+
+
+class JobApplication(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=200)
+    company = models.CharField(max_length=200)
+    location = models.CharField(max_length=200, blank=True)
+    source = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.APPLIED)
+
+    applied_at = models.DateTimeField(default=timezone.now)
+    recruiter_reply_at = models.DateTimeField(null=True, blank=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.company} — {self.title}"
+
+
+
+================================================
+FILE: apps/applications/urls.py
+================================================
+from django.urls import path
+
+from . import views
+
+app_name = "applications"
+
+urlpatterns = [
+    path("", views.list_applications, name="list"),
+    path("<int:pk>/", views.application_detail, name="detail"),
+    path("<int:pk>/status/", views.update_status, name="update_status"),
+
+    path("create/", views.create_application, name="create"),
+    path("<int:pk>/edit/", views.update_application, name="edit"),
+    path("<int:pk>/delete/", views.delete_application, name="delete"),
+
+
+]
+
+
+
+================================================
+FILE: apps/applications/views.py
+================================================
+from __future__ import annotations
+from django.shortcuts import get_object_or_404, redirect
+from .forms import JobApplicationForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from datetime import datetime
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.shortcuts import render
+from django.utils import timezone
+from .models import JobApplication
+
+
+@login_required
+def list_applications(request):
+    qs = JobApplication.objects.filter(user=request.user)
+
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status") or "").strip()
+    month = (request.GET.get("month") or "").strip()
+    sort = (request.GET.get("sort") or "-applied_at").strip()
+
+    if q:
+        qs = qs.filter(
+            Q(title__icontains=q)
+            | Q(company__icontains=q)
+            | Q(location__icontains=q)
+        )
+
+    if status:
+        qs = qs.filter(status=status)
+
+    if month:
+        try:
+            year, mon = map(int, month.split("-"))
+            start = timezone.make_aware(datetime(year, mon, 1, 0, 0, 0))
+            if mon == 12:
+                end = timezone.make_aware(datetime(year + 1, 1, 1, 0, 0, 0))
+            else:
+                end = timezone.make_aware(datetime(year, mon + 1, 1, 0, 0, 0))
+            qs = qs.filter(applied_at__gte=start, applied_at__lt=end)
+        except ValueError:
+            pass
+
+    allowed_sorts = {"applied_at", "-applied_at", "updated_at", "-updated_at"}
+    if sort not in allowed_sorts:
+        sort = "-applied_at"
+
+    qs = qs.order_by(sort)[:200]
+
+    return render(
+        request,
+        "applications/list.html",
+        {
+            "items": qs,
+            "q": q,
+            "status": status,
+            "month": month,
+            "sort": sort,
+        },
+    )
+
+
+@login_required
+def create_application(request):
+    if request.method == "POST":
+        form = JobApplicationForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.user = request.user
+            obj.save()
+            return redirect("applications:list")
+    else:
+        form = JobApplicationForm()
+
+    return render(request, "applications/form.html", {"form": form, "mode": "create"})
+
+
+@login_required
+def update_application(request, pk: int):
+    obj = get_object_or_404(JobApplication, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        form = JobApplicationForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            return redirect("applications:list")
+    else:
+        form = JobApplicationForm(instance=obj)
+
+    return render(request, "applications/form.html", {"form": form, "mode": "edit", "obj": obj})
+
+
+@login_required
+def delete_application(request, pk: int):
+    obj = get_object_or_404(JobApplication, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        obj.delete()
+        return redirect("applications:list")
+
+    return render(request, "applications/delete.html", {"obj": obj})
+
+
+
+@require_POST
+@login_required
+def update_status(request, pk):
+    status = request.POST.get("status")
+
+    if status not in {
+        "applied", "screen", "interview", "offer", "rejected"
+    }:
+        return JsonResponse({"error": "Invalid status"}, status=400)
+
+    app = JobApplication.objects.get(pk=pk, user=request.user)
+    app.status = status
+    app.save(update_fields=["status"])
+
+    return JsonResponse({"ok": True, "status": status})
+
+@login_required
+def application_detail(request, pk):
+    app = get_object_or_404(
+        JobApplication,
+        pk=pk,
+        user=request.user,
+    )
+
+    return render(
+        request,
+        "applications/detail.html",
+        {"app": app},
+    )
+
+
+
+================================================
+FILE: apps/applications/management/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/applications/management/commands/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/applications/management/commands/assign_fixtures_owner.py
+================================================
+from __future__ import annotations
+
+from typing import Any
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand, CommandError
+
+from apps.applications.models import JobApplication
+
+
+class Command(BaseCommand):
+    """
+    Reassign JobApplication.user for fixture-loaded records.
+
+    Typical use:
+      python manage.py assign_fixtures_owner --email you@gmail.com --from-user-id 1
+
+    Notes:
+    - loaddata runs with raw=True, so auto_now/auto_now_add won't fire.
+    - Fixtures often reference a placeholder user_id (e.g., 1) - this command migrates them.
+    """
+
+    help = "Assign fixture-loaded applications to a real user by email."
+
+    def add_arguments(self, parser) -> None:
+        parser.add_argument(
+            "--email",
+            required=True,
+            help="Target user email (must exist in DB).",
+        )
+        parser.add_argument(
+            "--from-user-id",
+            type=int,
+            default=1,
+            help="Move applications from this user_id to the target user (default: 1).",
+        )
+        parser.add_argument(
+            "--all",
+            action="store_true",
+            help="Reassign ALL applications (ignores --from-user-id).",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Print how many rows would be updated, without changing DB.",
+        )
+
+    def handle(self, *args: Any, **options: Any) -> None:
+        email: str = options["email"]
+        from_user_id: int = options["from_user_id"]
+        reassign_all: bool = options["all"]
+        dry_run: bool = options["dry_run"]
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist as exc:
+            raise CommandError(f"User with email '{email}' not found.") from exc
+
+        qs = JobApplication.objects.all() if reassign_all else JobApplication.objects.filter(user_id=from_user_id)
+
+        count = qs.count()
+        if count == 0:
+            self.stdout.write(self.style.WARNING("No applications matched. Nothing to do."))
+            return
+
+        if dry_run:
+            self.stdout.write(self.style.SUCCESS(f"[DRY RUN] Would reassign {count} applications to user_id={user.id}."))
+            return
+
+        updated = qs.update(user_id=user.id)
+        self.stdout.write(self.style.SUCCESS(f"Reassigned {updated} applications to {email} (user_id={user.id})."))
+
+
+
+================================================
+FILE: apps/applications/migrations/0001_initial.py
+================================================
+# Generated by Django 5.2.9 on 2025-12-22 13:49
+
+import django.db.models.deletion
+import django.utils.timezone
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='JobApplication',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=200)),
+                ('company', models.CharField(max_length=200)),
+                ('location', models.CharField(blank=True, max_length=200)),
+                ('source', models.CharField(blank=True, max_length=100)),
+                ('status', models.CharField(choices=[('applied', 'Applied'), ('replied', 'Recruiter replied'), ('interview', 'Interview'), ('offer', 'Offer'), ('rejected', 'Rejected'), ('archived', 'Archived')], default='applied', max_length=20)),
+                ('applied_at', models.DateField(default=django.utils.timezone.now)),
+                ('recruiter_reply_at', models.DateField(blank=True, null=True)),
+                ('notes', models.TextField(blank=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'ordering': ['-updated_at', '-created_at'],
+            },
+        ),
+    ]
+
+
+
+================================================
+FILE: apps/applications/migrations/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/interviews/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/interviews/forms.py
+================================================
+from __future__ import annotations
+
+from django import forms
+
+from apps.applications.models import ApplicationStatus, JobApplication
+from .models import InterviewEvent
+
+
+class InterviewEventForm(forms.ModelForm):
+    # field limits
+    LOCATION_MAX = 50
+    NOTES_MAX = 1000
+
+    location = forms.CharField(
+        required=False,
+        max_length=LOCATION_MAX,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control w-100",
+                "maxlength": str(LOCATION_MAX),
+                "data-maxlen": str(LOCATION_MAX),
+                "placeholder": "Zoom / Google Meet / Onsite address...",
+            }
+        ),
+        help_text=f"Max {LOCATION_MAX} characters.",
+    )
+
+    notes = forms.CharField(
+        required=False,
+        max_length=NOTES_MAX,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control w-100",
+                "rows": 3,
+                "maxlength": str(NOTES_MAX),
+                "data-maxlen": str(NOTES_MAX),
+            }
+        ),
+        help_text=f"Max {NOTES_MAX} characters.",
+    )
+
+    class Meta:
+        model = InterviewEvent
+        fields = ["application", "status", "starts_at", "location", "notes"]
+        widgets = {
+            "application": forms.Select(attrs={"class": "form-select w-100"}),
+            "status": forms.Select(attrs={"class": "form-select w-100"}),
+            "starts_at": forms.DateTimeInput(
+                attrs={"class": "form-control w-100", "type": "datetime-local"}
+            ),
+        }
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["application"].queryset = JobApplication.objects.filter(
+            user=user, status=ApplicationStatus.INTERVIEW
+        )
+
+    def clean_location(self) -> str:
+        value = (self.cleaned_data.get("location") or "").strip()
+        if len(value) > self.LOCATION_MAX:
+            raise forms.ValidationError(
+                f"Location must be {self.LOCATION_MAX} characters or less."
+            )
+        return value
+
+    def clean_notes(self) -> str:
+        value = (self.cleaned_data.get("notes") or "").strip()
+        if len(value) > self.NOTES_MAX:
+            raise forms.ValidationError(
+                f"Notes must be {self.NOTES_MAX} characters or less."
+            )
+        return value
+
+
+
+================================================
+FILE: apps/interviews/models.py
+================================================
+from __future__ import annotations
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+from apps.applications.models import JobApplication
+
+
+class InterviewStatus(models.TextChoices):
+    SCHEDULED = "scheduled", "Scheduled"
+    DONE = "done", "Done"
+    CANCELED = "canceled", "Canceled"
+
+
+class InterviewEvent(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE)
+
+    status = models.CharField(
+        max_length=16,
+        choices=InterviewStatus.choices,
+        default=InterviewStatus.SCHEDULED,
+    )
+
+    starts_at = models.DateTimeField()
+    location = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        super().clean()
+        if not self.starts_at:
+            return
+
+    def __str__(self) -> str:
+        return f"Interview: {self.application} @ {self.starts_at}"
+
+
+
+================================================
+FILE: apps/interviews/urls.py
+================================================
+from django.urls import path
+
+from . import views
+
+app_name = "interviews"
+
+urlpatterns = [
+    path("", views.interview_list, name="list"),
+    path("<int:pk>/status/", views.interview_status, name="status"),
+
+    path("create/", views.interview_create, name="create"),
+    path("<int:pk>/edit/", views.interview_update, name="edit"),
+    path("<int:pk>/delete/", views.interview_delete, name="delete"),
+]
+
+
+
+================================================
+FILE: apps/interviews/views.py
+================================================
+from __future__ import annotations
+
+from django.shortcuts import redirect, render
+
+from .forms import InterviewEventForm
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseBadRequest, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_POST
+
+from .models import InterviewEvent, InterviewStatus
+
+
+@login_required
+def interview_list(request):
+    items = InterviewEvent.objects.filter(user=request.user).select_related("application")[:200]
+    return render(request, "interviews/list.html", {"items": items})
+
+
+@login_required
+@require_POST
+def interview_status(request, pk: int):
+    obj = get_object_or_404(InterviewEvent, pk=pk, user=request.user)
+    status = (request.POST.get("status") or "").strip()
+
+    allowed = {c.value for c in InterviewStatus}
+    if status not in allowed:
+        return HttpResponseBadRequest("Invalid status")
+
+    obj.status = status
+    obj.save(update_fields=["status"])
+    return HttpResponse("ok")
+
+
+@login_required
+def interview_create(request):
+    if request.method == "POST":
+        form = InterviewEventForm(request.POST, user=request.user)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.user = request.user
+            obj.full_clean()
+            obj.save()
+            return redirect("interviews:list")
+    else:
+        form = InterviewEventForm(user=request.user)
+
+    return render(request, "interviews/form.html", {"form": form})
+
+@login_required
+def interview_update(request, pk: int):
+    obj = get_object_or_404(InterviewEvent, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        form = InterviewEventForm(request.POST, instance=obj, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect("interviews:list")
+    else:
+        form = InterviewEventForm(instance=obj, user=request.user)
+
+    return render(
+        request,
+        "interviews/form.html",
+        {"form": form, "mode": "edit", "obj": obj},
+    )
+
+@login_required
+def interview_delete(request, pk: int):
+    obj = get_object_or_404(InterviewEvent, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        obj.delete()
+        return redirect("interviews:list")
+
+    return render(request, "interviews/delete.html", {"obj": obj})
+
+
+
+================================================
+FILE: apps/reports/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: apps/reports/adapters.py
+================================================
+from __future__ import annotations
+
+from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+
+
+class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    """
+    Ensures predictable redirects after 'process=connect'.
+    """
+
+    def get_connect_redirect_url(self, request, socialaccount):
+        url = request.session.pop("drive_connect_next", None)
+        if url:
+            return url
+        return super().get_connect_redirect_url(request, socialaccount)
+
+
+
+================================================
+FILE: apps/reports/drive.py
+================================================
+from __future__ import annotations
+
+import io
+from dataclasses import dataclass
+
+from django.core.exceptions import PermissionDenied
+
+from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaInMemoryUpload, MediaIoBaseDownload
+
+TOKEN_URI = "https://oauth2.googleapis.com/token"
+SCOPE = "https://www.googleapis.com/auth/drive.file"
+
+
+@dataclass(frozen=True)
+class DriveFile:
+    file_id: str
+    name: str
+    mime_type: str
+
+
+def get_drive_status(user) -> dict:
+    acc = SocialAccount.objects.filter(user=user, provider="google").first()
+    if not acc:
+        return {"connected": False, "has_refresh_token": False}
+
+    tok = SocialToken.objects.filter(account=acc).first()
+    if not tok:
+        return {"connected": True, "has_refresh_token": False}
+
+    refresh = (tok.token_secret or "").strip()
+    return {"connected": True, "has_refresh_token": bool(refresh)}
+
+
+def _credentials_from_allauth(user) -> Credentials:
+    acc = SocialAccount.objects.filter(user=user, provider="google").first()
+    if not acc:
+        raise PermissionDenied("Google account is not connected.")
+
+    tok = SocialToken.objects.filter(account=acc).select_related("app").first()
+    if not tok:
+        raise PermissionDenied("Google token not found. Reconnect Google Drive.")
+
+    app = tok.app or SocialApp.objects.filter(provider="google").first()
+    if not app:
+        raise PermissionDenied("Google SocialApp is not configured.")
+
+    access_token = tok.token
+    refresh_token = (tok.token_secret or "").strip() or None
+
+    return Credentials(
+        token=access_token,
+        refresh_token=refresh_token,
+        token_uri=TOKEN_URI,
+        client_id=app.client_id,
+        client_secret=app.secret,
+        scopes=[SCOPE],
+    )
+
+
+def _service(user):
+    return build("drive", "v3", credentials=_credentials_from_allauth(user))
+
+
+def _find_folder(service, name: str, parent_id: str | None) -> str | None:
+    q = f"name='{name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    if parent_id:
+        q += f" and '{parent_id}' in parents"
+
+    res = service.files().list(q=q, fields="files(id,name)", pageSize=1).execute()
+    files = res.get("files", [])
+    return files[0]["id"] if files else None
+
+
+def _create_folder(service, name: str, parent_id: str | None) -> str:
+    meta = {"name": name, "mimeType": "application/vnd.google-apps.folder"}
+    if parent_id:
+        meta["parents"] = [parent_id]
+    created = service.files().create(body=meta, fields="id").execute()
+    return created["id"]
+
+
+def get_or_create_folder(service, name: str, parent_id: str | None = None) -> str:
+    folder_id = _find_folder(service, name=name, parent_id=parent_id)
+    if folder_id:
+        return folder_id
+    return _create_folder(service, name=name, parent_id=parent_id)
+
+
+def ensure_jobapply_folder(user, root_name: str = "JobApply", subfolder: str | None = "backups") -> str:
+    """
+    Returns folder_id where backups should be stored.
+    - root_name is created in My Drive root.
+    - if subfolder is provided -> creates it inside root_name.
+    """
+    service = _service(user)
+    root_id = get_or_create_folder(service, root_name, parent_id=None)  # My Drive root
+
+    if subfolder:
+        return get_or_create_folder(service, subfolder, parent_id=root_id)
+
+    return root_id
+
+
+def upload_backup(
+    user,
+    filename: str,
+    content_bytes: bytes,
+    mime_type: str,
+    root_name: str = "JobApply",
+    subfolder: str | None = "backups",
+) -> DriveFile:
+    service = _service(user)
+    folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
+
+    media = MediaInMemoryUpload(content_bytes, mimetype=mime_type, resumable=False)
+    meta = {"name": filename, "parents": [folder_id]}
+
+    created = service.files().create(body=meta, media_body=media, fields="id,name,mimeType").execute()
+    return DriveFile(file_id=created["id"], name=created["name"], mime_type=created["mimeType"])
+
+
+def list_backups(
+    user,
+    limit: int = 30,
+    root_name: str = "JobApply",
+    subfolder: str | None = "backups",
+) -> list[DriveFile]:
+    service = _service(user)
+    folder_id = ensure_jobapply_folder(user, root_name=root_name, subfolder=subfolder)
+
+    res = service.files().list(
+        q=f"'{folder_id}' in parents and trashed=false",
+        orderBy="createdTime desc",
+        pageSize=limit,
+        fields="files(id,name,mimeType)",
+    ).execute()
+
+    return [DriveFile(file_id=f["id"], name=f["name"], mime_type=f["mimeType"]) for f in res.get("files", [])]
+
+
+def download_file(user, file_id: str) -> bytes:
+    service = _service(user)
+
+    req = service.files().get_media(fileId=file_id)
+    buf = io.BytesIO()
+    downloader = MediaIoBaseDownload(buf, req)
+    done = False
+    while not done:
+        _, done = downloader.next_chunk()
+
+    return buf.getvalue()
+
+from allauth.socialaccount.models import SocialAccount, SocialToken
+
+
+def disconnect_drive(user) -> None:
+    """
+    Removes stored allauth tokens for Google (access/refresh).
+    """
+    acc = SocialAccount.objects.filter(user=user, provider="google").first()
+    if not acc:
+        return
+    SocialToken.objects.filter(account=acc).delete()
+
+
+
+================================================
+FILE: apps/reports/services.py
+================================================
+from __future__ import annotations
+
+import csv
+import io
+from dataclasses import dataclass
+from datetime import datetime
+
+from django.utils import timezone
+from openpyxl import Workbook
+
+from apps.applications.models import JobApplication
+
+
+@dataclass(frozen=True)
+class Stats:
+    total: int
+    by_status: dict[str, int]
+
+
+def build_stats(qs) -> Stats:
+    total = qs.count()
+    by_status: dict[str, int] = {}
+    for obj in qs.only("status"):
+        by_status[obj.status] = by_status.get(obj.status, 0) + 1
+    return Stats(total=total, by_status=by_status)
+
+
+def export_csv(qs) -> bytes:
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["id", "title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at", "notes"])
+    for a in qs:
+        w.writerow(
+            [
+                a.id,
+                a.title,
+                a.company,
+                a.location,
+                a.source,
+                a.status,
+                a.applied_at.isoformat() if a.applied_at else "",
+                a.recruiter_reply_at.isoformat() if a.recruiter_reply_at else "",
+                a.notes,
+            ]
+        )
+    return buf.getvalue().encode("utf-8")
+
+
+def export_xlsx(qs) -> bytes:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "applications"
+    ws.append(["id", "title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at", "notes"])
+    for a in qs:
+        ws.append(
+            [
+                a.id,
+                a.title,
+                a.company,
+                a.location,
+                a.source,
+                a.status,
+                a.applied_at.isoformat() if a.applied_at else "",
+                a.recruiter_reply_at.isoformat() if a.recruiter_reply_at else "",
+                a.notes,
+            ]
+        )
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue()
+
+
+def import_csv(user, raw_bytes: bytes) -> dict[str, int]:
+    """
+    Imports CSV with header:
+    id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
+
+    Dedupe rule (per TZ): if id exists -> update; else -> create.
+    """
+    created = 0
+    updated = 0
+
+    text = raw_bytes.decode("utf-8", errors="replace")
+    reader = csv.DictReader(io.StringIO(text))
+
+    for row in reader:
+        raw_id = (row.get("id") or "").strip()
+        obj = None
+        if raw_id.isdigit():
+            obj = JobApplication.objects.filter(user=user, id=int(raw_id)).first()
+
+        applied_at = _parse_date(row.get("applied_at"))
+        reply_at = _parse_date(row.get("recruiter_reply_at"))
+
+        payload = {
+            "title": (row.get("title") or "").strip(),
+            "company": (row.get("company") or "").strip(),
+            "location": (row.get("location") or "").strip(),
+            "source": (row.get("source") or "").strip(),
+            "status": (row.get("status") or "applied").strip(),
+            "applied_at": applied_at or timezone.now().date(),
+            "recruiter_reply_at": reply_at,
+            "notes": row.get("notes") or "",
+        }
+
+        if obj:
+            for k, v in payload.items():
+                setattr(obj, k, v)
+            obj.save()
+            updated += 1
+        else:
+            JobApplication.objects.create(user=user, **payload)
+            created += 1
+
+    return {"created": created, "updated": updated}
+
+
+def _parse_date(value: str | None):
+    if not value:
+        return None
+    v = value.strip()
+    if not v:
+        return None
+    try:
+        return datetime.fromisoformat(v).date()
+    except ValueError:
+        return None
+
+
+
+================================================
+FILE: apps/reports/urls.py
+================================================
+from django.urls import path
+
+from . import views
+
+app_name = "reports"
+
+urlpatterns = [
+    path("statistics/", views.statistics, name="statistics"),
+    path("export/<str:fmt>/", views.export_report, name="export"),
+    path("import/", views.import_view, name="import"),
+
+    path("drive/", views.drive_backups, name="drive_backups"),
+    path("drive/export/<str:fmt>/", views.drive_export, name="drive_export"),
+    path("drive/restore/<str:file_id>/", views.drive_restore, name="drive_restore"),
+    path("drive/disconnect/", views.drive_disconnect, name="drive_disconnect"),
+    path("drive/connect/", views.drive_connect, name="drive_connect"),
+
+]
+
+
+
+================================================
+FILE: apps/reports/views.py
+================================================
+from __future__ import annotations
+
+from django.contrib import messages
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.utils import timezone
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
+from allauth.socialaccount.models import SocialAccount
+from .drive import get_drive_status, list_backups, ensure_jobapply_folder
+from apps.applications.models import JobApplication
+
+from .drive import (
+    disconnect_drive,
+    download_file,
+    get_drive_status,
+    list_backups,
+    upload_backup,
+)
+from .services import build_stats, export_csv, export_xlsx, import_csv
+
+
+@login_required
+def statistics(request):
+    qs = JobApplication.objects.filter(user=request.user)
+    stats = build_stats(qs)
+    return render(request, "reports/statistics.html", {"stats": stats})
+
+
+@login_required
+def export_report(request, fmt: str):
+    qs = JobApplication.objects.filter(user=request.user)
+
+    if fmt == "csv":
+        content = export_csv(qs)
+        resp = HttpResponse(content, content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = 'attachment; filename="jobapply_export.csv"'
+        return resp
+
+    if fmt == "xlsx":
+        content = export_xlsx(qs)
+        resp = HttpResponse(content, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        resp["Content-Disposition"] = 'attachment; filename="jobapply_export.xlsx"'
+        return resp
+
+    return redirect("reports:statistics")
+
+
+@login_required
+def import_view(request):
+    if request.method == "POST":
+        f = request.FILES.get("file")
+        if not f:
+            return render(request, "reports/import.html", {"error": "No file uploaded."})
+
+        result = import_csv(request.user, f.read())
+        return render(request, "reports/import.html", {"result": result})
+
+    return render(request, "reports/import.html")
+
+
+@login_required
+def drive_backups(request):
+    drive_status = get_drive_status(request.user)
+
+    google_email = None
+    folder_url = None
+
+    acc = SocialAccount.objects.filter(user=request.user, provider="google").first()
+    if acc:
+        # чаще всего email есть и в User, и в extra_data — берём самое надёжное
+        google_email = (request.user.email or "") or (acc.extra_data.get("email") if acc.extra_data else None)
+
+    backups = []
+    error = None
+
+    # Если есть offline access — можем гарантированно получить folder_id и ссылку
+    if drive_status.get("connected") and drive_status.get("has_refresh_token"):
+        try:
+            folder_id = ensure_jobapply_folder(
+                request.user,
+                root_name="JobApply",
+                subfolder="backups",  # если ты кладёшь прямо в JobApply — поставь None
+            )
+            folder_url = f"https://drive.google.com/drive/folders/{folder_id}"
+            backups = list_backups(request.user, limit=30, root_name="JobApply", subfolder="backups")
+        except Exception as e:
+            error = str(e)
+
+    return render(
+        request,
+        "reports/drive_backups.html",
+        {
+            "drive_status": drive_status,
+            "google_email": google_email,
+            "folder_url": folder_url,
+            "backups": backups,
+            "error": error,
+        },
+    )
+
+
+@login_required
+def drive_export(request, fmt: str):
+    qs = JobApplication.objects.filter(user=request.user).order_by("-applied_at")
+    ts = timezone.now().strftime("%Y%m%d-%H%M%S")
+
+    try:
+        if fmt == "csv":
+            content = export_csv(qs)
+            filename = f"jobapply-{ts}.csv"
+            upload_backup(
+                request.user,
+                filename,
+                content,
+                "text/csv",
+                root_name="JobApply",
+                subfolder="backups",
+            )
+            messages.success(request, "Backup uploaded to Google Drive (CSV).")
+            return redirect("reports:drive_backups")
+
+        if fmt == "xlsx":
+            content = export_xlsx(qs)
+            filename = f"jobapply-{ts}.xlsx"
+            upload_backup(
+                request.user,
+                filename,
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                root_name="JobApply",
+                subfolder="backups",   # или None
+            )
+            messages.success(request, "Backup uploaded to Google Drive (XLSX).")
+            return redirect("reports:drive_backups")
+
+        return redirect("reports:drive_backups")
+
+    except Exception as e:
+        messages.error(request, f"Drive export failed: {e}")
+        return redirect("reports:drive_backups")
+
+
+@login_required
+def drive_restore(request, file_id: str):
+    try:
+        raw = download_file(request.user, file_id)
+        result = import_csv(request.user, raw)
+        messages.success(request, "Restore completed.")
+        return render(request, "reports/import.html", {"result": result})
+    except Exception as e:
+        messages.error(request, f"Restore failed: {e}")
+        return redirect("reports:drive_backups")
+
+
+@login_required
+def drive_connect(request):
+    request.session["drive_connect_next"] = reverse("reports:drive_backups")
+    return HttpResponseRedirect("/accounts/google/login/?process=connect")
+
+@login_required
+def drive_disconnect(request):
+    disconnect_drive(request.user)
+    messages.success(request, "Google Drive disconnected.")
+    return redirect("reports:drive_backups")
+
+
+
+================================================
+FILE: config/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: config/asgi.py
+================================================
+"""
+ASGI config for config project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
+"""
+
+import os
+
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_asgi_application()
+
+
+
+================================================
+FILE: config/settings.py
+================================================
+from __future__ import annotations
+
+import os
+
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
+DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+
+# Application definition
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    # Third party
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "widget_tweaks",
+    "django.contrib.sites",
+    # Local
+    "apps.accounts",
+    "apps.applications",
+    "apps.interviews",
+    "apps.reports",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # allauth
+    "allauth.account.middleware.AccountMiddleware",
+    # local
+    "apps.accounts.middleware.ConsentRequiredMiddleware",
+]
+
+ROOT_URLCONF = 'config.urls'
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+
+# Databases
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "jobapply"),
+        "USER": os.getenv("POSTGRES_USER", "jobapply"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "jobapply"),
+        "HOST": os.getenv("POSTGRES_HOST", "db"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+    }
+}
+
+
+# Password validation
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+]
+
+# Internationalization
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Europe/Berlin"
+USE_I18N = True
+USE_TZ = True
+
+
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SITE_ID = 1
+
+LOGIN_URL = "/accounts/google/login/"
+LOGIN_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGIN_BY_CODE_ENABLED = False
+ACCOUNT_PASSWORD_REQUIRED = False
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = []
+SILENCED_SYSTEM_CHECKS = ["account.W001"]
+
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+ACCOUNT_SESSION_REMEMBER = True
+
+ACCOUNT_ADAPTER = "apps.accounts.adapters.NoSignupAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+
+
+# Google-only (UI + flow)
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email", "https://www.googleapis.com/auth/drive.file"],
+        "AUTH_PARAMS": {
+            "access_type": "offline",
+            "prompt": "consent",
+        },
+    }
+}
+
+SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+
+
+
+
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+)
+
+
+================================================
+FILE: config/urls.py
+================================================
+from django.contrib import admin
+from django.urls import include, path
+from allauth.socialaccount.providers.google.views import oauth2_login
+from django.http import HttpResponseRedirect
+
+def google_only_login(request):
+    next_url = request.GET.get("next", "/")
+    return HttpResponseRedirect(f"/accounts/google/login/?next={next_url}")
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+
+    path("", oauth2_login),
+    path("accounts/login/", google_only_login),
+    path("accounts/", include("allauth.urls")),
+
+    path("app/", include("apps.accounts.urls")),
+    path("applications/", include("apps.applications.urls")),
+    path("interviews/", include("apps.interviews.urls")),
+    path("reports/", include("apps.reports.urls")),
+]
+
+
+
+
+================================================
+FILE: config/wsgi.py
+================================================
+"""
+WSGI config for config project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
+"""
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+application = get_wsgi_application()
+
+
+
+================================================
+FILE: docker/web/Dockerfile
+================================================
+FROM python:3.14-rc-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir poetry==2.0.1
+
+COPY pyproject.toml poetry.lock /app/
+
+RUN poetry config virtualenvs.create false \
+  && poetry install --no-interaction --no-ansi
+
+COPY . /app
+RUN chmod +x /app/docker/web/entrypoint.sh
+
+ENTRYPOINT ["/app/docker/web/entrypoint.sh"]
+
+
+================================================
+FILE: docker/web/entrypoint.sh
+================================================
+#!/usr/bin/env sh
+set -eu
+
+echo "[entrypoint] Installing deps (dev-friendly)..."
+poetry install --no-interaction --no-ansi
+
+echo "[entrypoint] Waiting DB..."
+i=0
+until poetry run python -c "import os; import psycopg; psycopg.connect(host=os.getenv('POSTGRES_HOST','db'), port=os.getenv('POSTGRES_PORT','5432'), dbname=os.getenv('POSTGRES_DB','jobapply'), user=os.getenv('POSTGRES_USER','jobapply'), password=os.getenv('POSTGRES_PASSWORD','jobapply')).close()" >/dev/null 2>&1
+do
+  i=$((i+1))
+  [ "$i" -le 60 ] || { echo "ERROR: DB is not ready"; exit 1; }
+  sleep 1
+done
+
+if [ "${DJANGO_AUTOMIGRATE:-0}" = "1" ]; then
+  echo "[entrypoint] Makemigrations (DEV)..."
+  poetry run python manage.py makemigrations --noinput
+fi
+
+echo "[entrypoint] Migrate..."
+poetry run python manage.py migrate --noinput
+
+
+echo "[entrypoint] Create social account(env, idempotent)..."
+poetry run python manage.py create_google_socialapp_if_not_exists
+
+echo "[entrypoint] Create superuser (env, idempotent)..."
+poetry run python manage.py create_superuser_if_not_exists
+
+echo "[entrypoint] Start server..."
+exec poetry run python manage.py runserver 0.0.0.0:8000
+
+
+
+================================================
+FILE: fixtures/applications.json
+================================================
+[
+  {
+    "model": "auth.user",
+    "pk": 1,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "maxx",
+      "first_name": "",
+      "last_name": "",
+      "email": "user1@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-12-01T10:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+
+  {
+    "model": "applications.jobapplication",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "title": "Python Backend Developer (Werkstudent)",
+      "company": "BRC Solar GmbH",
+      "location": "Ettlingen, DE",
+      "source": "LinkedIn",
+      "status": "replied",
+      "applied_at": "2025-12-10T09:20:00Z",
+      "recruiter_reply_at": "2025-12-12T14:05:00Z",
+      "notes": "Recruiter replied. Waiting for next step / scheduling.",
+      "created_at": "2025-12-10T09:20:00Z",
+      "updated_at": "2025-12-12T14:05:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 2,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python/Django)",
+      "company": "Security Robotics Development and Solutions GmbH",
+      "location": "Leipzig, DE",
+      "source": "Company site",
+      "status": "interview",
+      "applied_at": "2025-12-05T11:10:00Z",
+      "recruiter_reply_at": "2025-12-09T08:45:00Z",
+      "notes": "Interview scheduled in Leipzig (onsite). Prepare portfolio + Docker demo.",
+      "created_at": "2025-12-05T11:10:00Z",
+      "updated_at": "2025-12-09T08:45:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 3,
+    "fields": {
+      "user": 1,
+      "title": "Python Developer Intern",
+      "company": "Fiindo GmbH",
+      "location": "Hamburg (Remote), DE",
+      "source": "Email",
+      "status": "applied",
+      "applied_at": "2025-12-18T16:30:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Sent application + GitHub links. Waiting.",
+      "created_at": "2025-12-18T16:30:00Z",
+      "updated_at": "2025-12-18T16:30:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 4,
+    "fields": {
+      "user": 1,
+      "title": "Junior Backend Developer",
+      "company": "Regio Software GmbH",
+      "location": "Chemnitz, DE",
+      "source": "Indeed",
+      "status": "rejected",
+      "applied_at": "2025-11-28T10:15:00Z",
+      "recruiter_reply_at": "2025-12-03T09:05:00Z",
+      "notes": "Rejection. Ask for feedback next time.",
+      "created_at": "2025-11-28T10:15:00Z",
+      "updated_at": "2025-12-03T09:05:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 5,
+    "fields": {
+      "user": 1,
+      "title": "Django Developer (Werkstudent)",
+      "company": "Startup Studio",
+      "location": "Berlin (Remote), DE",
+      "source": "StepStone",
+      "status": "applied",
+      "applied_at": "2025-12-20T12:00:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Applied via StepStone. Mention Docker + Postgres + pytest.",
+      "created_at": "2025-12-20T12:00:00Z",
+      "updated_at": "2025-12-20T12:00:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 6,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python)",
+      "company": "Energy Corporation",
+      "location": "Germany (Hybrid)",
+      "source": "Referral",
+      "status": "replied",
+      "applied_at": "2025-12-02T13:40:00Z",
+      "recruiter_reply_at": "2025-12-04T10:25:00Z",
+      "notes": "HR replied. Next: technical screen, clarify stack expectations.",
+      "created_at": "2025-12-02T13:40:00Z",
+      "updated_at": "2025-12-04T10:25:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 7,
+    "fields": {
+      "user": 1,
+      "title": "Python Backend Engineer",
+      "company": "IN4NOVA",
+      "location": "Remote",
+      "source": "LinkedIn",
+      "status": "interview",
+      "applied_at": "2025-12-08T09:00:00Z",
+      "recruiter_reply_at": "2025-12-10T15:20:00Z",
+      "notes": "Online interview planned. Review async + Postgres + CI topics.",
+      "created_at": "2025-12-08T09:00:00Z",
+      "updated_at": "2025-12-10T15:20:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 8,
+    "fields": {
+      "user": 1,
+      "title": "Backend Developer (Django)",
+      "company": "Robert Half (Agency)",
+      "location": "Leipzig, DE",
+      "source": "Agency",
+      "status": "applied",
+      "applied_at": "2025-12-14T10:10:00Z",
+      "recruiter_reply_at": null,
+      "notes": "Agency submission. Need follow-up after 5 business days.",
+      "created_at": "2025-12-14T10:10:00Z",
+      "updated_at": "2025-12-14T10:10:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 9,
+    "fields": {
+      "user": 1,
+      "title": "Python Developer",
+      "company": "Trood (Internship)",
+      "location": "Remote",
+      "source": "GitHub",
+      "status": "offer",
+      "applied_at": "2025-11-20T09:30:00Z",
+      "recruiter_reply_at": "2025-11-25T11:00:00Z",
+      "notes": "Offer received (revenue-share). Evaluate risks and time investment.",
+      "created_at": "2025-11-20T09:30:00Z",
+      "updated_at": "2025-11-25T11:00:00Z"
+    }
+  },
+  {
+    "model": "applications.jobapplication",
+    "pk": 10,
+    "fields": {
+      "user": 1,
+      "title": "Backend Engineer (Python) - Part-time",
+      "company": "Local IT Services",
+      "location": "Chemnitz, DE",
+      "source": "Email",
+      "status": "archived",
+      "applied_at": "2025-10-15T08:00:00Z",
+      "recruiter_reply_at": "2025-10-22T12:15:00Z",
+      "notes": "Archived: role closed / not a match.",
+      "created_at": "2025-10-15T08:00:00Z",
+      "updated_at": "2025-10-22T12:15:00Z"
+    }
+  }
+]
+
+
+
+================================================
+FILE: static/css/applications.css
+================================================
+select.js-status-select {
+  max-width: 140px;
+}
+
+
+================================================
+FILE: static/css/landing.css
+================================================
+.glass-card {
+  background: rgba(20, 20, 20, 0.55); /* полупрозрачный фон */
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+
+================================================
+FILE: static/css/navbar.css
+================================================
+/*Navbar anim*/
+.nav-anim {
+transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+will-change: transform, filter;
+}
+
+.nav-anim.is-disabled {
+opacity: .45;
+pointer-events: auto;
+cursor: not-allowed;
+filter: grayscale(0.2);
+}
+
+.nav-anim:not(.is-disabled):hover {
+transform: translateY(-1px) scale(1.02);
+filter: brightness(1.08);
+}
+
+.nav-anim:not(.is-disabled):active {
+transform: translateY(0) scale(0.99);
+}
+
+@keyframes nav-shake {
+0% { transform: translateX(0); }
+20% { transform: translateX(-2px); }
+40% { transform: translateX(2px); }
+60% { transform: translateX(-2px); }
+80% { transform: translateX(2px); }
+100% { transform: translateX(0); }
+}
+
+.nav-anim.shake {
+animation: nav-shake 180ms ease-in-out;
+}
+
+
+
+================================================
+FILE: static/js/navbar.js
+================================================
+(function () {
+  function onEnter(e) {
+    const el = e.currentTarget;
+    if (el.dataset.disabled === "1") return;
+    el.style.transform = "translateY(-1px) scale(1.03)";
+    clearTimeout(el.__navT);
+    el.__navT = setTimeout(() => {
+      el.style.transform = "";
+    }, 140);
+  }
+
+  function onClick(e) {
+    const el = e.currentTarget;
+    // Не трогаем дропдауны
+    if (el.getAttribute("data-bs-toggle") === "dropdown") return;
+
+    if (el.dataset.disabled === "1") {
+      e.preventDefault();
+      el.classList.remove("shake");
+      void el.offsetWidth;
+      el.classList.add("shake");
+    }
+  }
+
+  document.querySelectorAll(".nav-anim").forEach((el) => {
+    el.addEventListener("mouseenter", onEnter);
+    if (el.getAttribute("data-bs-toggle") !== "dropdown") {
+      el.addEventListener("click", onClick);
+    }
+  });
+})();
+
+
+================================================
+FILE: templates/base.html
+================================================
+<!doctype html>
+{% load static %}
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JobApply</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+    <link rel="stylesheet" href="{% static 'css/applications.css' %}">
+  </head>
+  <body class="bg-body">
+
+    {% block navbar %}
+      {% include 'includes/navbar.html' %}
+    {% endblock %}
+
+
+    {% if messages %}
+      <div class="container mt-3" style="max-width: 920px;">
+        {% for message in messages %}
+          {% ifchanged message|stringformat:"s" %}
+            <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">
+              {{ message }}
+            </div>
+          {% endifchanged %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+
+
+
+      {% block content %}{% endblock %}
+    </main>
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="{% static 'js/navbar.js' %}?v=1" defer></script>
+
+  {% block page_scripts %}{% endblock %}
+
+{% endblock %}
+
+  </body>
+</html>
+
+
+
+================================================
+FILE: templates/account/logout.html
+================================================
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-2">Sign out</h1>
+
+      <p class="text-body-secondary mb-4">
+        Are you sure you want to sign out?
+      </p>
+
+      <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">
+            Sign out
+          </button>
+          <a href="/applications/" class="btn btn-outline-secondary">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+      <div class="mt-3 small text-body-secondary">
+        Tip: if you sign out, you’ll need Google OAuth to sign in again.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/accounts/consent.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h4 mb-2">Consent</h1>
+
+      <p class="text-body-secondary">
+        - To use JobApply, you must confirm that you agree to grant access to your Google account for authentication and, only when you enable them, selected Google services (e.g., Google Drive backups, Google Sheets, Google Calendar) to provide the requested features;<br>
+        - Google Drive access is optional and is only requested/used if you enable Cloud Backups to upload your backups to your own Drive;<br>
+        - The administration is not responsible for the storage and protection of your personal data.
+      </p>
+
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" value="1" id="consent" name="consent" required>
+          <label class="form-check-label" for="consent">
+            I agree
+          </label>
+        </div>
+
+        <button class="btn btn-primary w-100" type="submit">
+          Continue
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/applications/delete.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h5 mb-2">Delete application</h1>
+
+      <p class="text-body-secondary mb-4">
+        This action cannot be undone.
+      </p>
+
+      <div class="p-3 rounded border mb-4">
+        <div class="fw-semibold">{{ obj.title }}</div>
+        <div class="text-body-secondary small">
+          {{ obj.company }}{% if obj.location %} • {{ obj.location }}{% endif %}
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger" type="submit">Yes, delete</button>
+          <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/applications/detail.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">{{ app.title }}</h1>
+      <div class="text-body-secondary">
+        {{ app.company }}{% if app.location %}{% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
+        Back
+      </a>
+      <a class="btn btn-primary" href="{% url 'applications:edit' app.pk %}">
+        Edit
+      </a>
+       <a class="btn btn-warning" href="{% url 'applications:delete' app.pk %}">
+        Delete
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <h2 class="h6 mb-3">Details</h2>
+
+<dl class="row mb-0">
+  <dt class="col-sm-4 text-body-secondary">Applied</dt>
+  <dd class="col-sm-8">
+    {{ app.applied_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
+
+  <dt class="col-sm-4 text-body-secondary">HR reply</dt>
+  <dd class="col-sm-8">
+    {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
+
+  <dt class="col-sm-4 text-body-secondary">Last update</dt>
+  <dd class="col-sm-8">
+    {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+  </dd>
+
+  <dt class="col-sm-4 text-body-secondary">Status</dt>
+  <dd class="col-sm-8">
+    <span class="badge bg-secondary">{{ app.status }}</span>
+  </dd>
+
+  <dt class="col-sm-4 text-body-secondary">Location</dt>
+  <dd class="col-sm-8">
+    {{ app.location|default:"—" }}
+  </dd>
+
+  <dt class="col-sm-4 text-body-secondary">Source</dt>
+  <dd class="col-sm-8">
+    {{ app.source|default:"—" }}
+  </dd>
+
+</dl>
+
+{% if app.notes %}
+  <hr>
+  <h2 class="h6 mb-2">Notes</h2>
+  <div class="text-body-secondary">
+    {{ app.notes|linebreaksbr }}
+  </div>
+{% endif %}
+
+  </div>
+
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/applications/form.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        {% if mode == "edit" %}Edit application{% else %}New application{% endif %}
+      </h1>
+      <div class="text-body-secondary small">
+        {% if mode == "edit" %}Update fields and save changes.{% else %}Fill in details and create a record.{% endif %}
+      </div>
+    </div>
+
+    <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
+      Back
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-3">
+          {% for field in form %}
+            <div class="col-12 {% if field.name == 'title' or field.name == 'company' or field.name == 'location' or field.name == 'status' or field.name == 'source' %}col-lg-6{% endif %}">
+  <label class="form-label mb-1" for="{{ field.id_for_label }}">
+    {{ field.label }}
+    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+  </label>
+
+  <div class="form-control-wrap">
+    {{ field }}
+  </div>
+
+  <div class="form-text min-h-24">
+    {% if field.help_text %}
+      {{ field.help_text }}
+    {% endif %}
+  </div>
+
+  {% if field.errors %}
+    <div class="invalid-feedback d-block">
+      {{ field.errors|striptags }}
+    </div>
+  {% endif %}
+</div>
+
+          {% endfor %}
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <button class="btn btn-primary" type="submit">
+            {% if mode == "edit" %}Save changes{% else %}Create{% endif %}
+          </button>
+
+          {% if mode == "edit" %}
+            <a class="btn btn-outline-danger" href="{% url 'applications:delete' obj.pk %}">
+              Delete
+            </a>
+          {% endif %}
+
+          <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+<!--form fields limits-->
+<script>
+(function () {
+  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
+  if (!fields.length) return;
+
+  function ensureCounter(el) {
+    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
+    el.id = id;
+
+    let counter = document.querySelector(`[data-counter-for="${id}"]`);
+    if (counter) return counter;
+
+    counter = document.createElement("div");
+    counter.className = "form-text d-flex justify-content-end mt-1";
+    counter.dataset.counterFor = id;
+
+    // place after the field (or after wrapper)
+    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
+      el.parentElement.insertAdjacentElement("afterend", counter);
+    } else {
+      el.insertAdjacentElement("afterend", counter);
+    }
+    return counter;
+  }
+
+  function update(el) {
+    const max = parseInt(el.dataset.maxlen, 10);
+    if (!max) return;
+
+    const counter = ensureCounter(el);
+    const len = (el.value || "").length;
+
+    counter.textContent = `${len} / ${max}`;
+
+    // bootstrap-ish visuals
+    el.classList.remove("is-invalid", "is-valid");
+    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
+
+    if (len > max) {
+      el.classList.add("is-invalid");
+      counter.classList.add("text-danger");
+    } else if (len >= Math.floor(max * 0.9)) {
+      counter.classList.add("text-warning");
+    } else {
+      counter.classList.add("text-body-secondary");
+      el.classList.add("is-valid");
+    }
+  }
+
+  fields.forEach((el) => {
+    update(el);
+    el.addEventListener("input", () => update(el));
+    el.addEventListener("change", () => update(el));
+  });
+})();
+</script>
+
+
+
+
+================================================
+FILE: templates/applications/list.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Your Applications</h1>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'applications:create' %}">
+        ✚ Add application
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm glass-card mb-3">
+    <div class="card-body p-3">
+      <form class="row g-2 align-items-end" method="get">
+
+        <div class="col-12 col-lg-4">
+          <label class="form-label small text-body-secondary mb-1">Search</label>
+          <input
+            type="text"
+            name="q"
+            value="{{ q|default:'' }}"
+            class="form-control"
+            placeholder="Title, company, location..."
+          />
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <label class="form-label small text-body-secondary mb-1">Status</label>
+          <select class="form-select" name="status">
+            <option value="" {% if not status %}selected{% endif %}>All</option>
+            <option value="applied" {% if status == "applied" %}selected{% endif %}>Applied</option>
+            <option value="screen" {% if status == "screen" %}selected{% endif %}>HR Screen</option>
+            <option value="interview" {% if status == "interview" %}selected{% endif %}>Interview</option>
+            <option value="offer" {% if status == "offer" %}selected{% endif %}>Offer</option>
+            <option value="rejected" {% if status == "rejected" %}selected{% endif %}>Rejected</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <label class="form-label small text-body-secondary mb-1">Month</label>
+          <input
+            type="month"
+            name="month"
+            value="{{ month|default:'' }}"
+            class="form-control"
+          />
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <label class="form-label small text-body-secondary mb-1">Sort</label>
+          <select class="form-select" name="sort">
+            <option value="-applied_at" {% if sort == "-applied_at" %}selected{% endif %}>Applied ↓</option>
+            <option value="applied_at" {% if sort == "applied_at" %}selected{% endif %}>Applied ↑</option>
+            <option value="-updated_at" {% if sort == "-updated_at" %}selected{% endif %}>Updated ↓</option>
+            <option value="updated_at" {% if sort == "updated_at" %}selected{% endif %}>Updated ↑</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-lg-2 d-grid d-lg-flex gap-2">
+          <button class="btn btn-outline-primary w-100" type="submit">Apply</button>
+          <a class="btn btn-outline-secondary w-100" href="{% url 'applications:list' %}">Reset</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  {% if items %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+
+          <thead class="table-light">
+            <tr>
+              <th style="min-width: 160px;">Applied</th>
+              <th style="min-width: 220px;">Title</th>
+              <th style="min-width: 180px;">Company</th>
+              <th style="min-width: 160px; padding-left: 45px;">Location</th>
+              <th style="min-width: 170px; padding-left: 55px;">Status</th>
+              <th style="min-width: 170px; padding-left: 55px;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for app in items %}
+              <tr
+                class="js-row-link"
+                data-href="{% url 'applications:detail' app.pk %}"
+              >
+                <td class="text-body-secondary">
+                  {{ app.applied_at|date:"H:i - d.m.Y" }}
+                </td>
+
+                <td class="fw-semibold">
+                  {{ app.title }}
+                </td>
+
+                <td>
+                  {{ app.company }}
+                </td>
+
+                <td class="text-body-secondary">
+                  {{ app.location }}
+                </td>
+
+              <td>
+                <select
+                  class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }}"
+                  data-id="{{ app.id }}"
+                >
+                  <option value="applied"  {% if app.status == "applied" %}selected{% endif %}>Applied</option>
+                  <option value="screen"   {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
+                  <option value="interview"{% if app.status == "interview" %}selected{% endif %}>Interview</option>
+                  <option value="offer"    {% if app.status == "offer" %}selected{% endif %}>Offer</option>
+                  <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
+                </select>
+              </td>
+
+
+                <td class="text-end">
+                  <div class="btn-group">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="{% url 'applications:edit' app.pk %}">
+                      ✏️ Edit
+                    </a>
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="{% url 'applications:delete' app.pk %}">
+                      🗑️ Delete
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="card-body text-center py-5">
+        <h2 class="h5 mb-2">No applications found</h2>
+        <p class="text-body-secondary mb-3">
+          Try clearing filters or add your first <span class="badge bg-secondary">application</span>.
+        </p>
+        <a class="btn btn-primary" href="{% url 'applications:create' %}">
+          ✚ Add application
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.addEventListener("click", function (e) {
+  const row = e.target.closest(".js-row-link");
+  if (!row) return;
+
+  if (
+    e.target.closest("select") ||
+    e.target.closest("a") ||
+    e.target.closest("button")
+  ) {
+    return;
+  }
+
+  window.location = row.dataset.href;
+});
+
+document.addEventListener("change", function (e) {
+  const select = e.target.closest(".js-status-select");
+  if (!select) return;
+
+  fetch(`/applications/${select.dataset.id}/status/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ status: select.value }),
+  });
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    for (const cookie of document.cookie.split(";")) {
+      const c = cookie.trim();
+      if (c.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(c.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+<style>
+.js-row-link { cursor: pointer; }
+.js-row-link:hover { background-color: rgba(0,0,0,0.03); }
+
+.status-select { font-weight: 600; }
+.status-app-applied   { border-color: #0dcaf0; }
+.status-app-screen    { border-color: #6f42c1; }  /* purple */
+.status-app-interview { border-color: #ffc107; }
+.status-app-offer     { border-color: #198754; }
+.status-app-rejected  { border-color: #dc3545; }
+
+</style>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/includes/navbar.html
+================================================
+{% extends "base.html" %}
+
+{% block navbar %}{% endblock %}
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark border-bottom">
+  <div class="container">
+    <a class="navbar-brand" href="/">JobApply</a>
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      {% if user.is_authenticated %}
+        <a class="btn btn-outline-light btn-sm nav-anim" href="/applications/">Applications</a>
+        <a class="btn btn-outline-light btn-sm nav-anim" href="/interviews/">Interviews</a>
+        <a class="btn btn-outline-light btn-sm nav-anim" href="/reports/statistics/">Services</a>
+        <a class="btn btn-outline-warning btn-sm nav-anim" href="/accounts/logout/">Logout</a>
+      {% else %}
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
+          Applications
+        </a>
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
+          Interviews
+        </a>
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
+          Reports
+        </a>
+
+        <a class="btn btn-primary btn-sm nav-anim" href="/accounts/google/login/">
+          Sign in with Google
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+
+================================================
+FILE: templates/interviews/delete.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 pt-2" style="max-width: 760px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h5 mb-2">Delete interview</h1>
+
+      <p class="text-body-secondary mb-4">
+        This action cannot be undone.
+      </p>
+
+      <div class="p-3 rounded border mb-4">
+        <div class="fw-semibold">
+          {{ obj.application.title }}
+        </div>
+        <div class="text-body-secondary small">
+          {{ obj.application.company }}{% if obj.application.location %} • {{ obj.application.location }}{% endif %}
+        </div>
+        <div class="text-body-secondary small mt-2">
+          {{ obj.starts_at|date:"H:i - d.m.Y" }} → {{ obj.ends_at|date:"H:i - d.m.Y" }}
+          {% if obj.location %} • {{ obj.location }}{% endif %}
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger" type="submit">Yes, delete</button>
+          <a class="btn btn-outline-secondary" href="{% url 'interviews:list' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/interviews/form.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">Schedule interview</h1>
+    </div>
+
+    <a class="btn btn-outline-secondary" href="{% url 'interviews:list' %}">
+      Back
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-3">
+          {% for field in form %}
+            <div class="col-12 {% if field.name == 'application' or field.name == 'starts_at' or field.name == 'ends_at' or field.name == 'location' %}col-lg-6{% endif %}">
+              <label class="form-label mb-1" for="{{ field.id_for_label }}">
+                {{ field.label }}
+                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+
+              <div class="form-control-wrap">
+                {{ field }}
+              </div>
+
+              <div class="form-text min-h-24">
+                {% if field.help_text %}
+                  {{ field.help_text }}
+                {% endif %}
+              </div>
+
+              {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ field.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <button class="btn btn-primary" type="submit">
+            Save
+          </button>
+          <a class="btn btn-outline-secondary" href="{% url 'interviews:list' %}">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+      <div class="mt-3 small text-body-secondary">
+        Tip: if you don’t see an application in the dropdown — set its status to <span class="text-danger">Interview</span> in Applications.
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+<!--form fields limits-->
+<script>
+(function () {
+  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
+  if (!fields.length) return;
+
+  function ensureCounter(el) {
+    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
+    el.id = id;
+
+    let counter = document.querySelector(`[data-counter-for="${id}"]`);
+    if (counter) return counter;
+
+    counter = document.createElement("div");
+    counter.className = "form-text d-flex justify-content-end mt-1";
+    counter.dataset.counterFor = id;
+
+    // place after the field (or after wrapper)
+    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
+      el.parentElement.insertAdjacentElement("afterend", counter);
+    } else {
+      el.insertAdjacentElement("afterend", counter);
+    }
+    return counter;
+  }
+
+  function update(el) {
+    const max = parseInt(el.dataset.maxlen, 10);
+    if (!max) return;
+
+    const counter = ensureCounter(el);
+    const len = (el.value || "").length;
+
+    counter.textContent = `${len} / ${max}`;
+
+    // bootstrap-ish visuals
+    el.classList.remove("is-invalid", "is-valid");
+    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
+
+    if (len > max) {
+      el.classList.add("is-invalid");
+      counter.classList.add("text-danger");
+    } else if (len >= Math.floor(max * 0.9)) {
+      counter.classList.add("text-warning");
+    } else {
+      counter.classList.add("text-body-secondary");
+      el.classList.add("is-valid");
+    }
+  }
+
+  fields.forEach((el) => {
+    update(el);
+    el.addEventListener("input", () => update(el));
+    el.addEventListener("change", () => update(el));
+  });
+})();
+</script>
+
+
+================================================
+FILE: templates/interviews/list.html
+================================================
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Your Interviews</h1>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'interviews:create' %}">
+         ✚ Schedule interview
+      </a>
+    </div>
+  </div>
+
+  {% if items %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="table-wrap">
+          <table class="table table-hover align-middle mb-0 w-100">
+
+          <thead class="table-light">
+          <tr>
+            <th>Time</th>
+            <th>Application</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Notes</th>
+            <th class="text-end" ></th>
+          </tr>
+        </thead>
+
+
+          <tbody>
+            {% for it in items %}
+              <tr>
+
+                <td>
+                  <div class="fw-semibold">
+                    {{ it.starts_at|date:"H:i - d.m.Y" }}
+                  </div>
+                  <div class="text-body-secondary small">
+                    {{ it.ends_at|date:"H:i - d.m.Y" }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="fw-semibold">
+                    {{ it.application.title }}
+                  </div>
+                  <div class="text-body-secondary small">
+                    {{ it.application.company }}{% if it.application.location %} • {{ it.application.location }}{% endif %}
+                  </div>
+                </td>
+
+                <td>
+                  <select
+                    class="form-select form-select-sm js-interview-status status-select status-int-{{ it.status }}"
+                    data-id="{{ it.id }}"
+                  >
+                    <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>Scheduled</option>
+                    <option value="done" {% if it.status == "done" %}selected{% endif %}>Done</option>
+                    <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>Canceled</option>
+                  </select>
+                </td>
+
+
+
+                <td class="text-body-secondary">
+                  {{ it.location|default:"—" }}
+                </td>
+
+                <td class="text-body-secondary">
+                  {% if it.notes %}
+                    {{ it.notes|truncatechars:80 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+               <td class="text-end">
+                <div class="btn-group">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{% url 'interviews:edit' it.pk %}">
+                    ✏️ Edit
+                  </a>
+                  <a class="btn btn-sm btn-outline-danger"
+                     href="{% url 'interviews:delete' it.pk %}">
+                   🗑️ Delete
+                  </a>
+                </div>
+              </td>
+
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card border-0 shadow-sm glass-card">
+      <div class="card-body text-center py-5">
+        <h2 class="h5 mb-2">No interviews scheduled</h2>
+        <p class="text-body-secondary mb-3">
+          You can schedule an interview only for applications with status <span class="badge bg-secondary">Interview</span>.
+        </p>
+        <a class="btn btn-primary" href="{% url 'interviews:create' %}">
+           ✚ Schedule interview
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
+  if (!fields.length) return;
+
+  function ensureCounter(el) {
+    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
+    el.id = id;
+
+    let counter = document.querySelector(`[data-counter-for="${id}"]`);
+    if (counter) return counter;
+
+    counter = document.createElement("div");
+    counter.className = "form-text d-flex justify-content-end mt-1";
+    counter.dataset.counterFor = id;
+
+    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
+      el.parentElement.insertAdjacentElement("afterend", counter);
+    } else {
+      el.insertAdjacentElement("afterend", counter);
+    }
+    return counter;
+  }
+
+  function update(el) {
+    const max = parseInt(el.dataset.maxlen, 10);
+    if (!max) return;
+
+    const counter = ensureCounter(el);
+    const len = (el.value || "").length;
+
+    counter.textContent = `${len} / ${max}`;
+
+    el.classList.remove("is-invalid", "is-valid");
+    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
+
+    if (len > max) {
+      el.classList.add("is-invalid");
+      counter.classList.add("text-danger");
+    } else if (len >= Math.floor(max * 0.9)) {
+      counter.classList.add("text-warning");
+    } else {
+      counter.classList.add("text-body-secondary");
+      el.classList.add("is-valid");
+    }
+  }
+
+  fields.forEach((el) => {
+    update(el);
+    el.addEventListener("input", () => update(el));
+    el.addEventListener("change", () => update(el));
+  });
+})();
+</script>
+<script>
+document.addEventListener("change", function (e) {
+  const select = e.target.closest(".js-interview-status");
+  if (!select) return;
+
+  fetch(`/interviews/${select.dataset.id}/status/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ status: select.value }),
+  });
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    for (const cookie of document.cookie.split(";")) {
+      const c = cookie.trim();
+      if (c.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(c.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+<script>
+document.addEventListener("change", function (e) {
+  const el = e.target.closest(".js-interview-status");
+  if (!el) return;
+
+  [...el.classList].forEach((c) => {
+    if (c.startsWith("status-int-")) el.classList.remove(c);
+  });
+  el.classList.add("status-int-" + el.value);
+});
+</script>
+
+<style>
+.table-wrap { overflow-x: hidden; }
+
+.table-wrap table { table-layout: fixed; width: 100%; }
+
+.table-wrap th, .table-wrap td { overflow: hidden; text-overflow: ellipsis; }
+
+.table-wrap td:nth-child(2) .fw-semibold,
+.table-wrap td:nth-child(2) .text-body-secondary,
+.table-wrap td:nth-child(4) { white-space: nowrap; }
+
+.status-select { font-weight: 600; }
+
+.status-int-scheduled { border-color: #0d6efd; } /* primary */
+.status-int-done      { border-color: #198754; } /* success */
+.status-int-canceled  { border-color: #dc3545; } /* danger */
+
+
+@media (max-width: 992px) {
+  .table-wrap td:nth-child(4),
+  .table-wrap th:nth-child(4) { display: none; }
+}
+</style>
+{% endblock %}
+
+
+
+
+================================================
+FILE: templates/reports/_nav.html
+================================================
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">Services</h1>
+    <div class="text-muted small">Statistics, export & import, cloud backups</div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+    <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:statistics' %}">
+      📊 <span class="d-none d-sm-inline">Statistics</span>
+    </a>
+    <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:import' %}">
+      ⬆ <span class="d-none d-sm-inline">Import/Export</span>
+    </a>
+    <a class="btn btn-outline-warning nav-anim" href="{% url 'reports:drive_backups' %}">
+      ☁ <span class="d-none d-sm-inline">Cloud backups</span>
+    </a>
+
+  </div>
+</div>
+
+
+================================================
+FILE: templates/reports/drive_backups.html
+================================================
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Cloud backups</h1>
+      <div class="text-muted small">Powered by Google Drive</div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'reports:statistics' %}">📊 Statistics</a>
+      <a class="btn btn-outline-secondary" href="{% url 'reports:import' %}">⬆ Local import/export</a>
+    </div>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="row g-3">
+
+    <!-- Connection card -->
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Connection</div>
+          <div class="text-muted small mb-3">
+            Permission scope: <span class="font-monospace">drive.file</span> (only files created by this app).
+          </div>
+          {% if drive_status.connected %}
+          <div class="text-muted small mb-2">
+            Connected as:
+            <span class="fw-semibold">{{ google_email|default:request.user.email }}</span>
+          </div>
+        {% endif %}
+
+        {% if folder_url %}
+          <a class="btn btn-outline-secondary w-100 mb-2" href="{{ folder_url }}" target="_blank" rel="noopener">
+            📁 Open Drive folder
+          </a>
+        {% endif %}
+
+
+          {% if not drive_status.connected %}
+            <div class="alert alert-warning" role="alert">
+              Drive is not connected.
+            </div>
+
+            <a class="btn btn-warning w-100" href="{% url 'reports:drive_connect' %}">
+              Enable Drive backups
+            </a>
+
+          {% else %}
+            {% if drive_status.has_refresh_token %}
+              <div class="alert alert-success" role="alert">
+                Status: Google Drive connected.
+              </div>
+
+              <div class="d-grid gap-2">
+                <a class="btn btn-outline-danger" href="{% url 'reports:drive_disconnect' %}">
+                  Disconnect
+                </a>
+              </div>
+
+            {% else %}
+              <div class="alert alert-warning" role="alert">
+                Connected, but offline access is missing. Backups may fail after the session expires.
+              </div>
+
+              <div class="d-grid gap-2">
+                <a class="btn btn-warning" href="{% url 'reports:drive_connect' %}">
+                  Reconnect to enable offline access
+                </a>
+                <a class="btn btn-outline-danger" href="{% url 'reports:drive_disconnect' %}">
+                  Disconnect
+                </a>
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Backups card -->
+    <div class="col-12 col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="fw-semibold">Backups</div>
+
+            {% if drive_status.connected and drive_status.has_refresh_token %}
+              <div class="d-flex gap-2">
+                <a class="btn btn-primary btn-sm" href="{% url 'reports:drive_export' 'csv' %}">
+                  ☁ Upload CSV
+                </a>
+                <a class="btn btn-primary btn-sm" href="{% url 'reports:drive_export' 'xlsx' %}">
+                  ☁ Upload XLSX
+                </a>
+              </div>
+            {% endif %}
+          </div>
+
+          {% if not drive_status.connected %}
+            <div class="alert alert-secondary mb-0">
+              Connect Google Drive to start uploading backups.
+            </div>
+
+          {% elif not drive_status.has_refresh_token %}
+            <div class="alert alert-secondary mb-0">
+              Reconnect to enable offline access, then backups will work reliably.
+            </div>
+
+          {% else %}
+            {% if backups %}
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>File</th>
+                      <th class="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for f in backups %}
+                      <tr>
+                        <td>
+                          <div class="fw-semibold">{{ f.name }}</div>
+                          <div class="text-muted small">{{ f.mime_type }}</div>
+                        </td>
+                        <td class="text-end">
+                          <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:drive_restore' f.file_id %}">
+                            Restore
+                          </a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="alert alert-secondary mb-0">No backups yet.</div>
+            {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/reports/import.html
+================================================
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+  {% include "reports/_nav.html" %}
+
+  <div class="row g-3">
+
+    <!-- Import card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Import CSV</div>
+
+<div class="p-3 border rounded mb-3">
+  <div class="fw-semibold mb-2">Expected Header:</div>
+  <code class="d-block p-2 text-body-secondary bg-body-tertiary rounded">
+    id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
+  </code>
+</div>
+
+          {% if error %}
+            <div class="alert alert-danger" role="alert">
+              {{ error }}
+            </div>
+          {% endif %}
+
+          {% if result %}
+            <div class="alert alert-success" role="alert">
+              Import completed.
+              <div class="mt-2">
+                <span class="badge text-bg-success">Created: {{ result.created }}</span>
+                <span class="badge text-bg-primary">Updated: {{ result.updated }}</span>
+              </div>
+            </div>
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" class="d-grid gap-2">
+            {% csrf_token %}
+
+            <input class="form-control" type="file" name="file" accept=".csv,text/csv" required>
+
+            <button class="btn btn-primary" type="submit">
+              ⬆ Import
+            </button>
+          </form>
+
+          <div class="text-muted small mt-3">
+            Dedupe rule: if <span class="font-monospace">id</span> exists for your account → update, otherwise create new.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Export</div>
+          <div class="text-muted small mb-3">
+            Download your applications data or a CSV template.
+          </div>
+
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
+              ⬇ Export CSV
+            </a>
+
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'xlsx' %}">
+              ⬇ Export XLSX
+            </a>
+
+            <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
+              🧾 CSV template
+            </a>
+
+          </div>
+
+          <div class="text-muted small mt-3">
+            Tip: for autosave/backups use
+            <a href="{% url 'reports:drive_backups' %}">
+      ☁ <span class="d-none d-sm-inline"> Cloud backups.</span>
+    </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/reports/statistics.html
+================================================
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 920px;">
+  {% include "reports/_nav.html" %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Total applications</div>
+          <div class="fs-2 fw-bold">{{ stats.total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-semibold">By status</div>
+            <div class="text-muted small">Current snapshot</div>
+          </div>
+
+          {% if stats.by_status %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Status</th>
+                    <th class="text-end">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for status, count in stats.by_status.items %}
+                    <tr>
+                      <td>
+                        <span class="badge text-bg-secondary">{{ status }}</span>
+                      </td>
+                      <td class="text-end fw-semibold">{{ count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-secondary mb-0" role="alert">
+              No applications yet. Add one to see stats.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-2">What you can do</div>
+      <ul class="mb-0 text-muted">
+        <li>Export your data to CSV/XLSX for backup or analysis.</li>
+        <li>Import CSV to restore or migrate your applications.</li>
+        <li>Stats are per-user (isolated data).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+================================================
+FILE: templates/socialaccount/login.html
+================================================
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-2">
+  <div class="row g-3 align-items-stretch">
+
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 shadow-sm h-100 glass-card">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-2">JobApply</h1>
+
+          {% if request.user.is_authenticated %}
+
+            <a href="{% url 'applications:list' %}" class="btn btn-primary w-100">
+              Go to dashboard
+            </a>
+
+            <form class="mt-2" method="post" action="{% url 'account_logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-secondary w-100">
+                Logout
+              </button>
+            </form>
+
+          {% else %}
+            <p class="text-body-secondary mb-4">
+              You are about to sign in using a third-party account from
+              <span class="fw-semibold">{{ provider.name }}</span>.
+            </p>
+
+            <form method="post" action="">
+              {% csrf_token %}
+              {% if process %}
+                <input type="hidden" name="process" value="{{ process }}">
+              {% endif %}
+              {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+              {% endif %}
+
+              <button type="submit" class="btn btn-primary w-100">
+                Continue
+              </button>
+            </form>
+
+            <div class="mt-3 small text-body-secondary">
+              By continuing, you’ll be asked to accept the consent policy.
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+      <div class="card border-0 shadow-sm h-100 glass-card">
+        <div class="card-body p-4">
+          <h2 class="h5 mb-3">What you get</h2>
+
+          <ul class="mb-4 text-body-secondary">
+            <li>Applications with statuses and notes</li>
+            <li>Interview planner (only for “Interview” status)</li>
+            <li>Exports (CSV/XLSX) and basic reports</li>
+            <li>Google Drive backups (optional)</li>
+          </ul>
+
+          <div class="p-3 rounded border">
+            <div class="fw-semibold mb-1">Demo placeholder</div>
+            <div class="text-body-secondary">
+              This panel will later host dashboard widgets, recent activity, and quick actions.
+              For now it’s a stub to validate the landing layout.
+            </div>
+          </div>
+
+          <div class="mt-3 small text-body-secondary">
+            Tip: use <span class="fw-semibold">http://localhost:8000</span> (not 0.0.0.0) for OAuth.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+

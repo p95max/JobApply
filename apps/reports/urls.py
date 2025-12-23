@@ -14,5 +14,6 @@ urlpatterns = [
     path("drive/restore/<str:file_id>/", views.drive_restore, name="drive_restore"),
     path("drive/disconnect/", views.drive_disconnect, name="drive_disconnect"),
     path("drive/connect/", views.drive_connect, name="drive_connect"),
+    path("drive/auto-toggle/", views.toggle_auto_backup, name="toggle_auto_backup"),
 
 ]

@@ -90,6 +90,7 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <div class="fw-semibold">Your Cloud Backups</div>
 
+
             {% if drive_status.connected and drive_status.has_refresh_token %}
               <div class="d-flex gap-2">
                 <a class="btn btn-primary btn-sm" href="{% url 'reports:drive_export' 'csv' %}">
@@ -98,6 +99,8 @@
                 <a class="btn btn-primary btn-sm" href="{% url 'reports:drive_export' 'xlsx' %}">
                   ☁ Upload XLSX
                 </a>
+
+
               </div>
             {% endif %}
           </div>
@@ -143,6 +146,63 @@
               <div class="alert alert-secondary mb-0">No backups yet.</div>
             {% endif %}
           {% endif %}
+
+            <!-- Auto backup -->
+            <hr class="my-3">
+
+            <div class="d-flex align-items-start justify-content-between gap-3">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <div class="fw-semibold">Auto backup</div>
+
+                  {% if auto_backup_enabled %}
+                    <span class="badge rounded-pill text-bg-success">
+                      <span class="me-1">●</span>Running
+                    </span>
+                  {% else %}
+                    <span class="badge rounded-pill text-bg-secondary">
+                      <span class="me-1">●</span>Stopped
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div class="text-muted small">
+                  Runs every 15 minutes. Keeps only <span class="fw-semibold">3</span> files in Drive:
+                  <span class="font-monospace">latest</span>,
+                  <span class="font-monospace">backup-1</span>,
+                  <span class="font-monospace">backup-2</span>.
+                </div>
+
+                {% if not drive_status.connected or not drive_status.has_refresh_token %}
+                  <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mt-2 mb-0" role="alert">
+                    <span class="fw-semibold">Drive not connected.</span>
+                    <span class="small">Connect Google Drive (offline access) to enable auto backups.</span>
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="text-end">
+                <form method="post" action="{% url 'reports:toggle_auto_backup' %}">
+                  {% csrf_token %}
+
+                  <input type="hidden" name="enabled" value="{% if auto_backup_enabled %}0{% else %}1{% endif %}">
+
+                  <button
+                    type="submit"
+                    class="btn btn-sm {% if auto_backup_enabled %}btn-outline-danger{% else %}btn-primary{% endif %}"
+                    {% if not drive_status.connected or not drive_status.has_refresh_token %}disabled{% endif %}
+                  >
+                    {% if auto_backup_enabled %}
+                      ⏸ Disable
+                    {% else %}
+                      ▶ Enable
+                    {% endif %}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+
 
         </div>
       </div>
