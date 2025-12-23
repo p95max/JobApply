@@ -35,7 +35,7 @@ class Command(BaseCommand):
             try:
                 self._tick()
             except Exception as e:
-                self.stderr.write(f"{_ts()} tick error: {e!r}")
+                self.stderr.write(self.style.ERROR(f"{_ts()} tick error: {e!r}"))
 
             time.sleep(INTERVAL_SECONDS)
 
@@ -68,7 +68,7 @@ class Command(BaseCommand):
         qs = CloudBackupSettings.objects.select_related("user").filter(enabled=True)
 
         if not qs.exists():
-            self.stdout.write(f"{_ts()} no users with auto-backup enabled")
+            self.stdout.write(self.style.WARNING(f"{_ts()} no users with auto-backup enabled"))
             return
 
         for s in qs:
@@ -76,13 +76,14 @@ class Command(BaseCommand):
             due = (s.last_run_at is None) or (now - s.last_run_at >= BACKUP_EVERY)
 
             if not due:
-                remaining = BACKUP_EVERY - (now - s.last_run_at)
-                self.stdout.write(f"{_ts()} user={user.id} skip (not due, remaining to next try={remaining})")
+                remaining_seconds = max(int((BACKUP_EVERY - (now - s.last_run_at)).total_seconds()), 0)
+                remaining = timedelta(seconds=remaining_seconds)
+                self.stdout.write(f"{_ts()} user={user.id} skip (not due, remaining to next check={remaining})")
                 continue
 
             drive_status = get_drive_status(user)
             if not (drive_status.get("connected") and drive_status.get("has_refresh_token")):
-                self.stdout.write(f"{_ts()} user={user.id} disabled (drive not connected)")
+                self.stdout.write(self.style.WARNING(f"{_ts()} user={user.id} disabled (drive not connected)"))
                 s.enabled = False
                 s.save(update_fields=["enabled", "updated_at"])
                 continue
@@ -102,7 +103,10 @@ class Command(BaseCommand):
                 s.last_run_at = now
                 s.save(update_fields=["last_run_at", "updated_at"])
 
-                self.stdout.write(f"{_ts()} user={user.id} OK uploaded + rotated")
+                self.stdout.write(
+                    self.style.SUCCESS(f"{_ts()} user={user.id} Autobackup uploaded + rotated")
+                )
+
             except Exception as e:
-                self.stderr.write(f"{_ts()} user={user.id} ERROR: {e!r}")
+                self.stderr.write(self.style.ERROR(f"{_ts()} user={user.id} ERROR: {e!r}"))
 

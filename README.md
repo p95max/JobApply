@@ -24,11 +24,11 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
   - Upload backups (CSV/XLSX)
   - List & download backup files
   - Disconnect Drive (revoke local tokens / unlink)
-  - Auto Backup to Google Drive (latest + 2 retention)
+  - **OPTIONAL** Auto Backup to Google Drive (latest + 2 retention)
   
 - Applications CRUD with statuses + filters
 - Interview planner (linked to applications)
-- Reports: local import/export + statistics
+- Services: local import/export + statistics
 - Terms/consent gate for data processing (first-time user flow)
 
 ---
