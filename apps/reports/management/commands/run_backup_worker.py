@@ -17,17 +17,24 @@ from apps.applications.models import JobApplication
 import logging
 logger = logging.getLogger(__name__)
 
+from django.utils import timezone
 
 
-INTERVAL_SECONDS = 60
-BACKUP_EVERY = timedelta(minutes=15)
+def _ts() -> str:
+    return timezone.localtime().strftime("%H:%M:%S %d-%m-%Y")
+
+
+
+
+INTERVAL_SECONDS = 30
+BACKUP_EVERY = timedelta(minutes=5)
 
 
 class Command(BaseCommand):
     help = "Runs a lightweight loop that performs Google Drive auto backups (latest + 2) every 15 minutes."
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS("Auto-backup worker started (tick=60s, backup=15m)."))
+        self.stdout.write(self.style.SUCCESS(f"{_ts()} Auto-backup worker started (tick=60s, backup=15m)."))
 
         self._wait_until_table_exists("reports_cloudbackupsettings", timeout_seconds=120)
 
@@ -35,7 +42,7 @@ class Command(BaseCommand):
             try:
                 self._tick()
             except Exception as e:
-                self.stderr.write(f"[worker] tick error: {e!r}")
+                self.stderr.write(f"{_ts()} [worker] tick error: {e!r}")
 
             time.sleep(INTERVAL_SECONDS)
 
@@ -53,22 +60,22 @@ class Command(BaseCommand):
                     )
                     ok = cursor.fetchone() is not None
                 if ok:
-                    self.stdout.write(f"[worker] migrations ready: table '{table_name}' exists")
+                    self.stdout.write(f"{_ts()} [worker] migrations ready: table '{table_name}' exists")
                     return
             except Exception:
                 pass
 
-            self.stdout.write("[worker] waiting for migrations...")
+            self.stdout.write(f"{_ts()} [worker] waiting for migrations...")
             time.sleep(2)
 
-        raise RuntimeError(f"Timeout: table '{table_name}' did not appear in {timeout_seconds}s")
+        raise RuntimeError(f"{_ts()} Timeout: table '{table_name}' did not appear in {timeout_seconds}s")
 
     def _tick(self):
         now = timezone.now()
         qs = CloudBackupSettings.objects.select_related("user").filter(enabled=True)
 
         if not qs.exists():
-            self.stdout.write("[worker] no users with auto-backup enabled")
+            self.stdout.write(f"{_ts()} [worker] no users with auto-backup enabled")
             return
 
         for s in qs:
@@ -76,12 +83,13 @@ class Command(BaseCommand):
             due = (s.last_run_at is None) or (now - s.last_run_at >= BACKUP_EVERY)
 
             if not due:
-                self.stdout.write(f"[worker] user={user.id} skip (not due)")
+                remaining = BACKUP_EVERY - (now - s.last_run_at)
+                self.stdout.write(f"{_ts()} [worker] user={user.id} skip (not due, remaining={remaining})")
                 continue
 
             drive_status = get_drive_status(user)
             if not (drive_status.get("connected") and drive_status.get("has_refresh_token")):
-                self.stdout.write(f"[worker] user={user.id} disabled (drive not connected)")
+                self.stdout.write(f"{_ts()} [worker] user={user.id} disabled (drive not connected)")
                 s.enabled = False
                 s.save(update_fields=["enabled", "updated_at"])
                 continue
@@ -95,7 +103,7 @@ class Command(BaseCommand):
                 s.last_run_at = now
                 s.save(update_fields=["last_run_at", "updated_at"])
 
-                self.stdout.write(f"[worker] user={user.id} OK uploaded + rotated")
+                self.stdout.write(f"{_ts()} [worker] user={user.id} OK uploaded + rotated")
             except Exception as e:
-                self.stderr.write(f"[worker] user={user.id} ERROR: {e!r}")
+                self.stderr.write(f"{_ts()} [worker] user={user.id} ERROR: {e!r}")
 
