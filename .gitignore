@@ -25,5 +25,5 @@ htmlcov/
 dist/
 build/
 .DS_Store
-T3.txt
+.txt
 TODO.md
