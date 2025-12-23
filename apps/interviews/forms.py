@@ -41,9 +41,10 @@ class InterviewEventForm(forms.ModelForm):
 
     class Meta:
         model = InterviewEvent
-        fields = ["application", "starts_at", "location", "notes"]
+        fields = ["application", "status", "starts_at", "location", "notes"]
         widgets = {
             "application": forms.Select(attrs={"class": "form-select w-100"}),
+            "status": forms.Select(attrs={"class": "form-select w-100"}),
             "starts_at": forms.DateTimeInput(
                 attrs={"class": "form-control w-100", "type": "datetime-local"}
             ),

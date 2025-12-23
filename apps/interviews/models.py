@@ -3,14 +3,26 @@ from __future__ import annotations
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-from apps.applications.models import ApplicationStatus, JobApplication
+from apps.applications.models import JobApplication
+
+
+class InterviewStatus(models.TextChoices):
+    SCHEDULED = "scheduled", "Scheduled"
+    DONE = "done", "Done"
+    CANCELED = "canceled", "Canceled"
 
 
 class InterviewEvent(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     application = models.ForeignKey(JobApplication, on_delete=models.CASCADE)
+
+    status = models.CharField(
+        max_length=16,
+        choices=InterviewStatus.choices,
+        default=InterviewStatus.SCHEDULED,
+    )
 
     starts_at = models.DateTimeField()
     location = models.CharField(max_length=255, blank=True)
@@ -20,12 +32,8 @@ class InterviewEvent(models.Model):
 
     def clean(self):
         super().clean()
-
-        if not self.starts_at or not self.ends_at:
+        if not self.starts_at:
             return
-
-        if self.ends_at <= self.starts_at:
-            raise ValidationError({"ends_at": _("End time must be after start time.")})
 
     def __str__(self) -> str:
         return f"Interview: {self.application} @ {self.starts_at}"

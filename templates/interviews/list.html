@@ -19,28 +19,31 @@
 
   {% if items %}
     <div class="card border-0 shadow-sm glass-card">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+      <div class="table-wrap">
+          <table class="table table-hover align-middle mb-0 w-100">
 
           <thead class="table-light">
-            <tr>
-              <th style="min-width: 210px;">Time</th>
-              <th style="min-width: 260px;">Application</th>
-              <th style="min-width: 180px;">Location</th>
-              <th style="min-width: 240px;">Notes</th>
-              <th class="text-end" style="min-width: 140px;">Actions</th>
-            </tr>
-          </thead>
+          <tr>
+            <th>Time</th>
+            <th>Application</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Notes</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+
 
           <tbody>
             {% for it in items %}
               <tr>
+
                 <td>
                   <div class="fw-semibold">
                     {{ it.starts_at|date:"H:i - d.m.Y" }}
                   </div>
                   <div class="text-body-secondary small">
-                    → {{ it.ends_at|date:"H:i - d.m.Y" }}
+                    {{ it.ends_at|date:"H:i - d.m.Y" }}
                   </div>
                 </td>
 
@@ -52,6 +55,15 @@
                     {{ it.application.company }}{% if it.application.location %} • {{ it.application.location }}{% endif %}
                   </div>
                 </td>
+
+                <td>
+                  <select class="form-select form-select-sm js-interview-status" data-id="{{ it.id }}">
+                    <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>Scheduled</option>
+                    <option value="done" {% if it.status == "done" %}selected{% endif %}>Done</option>
+                    <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>Canceled</option>
+                  </select>
+                </td>
+
 
                 <td class="text-body-secondary">
                   {{ it.location|default:"—" }}
@@ -65,12 +77,19 @@
                   {% endif %}
                 </td>
 
-                <td class="text-end">
+               <td class="text-end">
+                <div class="btn-group">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{% url 'interviews:edit' it.pk %}">
+                    Edit
+                  </a>
                   <a class="btn btn-sm btn-outline-danger"
                      href="{% url 'interviews:delete' it.pk %}">
                     Delete
                   </a>
-                </td>
+                </div>
+              </td>
+
               </tr>
             {% endfor %}
           </tbody>
@@ -149,3 +168,51 @@
   });
 })();
 </script>
+<script>
+document.addEventListener("change", function (e) {
+  const select = e.target.closest(".js-interview-status");
+  if (!select) return;
+
+  fetch(`/interviews/${select.dataset.id}/status/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ status: select.value }),
+  });
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    for (const cookie of document.cookie.split(";")) {
+      const c = cookie.trim();
+      if (c.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(c.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+
+<style>
+.table-wrap { overflow-x: hidden; }
+
+.table-wrap table { table-layout: fixed; width: 100%; }
+
+.table-wrap th, .table-wrap td { overflow: hidden; text-overflow: ellipsis; }
+
+.table-wrap td:nth-child(2) .fw-semibold,
+.table-wrap td:nth-child(2) .text-body-secondary,
+.table-wrap td:nth-child(4) { white-space: nowrap; }
+
+@media (max-width: 992px) {
+  .table-wrap td:nth-child(4),
+  .table-wrap th:nth-child(4) { display: none; }
+}
+</style>
+
