@@ -109,7 +109,7 @@ def drive_backups(request):
 @login_required
 def drive_export(request, fmt: str):
     qs = JobApplication.objects.filter(user=request.user).order_by("-applied_at")
-    ts = timezone.now().strftime("%Y%m%d-%H%M%S")
+    ts = timezone.now().strftime("%d-%m-%Y-%H-%M")
 
     try:
         if fmt == "csv":
