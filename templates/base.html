@@ -16,19 +16,23 @@
       {% include 'includes/navbar.html' %}
     {% endblock %}
 
-
-    {% if messages %}
-      <div class="container mt-3" style="max-width: 920px;">
+{% block messages %}
+  {% if messages %}
+    <div class="position-fixed top-0 start-50 translate-middle-x z-3 w-100 pt-5 px-3" style="pointer-events: none;">
+      <div class="container" style="pointer-events: auto;">
         {% for message in messages %}
-          {% ifchanged message|stringformat:"s" %}
-            <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">
-              {{ message }}
-            </div>
-          {% endifchanged %}
+          <div class="alert alert-{{ message.level_tag }} alert-dismissible fade show shadow mb-3 js-auto-alert"
+               role="alert"
+               data-timeout="{% if message.level_tag == 'danger' %}0{% else %}15000{% endif %}"
+               style="max-width: 800px; margin: 0 auto;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
         {% endfor %}
       </div>
-    {% endif %}
-
+    </div>
+  {% endif %}
+{% endblock %}
 
 
 
@@ -39,6 +43,25 @@
 {% block scripts %}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
   <script src="{% static 'js/navbar.js' %}?v=1" defer></script>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".js-auto-alert").forEach((el) => {
+      const timeout = parseInt(el.getAttribute("data-timeout") || "0", 10);
+      if (!timeout) return;
+
+      window.setTimeout(() => {
+        try {
+          const alert = bootstrap.Alert.getOrCreateInstance(el);
+          alert.close();
+        } catch (e) {
+          el.classList.remove("show");
+          el.remove();
+        }
+      }, timeout);
+    });
+  });
+</script>
+
 
   {% block page_scripts %}{% endblock %}
 
