@@ -40,6 +40,7 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 - **PostgreSQL 18**
 - **Docker Compose v2** (`docker compose ...`)
 - **Poetry** for dependency management (installed in container)
+- **Pytest**
 - Google integrations:
   - **django-allauth** (OAuth)
   - **Google Drive API** via `google-api-python-client`
@@ -240,6 +241,14 @@ docker compose exec web python manage.py loaddata fixtures/applications.json   &
 Dry-run verification:
 ```bash
 docker compose exec web python manage.py assign_fixtures_owner --email you-google-email@gmail.com --from-user-id 1 --dry-run
+```
+
+---
+## Testing (pytest)
+
+- Run all pytest-tests
+```bash
+docker compose exec web poetry run pytest -ra -vv
 ```
 
 ---
