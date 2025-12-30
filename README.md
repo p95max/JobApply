@@ -76,6 +76,14 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 DJANGO_SITE_DOMAIN=0.0.0.0:8000
 DJANGO_SITE_NAME=JobApply
+
+# Cloudflare Turnstile (anti-bot gate before Google OAuth)
+TURNSTILE_ENABLED=1
+TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
+
+# Hide admin behind a custom URL (optional)
+ADMIN_URL=super-secret-admin
 ```
 
 ### 3) Start the stack
@@ -150,8 +158,9 @@ Set:
 
 ### C) Login entry points
 This project is intentionally Google-first:
-- `/` redirects to Google login (oauth2_login)
-- `/accounts/login/` is also forced to Google login
+- `/` redirects to Turnstile gate: /accounts/google/login/
+- `/accounts/google/oauth/` after successful Turnstile verification the user is redirected to Google OAuth
+- `/accounts/login/` is forced to the same Turnstile gate (Google-only auth)
 
 ---
 
@@ -202,12 +211,14 @@ JobApply can run **automatic backups to Google Drive** on a schedule.
 
 ## Local admin
 
-Django admin:
-- http://localhost:8000/admin/
+Admin is optionally exposed under a custom path via ADMIN_URL.
+
+`Example: if ADMIN_URL=super-secret-admin, admin URL is http://localhost:8000/super-secret-admin/.`
 
 Credentials are created from `.env`:
 - `DJANGO_SUPERUSER_USERNAME`
 - `DJANGO_SUPERUSER_PASSWORD`
+- `ADMIN_URL`
 
 ---
 

@@ -7,7 +7,7 @@ from allauth.socialaccount.providers.google.views import oauth2_login
 
 from config import settings
 
-admin_path = f"{settings.ADMIN_URL}/" if settings.ADMIN_URL else None
+admin_path = f"{settings.ADMIN_URL.strip('/')}/" if getattr(settings, "ADMIN_URL", "") else None
 
 
 def root(request):
@@ -34,6 +34,4 @@ urlpatterns = [
 ]
 
 if admin_path:
-    urlpatterns += [
-        path(admin_path, admin.site.urls),
-    ]
+    urlpatterns.append(path(admin_path, admin.site.urls))

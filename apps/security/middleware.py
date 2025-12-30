@@ -4,6 +4,8 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 
+admin_prefix = f"/{settings.ADMIN_URL.strip('/')}/" if getattr(settings, "ADMIN_URL", "") else None
+
 
 class TurnstileAnonymousGateMiddleware:
     def __init__(self, get_response):
@@ -28,7 +30,7 @@ class TurnstileAnonymousGateMiddleware:
             or path.startswith("/accounts/social/")
             or path.startswith("/static/")
             or path.startswith("/media/")
-            or path.startswith("/admin/")
+            or (admin_prefix and path.startswith(admin_prefix))
             or path in ("/favicon.ico", "/robots.txt")
         ):
             return self.get_response(request)
