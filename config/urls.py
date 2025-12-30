@@ -5,6 +5,10 @@ from django.contrib import admin
 from apps.accounts.views_turnstile import google_login_gate
 from allauth.socialaccount.providers.google.views import oauth2_login
 
+from config import settings
+
+admin_path = f"{settings.ADMIN_URL}/" if settings.ADMIN_URL else None
+
 
 def root(request):
     return redirect(f"{reverse('google_login_gate')}?next=/")
@@ -14,8 +18,6 @@ def google_only_login(request):
     return redirect(f"{reverse('google_login_gate')}?next={next_url}")
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-
     path("", root),
 
     path("accounts/login/", google_only_login),
@@ -30,3 +32,8 @@ urlpatterns = [
     path("interviews/", include("apps.interviews.urls")),
     path("reports/", include("apps.reports.urls")),
 ]
+
+if admin_path:
+    urlpatterns += [
+        path(admin_path, admin.site.urls),
+    ]

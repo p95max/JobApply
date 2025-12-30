@@ -162,3 +162,6 @@ TURNSTILE_SITE_KEY = getenv("TURNSTILE_SITE_KEY", "")
 TURNSTILE_SECRET_KEY = getenv("TURNSTILE_SECRET_KEY", "")
 TURNSTILE_ENABLED = getenv("TURNSTILE_ENABLED", "1") == "1"
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+
+ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
