@@ -88,7 +88,7 @@ TURNSTILE_SITE_KEY=...
 TURNSTILE_SECRET_KEY=...
 
 # Hide admin behind a custom URL (optional)
-ADMIN_URL=super-secret-admin
+ADMIN_URL=admin
 ```
 
 ### 3) Start the stack
@@ -231,8 +231,8 @@ JobApply can run **automatic backups to Google Drive** on a schedule.
 Admin is optionally exposed under a custom path via `ADMIN_URL`.
 
 Example:  
-If `ADMIN_URL=super-secret-admin`, the admin panel is available at  
-`http://localhost:8000/super-secret-admin/`.
+If `ADMIN_URL=admin`, the admin panel is available at  
+`http://localhost:8000/admin/`.
 
 If `ADMIN_URL` is not set, the admin route is not registered.
 
