@@ -31,6 +31,11 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 - Services: local import/export + statistics
 - Terms/consent gate for data processing (first-time user flow)
 
+- **Cloudflare Turnstile**
+  - Anti-bot gate before Google OAuth
+  - Applied to anonymous users only (never shown to authenticated users)
+
+
 ---
 
 ## Tech stack
@@ -44,7 +49,7 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 - Google integrations:
   - **django-allauth** (OAuth)
   - **Google Drive API** via `google-api-python-client`
-
+  - **Cloudflare Turnstile** (pre-auth anti-bot protection)
 ---
 
 ## Quick start (Docker, dev mode)
@@ -157,10 +162,22 @@ Set:
 - `GOOGLE_CLIENT_SECRET`
 
 ### C) Login entry points
+
 This project is intentionally Google-first:
-- `/` redirects to Turnstile gate: /accounts/google/login/
-- `/accounts/google/oauth/` after successful Turnstile verification the user is redirected to Google OAuth
-- `/accounts/login/` is forced to the same Turnstile gate (Google-only auth)
+
+- `/`  
+  - authenticated users are redirected directly to the application  
+  - anonymous users are redirected to the Turnstile gate
+
+- `/accounts/google/login/`  
+  Turnstile gate for anonymous users only (runs once per session, `never shown to authenticated users`)
+
+- `/accounts/google/oauth/`  
+  Starts Google OAuth flow after successful Turnstile verification
+
+- `/accounts/login/`  
+  Always redirected to the same Turnstile gate (Google-only authentication)
+
 
 ---
 
@@ -211,14 +228,18 @@ JobApply can run **automatic backups to Google Drive** on a schedule.
 
 ## Local admin
 
-Admin is optionally exposed under a custom path via ADMIN_URL.
+Admin is optionally exposed under a custom path via `ADMIN_URL`.
 
-`Example: if ADMIN_URL=super-secret-admin, admin URL is http://localhost:8000/super-secret-admin/.`
+Example:  
+If `ADMIN_URL=super-secret-admin`, the admin panel is available at  
+`http://localhost:8000/super-secret-admin/`.
 
-Credentials are created from `.env`:
+If `ADMIN_URL` is not set, the admin route is not registered.
+
+Superuser credentials are configured via `.env`:
 - `DJANGO_SUPERUSER_USERNAME`
 - `DJANGO_SUPERUSER_PASSWORD`
-- `ADMIN_URL`
+
 
 ---
 

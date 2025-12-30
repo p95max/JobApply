@@ -11,7 +11,9 @@ admin_path = f"{settings.ADMIN_URL.strip('/')}/" if getattr(settings, "ADMIN_URL
 
 
 def root(request):
-    return redirect(f"{reverse('google_login_gate')}?next=/")
+    if request.user.is_authenticated:
+        return redirect("/applications/")
+    return redirect(f"{reverse('google_login_gate')}?next=/applications/")
 
 def google_only_login(request):
     next_url = request.GET.get("next", "/")
