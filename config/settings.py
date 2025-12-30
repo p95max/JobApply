@@ -1,4 +1,5 @@
 from __future__ import annotations
+from os import getenv
 
 import os
 
@@ -151,3 +152,8 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 )
+
+TURNSTILE_SITE_KEY = getenv("TURNSTILE_SITE_KEY", "")
+TURNSTILE_SECRET_KEY = getenv("TURNSTILE_SECRET_KEY", "")
+TURNSTILE_ENABLED = getenv("TURNSTILE_ENABLED", "1") == "1"
+TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 520px;">
+  <div class="card border-0 shadow-sm glass-card">
+    <div class="card-body p-4">
+      <h1 class="h5 mb-2">Continue with Google</h1>
+      <p class="text-body-secondary mb-4">Complete the verification to proceed.</p>
+
+      {% if turnstile_enabled %}
+        <form method="post" class="d-grid gap-3">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+          <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="auto"></div>
+          <button class="btn btn-primary" type="submit">Continue</button>
+        </form>
+      {% else %}
+        <a class="btn btn-primary w-100" href="{% url 'google_login' %}?next={{ next|urlencode }}">Continue</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
