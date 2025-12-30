@@ -32,7 +32,7 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "django.contrib.sites",
     # Local
-    "apps.accounts",
+    "apps.accounts.apps.AccountsConfig",
     "apps.applications",
     "apps.interviews",
     "apps.reports",
@@ -44,6 +44,11 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.security.middleware.TurnstileAnonymousGateMiddleware",
+
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # allauth
