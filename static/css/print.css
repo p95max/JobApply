@@ -7,6 +7,22 @@
     visibility: hidden !important;
   }
 
+
+   html, body {
+          background: #fff !important;
+          background-color: #fff !important;
+          color-scheme: light !important;
+        }
+
+    #print-area,
+    #print-area * {
+      background: #fff !important;
+      background-color: #fff !important;
+    }
+
+
+
+
   #print-area,
   #print-area * {
     visibility: visible !important;
