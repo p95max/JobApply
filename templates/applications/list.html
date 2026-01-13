@@ -79,71 +79,61 @@
       <div class="card border-0 shadow-sm glass-card">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0 apps-table">
-            <thead class="table-light">
-              <tr>
-                <th class="col-check text-center no-print">
-                  <input class="form-check-input js-check-all" type="checkbox" aria-label="Select all">
-                </th>
+  <thead class="table-light">
+    <tr>
+      <th class="text-center no-print col-check">
+        <input class="form-check-input js-check-all" type="checkbox" aria-label="Select all">
+      </th>
+      <th class="text-end col-num">#</th>
+      <th class="col-applied">Applied</th>
+      <th class="col-title">Title</th>
+      <th class="col-company">Company</th>
+      <th class="col-location">Location</th>
+      <th class="col-status">Status</th>
+      <th class="col-notes">Notes</th>
+      <th class="no-print text-end col-actions">Actions</th>
+    </tr>
+  </thead>
 
-                <th class="col-num text-end">#</th>
-                <th class="col-applied">Applied</th>
-                <th class="col-title">Title</th>
-                <th class="col-company">Company</th>
-                <th class="col-location">Location</th>
-                <th class="col-status">Status</th>
-                <th class="col-notes">Notes</th>
+  <tbody>
+    {% for app in items %}
+      <tr class="js-row-link" data-href="{% url 'applications:detail' app.pk %}">
+        <td class="text-center no-print col-check">
+          <input class="form-check-input js-row-check" type="checkbox" value="{{ app.id }}" aria-label="Select row">
+        </td>
 
-                <th class="col-actions no-print text-end">Actions</th>
-              </tr>
-            </thead>
+        <td class="text-end text-body-secondary col-num">{{ forloop.counter }}</td>
+        <td class="text-body-secondary col-applied">{{ app.applied_at|date:"H:i - d.m.Y" }}</td>
+        <td class="fw-semibold col-title">{{ app.title }}</td>
+        <td class="col-company">{{ app.company }}</td>
+        <td class="text-body-secondary col-location">{{ app.location }}</td>
 
-            <tbody>
-              {% for app in items %}
-                <tr class="js-row-link" data-href="{% url 'applications:detail' app.pk %}">
-                  <td class="col-check text-center no-print">
-                    <input class="form-check-input js-row-check" type="checkbox" value="{{ app.id }}" aria-label="Select row">
-                  </td>
+        <td class="col-status">
+          <select class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }} " data-id="{{ app.id }}">
+            <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
+            <option value="screen" {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
+            <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
+            <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
+            <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
+          </select>
+          <span class="print-only fw-medium">{{ app.get_status_display|default:app.status|title }}</span>
+        </td>
 
-                  <td class="col-num text-end text-body-secondary">{{ forloop.counter }}</td>
+        <td class="text-body-secondary col-notes">
+          {{ app.notes|default_if_none:""|truncatechars:50 }}
+        </td>
 
-                  <td class="col-applied text-body-secondary">
-                    <span class="d-inline d-print-none">{{ app.applied_at|date:"H:i - d.m.Y" }}</span>
-                    <span class="d-none d-print-inline">
-                      {{ app.applied_at|date:"H:i" }}<br>{{ app.applied_at|date:"d.m.Y" }}
-                    </span>
-                  </td>
+        <td class="text-end no-print col-actions">
+          <div class="btn-group">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'applications:edit' app.pk %}">✏️ Edit</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'applications:delete' app.pk %}">🗑️ Delete</a>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-                  <td class="col-title fw-semibold">{{ app.title }}</td>
-                  <td class="col-company">{{ app.company }}</td>
-                  <td class="col-location text-body-secondary">{{ app.location }}</td>
-
-                  <td class="col-status">
-                    <select class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }} no-print" data-id="{{ app.id }}">
-                      <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
-                      <option value="screen" {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
-                      <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
-                      <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
-                      <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
-                    </select>
-
-                    <span class="print-only fw-medium">{{ app.get_status_display|default:app.status|title }}</span>
-                  </td>
-
-                  <td class="col-notes text-body-secondary">
-                    {{ app.notes|default_if_none:""|truncatechars:50 }}
-                  </td>
-
-                  <td class="col-actions text-end no-print">
-                    <div class="btn-group">
-                      <a class="btn btn-sm btn-outline-primary" href="{% url 'applications:edit' app.pk %}">✏️ Edit</a>
-                      <a class="btn btn-sm btn-outline-danger" href="{% url 'applications:delete' app.pk %}">🗑️ Delete</a>
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
         </div>
       </div>
     </div>

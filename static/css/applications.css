@@ -1,13 +1,14 @@
+.table-responsive {
+  overflow-x: hidden;
+}
+
 .apps-table {
   width: 100%;
-  border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .apps-table th,
 .apps-table td {
-  padding: 0.75rem 0.5rem;
-  vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -20,59 +21,6 @@
 .apps-table .col-actions { width: 190px; }
 
 .apps-table .col-notes {
-  min-width: 260px;
-}
-
-@media (max-width: 992px) {
-  .apps-table .col-notes { min-width: 200px; }
-}
-
-@media print {
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  body, .container, .card, .card-body {
-    color: #000 !important;
-  }
-
-  .text-body-secondary {
-    color: #000 !important;
-  }
-
-  a, a:visited {
-    color: #000 !important;
-    text-decoration: none !important;
-  }
-
-  .apps-table {
-    table-layout: fixed;
-    width: 100%;
-  }
-
-  .apps-table th,
-  .apps-table td {
-    padding: 6px 4px !important;
-    font-size: 9.5pt;
-    line-height: 1.25;
-  }
-
-  .apps-table .col-applied {
-    white-space: normal !important;
-  }
-
-  .apps-table .col-check,
-  .apps-table .col-actions,
-  .no-print {
-    display: none !important;
-  }
-
-  .apps-table .col-num { width: 28px; }
-  .apps-table .col-applied { width: 70px; }
-  .apps-table .col-title { width: 22%; }
-  .apps-table .col-company { width: 16%; }
-  .apps-table .col-location { width: 14%; }
-  .apps-table .col-status { width: 12%; }
-  .apps-table .col-notes { width: 26%; }
+  width: 260px;
+  max-width: 260px;
 }
