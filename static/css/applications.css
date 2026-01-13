@@ -53,3 +53,12 @@ th:nth-child(7) { width: 16%; }
   th:nth-child(5), td:nth-child(5) { width: 18%; }
   th:nth-child(6), td:nth-child(6) { width: 24%; }
 }
+
+.table th:last-child,
+.table td:last-child {
+  white-space: nowrap;
+}
+
+.table thead th.no-print.text-end {
+  text-align: right;
+}

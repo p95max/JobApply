@@ -7,6 +7,7 @@
   #print-area,
   #print-area * {
     visibility: visible !important;
+    color: #000 !important;
   }
 
   #print-area {
@@ -43,6 +44,16 @@
     width: 100% !important;
     table-layout: fixed !important;
     margin: 0 !important;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2) { width: 22% !important; }
+
+  .table td:nth-child(2) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 9pt !important;
   }
 
   .table th, .table td {
