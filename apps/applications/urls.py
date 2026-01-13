@@ -12,6 +12,7 @@ urlpatterns = [
     path("create/", views.create_application, name="create"),
     path("<int:pk>/edit/", views.update_application, name="edit"),
     path("<int:pk>/delete/", views.delete_application, name="delete"),
+    path("bulk-delete/", views.bulk_delete, name="bulk_delete"),
 
 
 ]

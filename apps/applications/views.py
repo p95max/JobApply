@@ -4,12 +4,14 @@ import logging
 from datetime import datetime
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+import json
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 
 from .forms import JobApplicationForm
 from .models import JobApplication
@@ -135,6 +137,21 @@ def delete_application(request, pk: int):
         logger.exception("delete_application failed user=%s pk=%s", request.user.id, pk)
         messages.error(request, "Could not delete application. Try again later.")
         return redirect("applications:list")
+
+
+@require_POST
+@login_required
+@csrf_protect
+def bulk_delete(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        ids = payload.get("ids", [])
+        ids = [int(x) for x in ids]
+    except Exception:
+        return HttpResponseBadRequest("Invalid payload")
+
+    JobApplication.objects.filter(user=request.user, id__in=ids).delete()
+    return JsonResponse({"deleted": len(ids)})
 
 
 @require_POST
