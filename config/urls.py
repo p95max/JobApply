@@ -4,6 +4,8 @@ from django.contrib import admin
 
 from apps.accounts.views_turnstile import google_login_gate
 from allauth.socialaccount.providers.google.views import oauth2_login
+from django.conf.urls.i18n import i18n_patterns
+
 
 from config import settings
 
@@ -26,6 +28,8 @@ urlpatterns = [
     path("accounts/google/login/", google_login_gate, name="google_login_gate"),
 
     path("accounts/google/oauth/", oauth2_login, name="google_oauth_login"),
+    path("i18n/", include("django.conf.urls.i18n")),
+
 
     path("accounts/", include("allauth.urls")),
 

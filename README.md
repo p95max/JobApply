@@ -19,6 +19,7 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 ## Key features
 
 - **Google-only sign-in** (django-allauth)
+- **Printable & PDF-Ready Applications Dashboard with Filters and Sorting**
 - **Optional Google Drive connection**
   - Create `JobApply/` folder (and optional `backups/` subfolder)
   - Upload backups (CSV/XLSX)

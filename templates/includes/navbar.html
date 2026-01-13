@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block navbar %}{% endblock %}
 {% block content %}
+{% get_current_language as LANGUAGE_CODE %}
 <nav class="navbar navbar-expand-lg navbar-dark border-bottom">
   <div class="container">
     <a class="navbar-brand" href="/">JobApply</a>
@@ -11,21 +13,48 @@
         <a class="btn btn-outline-light btn-sm nav-anim" href="/applications/">Applications</a>
         <a class="btn btn-outline-light btn-sm nav-anim" href="/interviews/">Interviews</a>
         <a class="btn btn-outline-light btn-sm nav-anim" href="/reports/statistics/">Services</a>
+
+<form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">
+  {% csrf_token %}
+  <input name="next" type="hidden" value="{{ request.get_full_path }}">
+  <button
+    type="submit"
+    name="language"
+    value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
+    class="btn btn-outline-light btn-sm nav-anim py-1 lh-1 d-inline-flex align-items-center"
+    style="height: 31px;"
+    title="{% if LANGUAGE_CODE == 'de' %}English{% else %}Deutsch{% endif %}"
+  >
+    <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
+    <span class="ms-1">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
+  </button>
+</form>
+
+
         <a class="btn btn-outline-warning btn-sm nav-anim" href="/accounts/logout/">Logout</a>
       {% else %}
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
-          Applications
-        </a>
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
-          Interviews
-        </a>
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">
-          Reports
-        </a>
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">Applications</a>
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">Interviews</a>
+        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">Reports</a>
 
-        <a class="btn btn-primary btn-sm nav-anim" href="/accounts/google/login/">
-          Sign in with Google
-        </a>
+<form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">
+  {% csrf_token %}
+  <input name="next" type="hidden" value="{{ request.get_full_path }}">
+  <button
+    type="submit"
+    name="language"
+    value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
+    class="btn btn-outline-light btn-sm nav-anim py-1 lh-1 d-inline-flex align-items-center"
+    style="height: 31px;"
+    title="{% if LANGUAGE_CODE == 'de' %}English{% else %}Deutsch{% endif %}"
+  >
+    <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
+    <span class="ms-1">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
+  </button>
+</form>
+
+
+        <a class="btn btn-primary btn-sm nav-anim" href="/accounts/google/login/">Sign in with Google</a>
       {% endif %}
     </div>
   </div>

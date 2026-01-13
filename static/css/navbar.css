@@ -1,4 +1,3 @@
-/*Navbar anim*/
 .nav-anim {
 transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
 will-change: transform, filter;

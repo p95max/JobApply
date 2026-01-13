@@ -1,6 +1,6 @@
-<!doctype html>
-{% load static %}
-<html lang="en" data-bs-theme="dark">
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}" data-bs-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
