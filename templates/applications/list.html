@@ -89,6 +89,7 @@
                 <th>Company</th>
                 <th>Location</th>
                 <th>Status</th>
+                <th style="min-width: 260px;">Notes</th>
                 <th class="no-print text-end">Actions</th>
               </tr>
             </thead>
@@ -115,6 +116,10 @@
                     </select>
 
                     <span class="print-only fw-medium">{{ app.get_status_display|default:app.status|title }}</span>
+                  </td>
+
+                  <td class="text-body-secondary">
+                    {{ app.notes|default_if_none:""|truncatechars:50 }}
                   </td>
 
                   <td class="text-end no-print">
