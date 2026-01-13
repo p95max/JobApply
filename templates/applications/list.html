@@ -3,12 +3,12 @@
 
 {% block page_css %}
 <link rel="stylesheet" href="{% static 'css/applications.css' %}">
+<link rel="stylesheet" href="{% static 'css/print.css' %}">
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{% static 'js/apps_list.js' %}"></script>
 {% endblock %}
-
 
 {% block content %}
 <div class="container mt-4">
@@ -81,22 +81,22 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th style="width: 44px;" class="text-center no-print">
+                <th class="text-center no-print" style="width: 44px;">
                   <input class="form-check-input js-check-all" type="checkbox" aria-label="Select all">
                 </th>
-                <th style="min-width: 160px;">Applied</th>
-                <th style="min-width: 220px;">Title</th>
-                <th style="min-width: 180px;">Company</th>
-                <th style="min-width: 160px; padding-left: 45px;">Location</th>
-                <th style="min-width: 170px; padding-left: 55px;">Status</th>
-                <th style="min-width: 170px; padding-left: 55px;" class="no-print">Actions</th>
+                <th>Applied</th>
+                <th>Title</th>
+                <th>Company</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th class="no-print">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {% for app in items %}
                 <tr class="js-row-link" data-href="{% url 'applications:detail' app.pk %}">
-                  <td class="text-center no-print" style="width: 44px;">
+                  <td class="text-center no-print">
                     <input class="form-check-input js-row-check" type="checkbox" value="{{ app.id }}" aria-label="Select row">
                   </td>
 
@@ -106,13 +106,15 @@
                   <td class="text-body-secondary">{{ app.location }}</td>
 
                   <td>
-                    <select class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }}" data-id="{{ app.id }}">
+                    <select class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }} no-print" data-id="{{ app.id }}">
                       <option value="applied" {% if app.status == "applied" %}selected{% endif %}>Applied</option>
                       <option value="screen" {% if app.status == "screen" %}selected{% endif %}>HR Screen</option>
                       <option value="interview" {% if app.status == "interview" %}selected{% endif %}>Interview</option>
                       <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
                       <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
                     </select>
+
+                    <span class="print-only fw-medium">{{ app.get_status_display|default:app.status|title }}</span>
                   </td>
 
                   <td class="text-end no-print">
@@ -128,6 +130,7 @@
         </div>
       </div>
     </div>
+
   {% else %}
     <div class="card border-0 shadow-sm glass-card">
       <div class="card-body text-center py-5">
@@ -141,4 +144,3 @@
   {% endif %}
 </div>
 {% endblock %}
-

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 class ApplicationStatus(models.TextChoices):
     APPLIED = "applied", "Applied"
+    SCREEN = "screen", "HR Screen"
     REPLIED = "replied", "Recruiter replied"
     INTERVIEW = "interview", "Interview"
     OFFER = "offer", "Offer"

@@ -13,10 +13,9 @@ def google_login_gate(request):
         remote_ip = request.META.get("REMOTE_ADDR")
         result = verify_turnstile(token, remote_ip=remote_ip)
 
-        request.session["turnstile_passed"] = True
-        request.session.modified = True
-
         if result.success:
+            request.session["turnstile_passed"] = True
+            request.session.modified = True
             return redirect(f"{reverse('google_oauth_login')}?next={next_url}")
 
     return render(request, "accounts/google_login_gate.html", {

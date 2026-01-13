@@ -1,29 +1,55 @@
-@media print {
-  body * { visibility: hidden !important; }
-  #print-area, #print-area * { visibility: visible !important; }
-
-  #print-area {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-  }
-
-  .no-print { display: none !important; }
-
-  #print-area .glass-card { box-shadow: none !important; border: 0 !important; }
-  #print-area .table-responsive { overflow: visible !important; }
-
-  #print-area select {
-    border: 0 !important;
-    outline: none !important;
-    appearance: none;
-    -webkit-appearance: none;
-    background: transparent !important;
-    padding: 0 !important;
-  }
-
-  #print-area .js-row-link { cursor: default !important; }
-  #print-area .js-row-link:hover { background: transparent !important; }
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
 
+.table th,
+.table td {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table thead th {
+  font-weight: 600;
+  background: var(--bs-table-light-bg, #f8f9fa);
+}
+
+th:nth-child(4), td:nth-child(4),
+th:nth-child(5), td:nth-child(5),
+th:nth-child(6), td:nth-child(6),
+th:nth-child(7), td:nth-child(7) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+th:nth-child(1) { width: 44px; }
+th:nth-child(2) { width: 14%; }
+th:nth-child(3) { width: 22%; }
+th:nth-child(4) { width: 18%; }
+th:nth-child(5) { width: 16%; }
+th:nth-child(6) { width: 14%; }
+th:nth-child(7) { width: 16%; }
+
+@media print {
+  .table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  th, td {
+    padding: 6px 4px !important;
+    font-size: 9.5pt;
+    line-height: 1.3;
+  }
+
+  th:nth-child(1), td:nth-child(1) { width: 30px; }
+  th:nth-child(2), td:nth-child(2) { width: 14%; }
+  th:nth-child(3), td:nth-child(3) { width: 24%; }
+  th:nth-child(4), td:nth-child(4) { width: 20%; }
+  th:nth-child(5), td:nth-child(5) { width: 18%; }
+  th:nth-child(6), td:nth-child(6) { width: 24%; }
+}

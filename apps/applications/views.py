@@ -159,7 +159,8 @@ def bulk_delete(request):
 def update_status(request, pk: int):
     status = (request.POST.get("status") or "").strip()
 
-    if status not in {"applied", "screen", "interview", "offer", "rejected"}:
+    allowed = {c[0] for c in JobApplication._meta.get_field("status").choices}
+    if status not in allowed:
         return JsonResponse({"error": "Invalid status"}, status=400)
 
     try:
