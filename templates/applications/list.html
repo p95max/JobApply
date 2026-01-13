@@ -116,7 +116,11 @@
             <option value="offer" {% if app.status == "offer" %}selected{% endif %}>Offer</option>
             <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>Rejected</option>
           </select>
-          <span class="print-only fw-medium">{{ app.get_status_display|default:app.status|title }}</span>
+
+          <span class="print-only fw-medium status-badge status-app-{{ app.status }}">
+            {{ app.get_status_display|default:app.status|title }}
+          </span>
+
         </td>
 
         <td class="text-body-secondary col-notes">

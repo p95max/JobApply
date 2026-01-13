@@ -1,8 +1,8 @@
 .print-only { display: none !important; }
 
 @media print {
-
   .no-print { display: none !important; }
+  .print-only { display: inline-block !important; }
 
   html, body {
     background: #fff !important;
@@ -31,4 +31,27 @@
     padding: 0 !important;
     width: 100% !important;
   }
+
+  #print-area, #print-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #print-area .status-select { display: none !important; }
+
+  .status-badge {
+    --st-color: #000;
+    display: inline-block !important;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 2px solid var(--st-color) !important;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .status-app-applied   { --st-color: #0d6efd; }
+  .status-app-screen    { --st-color: #6f42c1; }
+  .status-app-interview { --st-color: #fd7e14; }
+  .status-app-offer     { --st-color: #198754; }
+  .status-app-rejected  { --st-color: #dc3545; }
 }
