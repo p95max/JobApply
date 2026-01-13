@@ -121,3 +121,9 @@ document.addEventListener("DOMContentLoaded", function () {
   syncCheckAllState();
   syncBulkUI();
 });
+
+document.addEventListener("click", function (e) {
+  const btn = e.target.closest(".js-print");
+  if (!btn) return;
+  window.print();
+});

@@ -1,3 +1,29 @@
-select.js-status-select {
-  max-width: 140px;
+@media print {
+  body * { visibility: hidden !important; }
+  #print-area, #print-area * { visibility: visible !important; }
+
+  #print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
+  .no-print { display: none !important; }
+
+  #print-area .glass-card { box-shadow: none !important; border: 0 !important; }
+  #print-area .table-responsive { overflow: visible !important; }
+
+  #print-area select {
+    border: 0 !important;
+    outline: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  #print-area .js-row-link { cursor: default !important; }
+  #print-area .js-row-link:hover { background: transparent !important; }
 }
+
