@@ -9,9 +9,10 @@
 
 .apps-table th,
 .apps-table td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+  white-space: normal !important;
+  word-wrap: break-word;
+  vertical-align: middle;
 }
 
 .apps-table .col-check { width: 44px; }
@@ -57,3 +58,12 @@
 
 .sort-link:hover { text-decoration: underline; }
 
+.status-select option {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+.status-select {
+  background-color: var(--st-bg) !important;
+  color: var(--st-color) !important;
+}
