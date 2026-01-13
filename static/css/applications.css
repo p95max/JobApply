@@ -46,3 +46,14 @@
 .status-app-offer     { --st-color: #198754; --st-bg: rgba(25, 135, 84, 0.10); }
 .status-app-rejected  { --st-color: #dc3545; --st-bg: rgba(220, 53, 69, 0.10); }
 
+
+.sort-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sort-link:hover { text-decoration: underline; }
+

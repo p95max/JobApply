@@ -51,7 +51,16 @@ def list_applications(request):
             except ValueError:
                 pass
 
-        allowed_sorts = {"applied_at", "-applied_at", "updated_at", "-updated_at"}
+        allowed_sorts = {
+            "id", "-id",
+            "applied_at", "-applied_at",
+            "updated_at", "-updated_at",
+            "title", "-title",
+            "company", "-company",
+            "location", "-location",
+            "status", "-status",
+        }
+
         if sort not in allowed_sorts:
             sort = "-applied_at"
 
@@ -71,12 +80,22 @@ def list_applications(request):
     except Exception:
         logger.exception("list_applications failed user=%s", request.user.id)
         messages.error(request, "Could not load applications. Try again later.")
+        params = request.GET.copy()
+        params.pop("sort", None)
+        base_qs = params.urlencode()
+
         return render(
             request,
             "applications/list.html",
-            {"items": [], "q": "", "status": "", "month": "", "sort": "-applied_at"},
+            {
+                "items": qs,
+                "q": q,
+                "status": status,
+                "month": month,
+                "sort": sort,
+                "base_qs": base_qs,
+            },
         )
-
 
 @login_required
 def create_application(request):

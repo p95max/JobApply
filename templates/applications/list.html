@@ -79,21 +79,62 @@
       <div class="card border-0 shadow-sm glass-card">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0 apps-table">
-  <thead class="table-light">
-    <tr>
-      <th class="text-center no-print col-check">
-        <input class="form-check-input js-check-all" type="checkbox" aria-label="Select all">
-      </th>
-      <th class="text-end col-num">#</th>
-      <th class="col-applied">Applied</th>
-      <th class="col-title">Title</th>
-      <th class="col-company">Company</th>
-      <th class="col-location">Location</th>
-      <th class="col-status">Status</th>
-      <th class="col-notes">Notes</th>
-      <th class="no-print text-end col-actions">Actions</th>
-    </tr>
-  </thead>
+
+          {% with cur=sort|default:"-applied_at" %}
+          <thead class="table-light">
+            <tr>
+              <th class="text-center no-print col-check">
+                <input class="form-check-input js-check-all" type="checkbox" aria-label="Select all">
+              </th>
+
+              <th class="text-end col-num">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "id" %}-id{% else %}id{% endif %}">
+                  #
+                  {% if cur == "id" %}▲{% elif cur == "-id" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-applied">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "applied_at" %}-applied_at{% else %}applied_at{% endif %}">
+                  Applied
+                  {% if cur == "applied_at" %}▲{% elif cur == "-applied_at" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-title">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "title" %}-title{% else %}title{% endif %}">
+                  Title
+                  {% if cur == "title" %}▲{% elif cur == "-title" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-company">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "company" %}-company{% else %}company{% endif %}">
+                  Company
+                  {% if cur == "company" %}▲{% elif cur == "-company" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-location">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "location" %}-location{% else %}location{% endif %}">
+                  Location
+                  {% if cur == "location" %}▲{% elif cur == "-location" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-status">
+                <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "status" %}-status{% else %}status{% endif %}">
+                  Status
+                  {% if cur == "status" %}▲{% elif cur == "-status" %}▼{% endif %}
+                </a>
+              </th>
+
+              <th class="col-notes">Notes</th>
+              <th class="no-print text-end col-actions">Actions</th>
+            </tr>
+          </thead>
+          {% endwith %}
+
 
   <tbody>
     {% for app in items %}
@@ -103,7 +144,7 @@
         </td>
 
         <td class="text-end text-body-secondary col-num">{{ forloop.counter }}</td>
-        <td class="text-body-secondary col-applied">{{ app.applied_at|date:"H:i - d.m.Y" }}</td>
+        <td class="text-body-secondary col-applied">{{ app.applied_at|date:"d.m.Y" }}</td>
         <td class="fw-semibold col-title">{{ app.title }}</td>
         <td class="col-company">{{ app.company }}</td>
         <td class="text-body-secondary col-location">{{ app.location }}</td>
