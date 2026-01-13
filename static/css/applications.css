@@ -4,12 +4,13 @@
 
 .apps-table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto !important;
 }
 
 .apps-table th,
 .apps-table td {
-
+  text-align: left !important;
+  padding-left: 12px !important;
   white-space: normal !important;
   word-wrap: break-word;
   vertical-align: middle;
@@ -22,8 +23,8 @@
 .apps-table .col-actions { width: 190px; }
 
 .apps-table .col-notes {
-  width: 260px;
-  max-width: 260px;
+  width: auto !important;
+  min-width: 150px;
 }
 
 
