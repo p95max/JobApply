@@ -19,8 +19,20 @@ from .models import JobApplication
 logger = logging.getLogger(__name__)
 
 
+from datetime import datetime
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import render
+from django.utils import timezone
+
 @login_required
 def list_applications(request):
+    PER_PAGE_DEFAULT = 15
+    PER_PAGE_MIN = 10
+    PER_PAGE_MAX = 50
+
     try:
         qs = JobApplication.objects.filter(user=request.user)
 
@@ -43,10 +55,13 @@ def list_applications(request):
             try:
                 year, mon = map(int, month.split("-"))
                 start = timezone.make_aware(datetime(year, mon, 1, 0, 0, 0))
-                if mon == 12:
-                    end = timezone.make_aware(datetime(year + 1, 1, 1, 0, 0, 0))
-                else:
-                    end = timezone.make_aware(datetime(year, mon + 1, 1, 0, 0, 0))
+                end = timezone.make_aware(
+                    datetime(
+                        year + (1 if mon == 12 else 0),
+                        (1 if mon == 12 else mon + 1),
+                        1, 0, 0, 0
+                    )
+                )
                 qs = qs.filter(applied_at__gte=start, applied_at__lt=end)
             except ValueError:
                 pass
@@ -60,42 +75,60 @@ def list_applications(request):
             "location", "-location",
             "status", "-status",
         }
-
         if sort not in allowed_sorts:
             sort = "-applied_at"
 
-        qs = qs.order_by(sort)[:200]
+        qs = qs.order_by(sort)
 
-        return render(
-            request,
-            "applications/list.html",
-            {
-                "items": qs,
-                "q": q,
-                "status": status,
-                "month": month,
-                "sort": sort,
-            },
-        )
-    except Exception:
-        logger.exception("list_applications failed user=%s", request.user.id)
-        messages.error(request, "Could not load applications. Try again later.")
+        try:
+            per_page = int(request.GET.get("per_page") or PER_PAGE_DEFAULT)
+        except ValueError:
+            per_page = PER_PAGE_DEFAULT
+
+        per_page = max(PER_PAGE_MIN, min(PER_PAGE_MAX, per_page))
+
+        paginator = Paginator(qs, per_page)
+        page_obj = paginator.get_page(request.GET.get("page"))
+
         params = request.GET.copy()
-        params.pop("sort", None)
+        params.pop("page", None)
         base_qs = params.urlencode()
 
         return render(
             request,
             "applications/list.html",
             {
-                "items": qs,
+                "items": page_obj.object_list,
+                "page_obj": page_obj,
+                "paginator": paginator,
                 "q": q,
                 "status": status,
                 "month": month,
                 "sort": sort,
+                "per_page": per_page,
                 "base_qs": base_qs,
             },
         )
+    except Exception:
+        logger.exception("list_applications failed user=%s", request.user.id)
+        messages.error(request, "Could not load applications. Try again later.")
+        return render(
+            request,
+            "applications/list.html",
+            {
+                "items": [],
+                "page_obj": None,
+                "paginator": None,
+                "q": "",
+                "status": "",
+                "month": "",
+                "sort": "-applied_at",
+                "per_page": PER_PAGE_DEFAULT,
+                "base_qs": "",
+            },
+        )
+
+
 
 @login_required
 def create_application(request):
