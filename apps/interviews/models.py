@@ -9,9 +9,9 @@ from apps.applications.models import JobApplication
 
 
 class InterviewStatus(models.TextChoices):
-    SCHEDULED = "scheduled", "Scheduled"
-    DONE = "done", "Done"
-    CANCELED = "canceled", "Canceled"
+    SCHEDULED = "scheduled", _("Scheduled")
+    DONE = "done", _("Done")
+    CANCELED = "canceled", _("Canceled")
 
 
 class InterviewEvent(models.Model):

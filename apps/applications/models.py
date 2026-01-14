@@ -3,16 +3,17 @@ from __future__ import annotations
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class ApplicationStatus(models.TextChoices):
-    APPLIED = "applied", "Applied"
-    SCREEN = "screen", "HR Screen"
-    REPLIED = "replied", "Recruiter replied"
-    INTERVIEW = "interview", "Interview"
-    OFFER = "offer", "Offer"
-    REJECTED = "rejected", "Rejected"
-    ARCHIVED = "archived", "Archived"
+    APPLIED = "applied", _("Applied")
+    SCREEN = "screen", _("HR Screen")
+    REPLIED = "replied", _("Recruiter replied")
+    INTERVIEW = "interview", _("Interview")
+    OFFER = "offer", _("Offer")
+    REJECTED = "rejected", _("Rejected")
+    ARCHIVED = "archived", _("Archived")
 
 
 class JobApplication(models.Model):
