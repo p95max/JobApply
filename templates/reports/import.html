@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4" style="max-width: 920px;">
@@ -6,18 +7,17 @@
 
   <div class="row g-3">
 
-    <!-- Import card -->
     <div class="col-12 col-lg-6">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="fw-semibold mb-1">Import CSV</div>
+          <div class="fw-semibold mb-1">{% trans "Import CSV" %}</div>
 
-<div class="p-3 border rounded mb-3">
-  <div class="fw-semibold mb-2">Expected Header:</div>
-  <code class="d-block p-2 text-body-secondary bg-body-tertiary rounded">
-    id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
-  </code>
-</div>
+          <div class="p-3 border rounded mb-3">
+            <div class="fw-semibold mb-2">{% trans "Expected Header:" %}</div>
+            <code class="d-block p-2 text-body-secondary bg-body-tertiary rounded">
+              id,title,company,location,source,status,applied_at,recruiter_reply_at,notes
+            </code>
+          </div>
 
           {% if error %}
             <div class="alert alert-danger" role="alert">
@@ -27,60 +27,65 @@
 
           {% if result %}
             <div class="alert alert-success" role="alert">
-              Import completed.
+              {% trans "Import completed." %}
               <div class="mt-2">
-                <span class="badge text-bg-success">Created: {{ result.created }}</span>
-                <span class="badge text-bg-primary">Updated: {{ result.updated }}</span>
+                <span class="badge text-bg-success">
+                  {% trans "Created:" %} {{ result.created }}
+                </span>
+                <span class="badge text-bg-primary">
+                  {% trans "Updated:" %} {{ result.updated }}
+                </span>
               </div>
             </div>
           {% endif %}
 
           <form method="post" enctype="multipart/form-data" class="d-grid gap-2">
             {% csrf_token %}
-
             <input class="form-control" type="file" name="file" accept=".csv,text/csv" required>
 
             <button class="btn btn-primary" type="submit">
-              ⬆ Import
+              ⬆ {% trans "Import" %}
             </button>
           </form>
 
           <div class="text-muted small mt-3">
+            {% blocktrans %}
             Dedupe rule: if <span class="font-monospace">id</span> exists for your account → update, otherwise create new.
+            {% endblocktrans %}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Export card -->
     <div class="col-12 col-lg-6">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="fw-semibold mb-1">Export</div>
+          <div class="fw-semibold mb-1">{% trans "Export" %}</div>
           <div class="text-muted small mb-3">
-            Download your applications data or a CSV template.
+            {% trans "Download your applications data or a CSV template." %}
           </div>
 
           <div class="d-grid gap-2">
             <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
-              ⬇ Export CSV
+              ⬇ {% trans "Export CSV" %}
             </a>
 
             <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'xlsx' %}">
-              ⬇ Export XLSX
+              ⬇ {% trans "Export XLSX" %}
             </a>
 
             <a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">
-              🧾 CSV template
+              🧾 {% trans "CSV template" %}
             </a>
-
           </div>
 
           <div class="text-muted small mt-3">
+            {% blocktrans %}
             Tip: for autosave/backups use
+            {% endblocktrans %}
             <a href="{% url 'reports:drive_backups' %}">
-      ☁ <span class="d-none d-sm-inline"> Cloud backups.</span>
-    </a>
+              ☁ <span class="d-none d-sm-inline"> {% trans "Cloud backups." %}</span>
+            </a>
           </div>
         </div>
       </div>

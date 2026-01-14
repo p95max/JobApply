@@ -1,19 +1,22 @@
+{% load i18n %}
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
-    <h1 class="h4 mb-1">Services</h1>
-    <div class="text-muted small">Statistics, export & import, cloud backups</div>
+    <h1 class="h4 mb-1">{% trans "Services" %}</h1>
+    <div class="text-muted small">
+      {% trans "Statistics, export & import, cloud backups" %}
+    </div>
   </div>
 
   <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
     <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:statistics' %}">
-      📊 <span class="d-none d-sm-inline">Statistics</span>
+      📊 <span class="d-none d-sm-inline">{% trans "Statistics" %}</span>
     </a>
     <a class="btn btn-outline-secondary nav-anim" href="{% url 'reports:import' %}">
-      ⬆ <span class="d-none d-sm-inline">Import/Export</span>
+      ⬆ <span class="d-none d-sm-inline">{% trans "Import/Export" %}</span>
     </a>
     <a class="btn btn-outline-warning nav-anim" href="{% url 'reports:drive_backups' %}">
-      ☁ <span class="d-none d-sm-inline">Cloud backups</span>
+      ☁ <span class="d-none d-sm-inline">{% trans "Cloud backups" %}</span>
     </a>
-
   </div>
 </div>

@@ -1,18 +1,17 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block content %}
-<div class="container mt-4" style="max-width: 920px;">
+<div class="container mt-4">
 
-  <!-- Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
-      <h1 class="h4 mb-1">Your Interviews</h1>
+      <h1 class="h4 mb-1">{% trans "Your Interviews" %}</h1>
     </div>
 
     <div class="d-flex gap-2">
       <a class="btn btn-primary" href="{% url 'interviews:create' %}">
-         ✚ Schedule interview
+        ✚ {% trans "Schedule interview" %}
       </a>
     </div>
   </div>
@@ -20,24 +19,22 @@
   {% if items %}
     <div class="card border-0 shadow-sm glass-card">
       <div class="table-wrap">
-          <table class="table table-hover align-middle mb-0 w-100">
+        <table class="table table-hover align-middle mb-0 w-100">
 
           <thead class="table-light">
-          <tr>
-            <th>Time</th>
-            <th>Application</th>
-            <th>Status</th>
-            <th>Location</th>
-            <th>Notes</th>
-            <th class="text-end" ></th>
-          </tr>
-        </thead>
-
+            <tr>
+              <th>{% trans "Time" %}</th>
+              <th>{% trans "Application" %}</th>
+              <th>{% trans "Status" %}</th>
+              <th>{% trans "Location" %}</th>
+              <th>{% trans "Notes" %}</th>
+              <th class="text-end"></th>
+            </tr>
+          </thead>
 
           <tbody>
             {% for it in items %}
               <tr>
-
                 <td>
                   <div class="fw-semibold">
                     {{ it.starts_at|date:"H:i - d.m.Y" }}
@@ -61,13 +58,11 @@
                     class="form-select form-select-sm js-interview-status status-select status-int-{{ it.status }}"
                     data-id="{{ it.id }}"
                   >
-                    <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>Scheduled</option>
-                    <option value="done" {% if it.status == "done" %}selected{% endif %}>Done</option>
-                    <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>Canceled</option>
+                    <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>{% trans "Scheduled" %}</option>
+                    <option value="done" {% if it.status == "done" %}selected{% endif %}>{% trans "Done" %}</option>
+                    <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
                   </select>
                 </td>
-
-
 
                 <td class="text-body-secondary">
                   {{ it.location|default:"—" }}
@@ -81,19 +76,18 @@
                   {% endif %}
                 </td>
 
-               <td class="text-end">
-                <div class="btn-group">
-                  <a class="btn btn-sm btn-outline-primary"
-                     href="{% url 'interviews:edit' it.pk %}">
-                    ✏️ Edit
-                  </a>
-                  <a class="btn btn-sm btn-outline-danger"
-                     href="{% url 'interviews:delete' it.pk %}">
-                   🗑️ Delete
-                  </a>
-                </div>
-              </td>
-
+                <td class="text-end">
+                  <div class="btn-group">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="{% url 'interviews:edit' it.pk %}">
+                      ✏️ {% trans "Edit" %}
+                    </a>
+                    <a class="btn btn-sm btn-outline-danger"
+                       href="{% url 'interviews:delete' it.pk %}">
+                      🗑️ {% trans "Delete" %}
+                    </a>
+                  </div>
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -104,12 +98,15 @@
   {% else %}
     <div class="card border-0 shadow-sm glass-card">
       <div class="card-body text-center py-5">
-        <h2 class="h5 mb-2">No interviews scheduled</h2>
+        <h2 class="h5 mb-2">{% trans "No interviews scheduled" %}</h2>
         <p class="text-body-secondary mb-3">
-          You can schedule an interview only for applications with status <span class="badge bg-secondary">Interview</span>.
+          {% blocktrans %}
+          You can schedule an interview only for applications with status
+          <span class="badge bg-secondary">Interview</span>.
+          {% endblocktrans %}
         </p>
         <a class="btn btn-primary" href="{% url 'interviews:create' %}">
-           ✚ Schedule interview
+          ✚ {% trans "Schedule interview" %}
         </a>
       </div>
     </div>
@@ -117,125 +114,3 @@
 
 </div>
 {% endblock %}
-
-{% block page_scripts %}
-<script>
-(function () {
-  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
-  if (!fields.length) return;
-
-  function ensureCounter(el) {
-    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
-    el.id = id;
-
-    let counter = document.querySelector(`[data-counter-for="${id}"]`);
-    if (counter) return counter;
-
-    counter = document.createElement("div");
-    counter.className = "form-text d-flex justify-content-end mt-1";
-    counter.dataset.counterFor = id;
-
-    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
-      el.parentElement.insertAdjacentElement("afterend", counter);
-    } else {
-      el.insertAdjacentElement("afterend", counter);
-    }
-    return counter;
-  }
-
-  function update(el) {
-    const max = parseInt(el.dataset.maxlen, 10);
-    if (!max) return;
-
-    const counter = ensureCounter(el);
-    const len = (el.value || "").length;
-
-    counter.textContent = `${len} / ${max}`;
-
-    el.classList.remove("is-invalid", "is-valid");
-    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
-
-    if (len > max) {
-      el.classList.add("is-invalid");
-      counter.classList.add("text-danger");
-    } else if (len >= Math.floor(max * 0.9)) {
-      counter.classList.add("text-warning");
-    } else {
-      counter.classList.add("text-body-secondary");
-      el.classList.add("is-valid");
-    }
-  }
-
-  fields.forEach((el) => {
-    update(el);
-    el.addEventListener("input", () => update(el));
-    el.addEventListener("change", () => update(el));
-  });
-})();
-</script>
-<script>
-document.addEventListener("change", function (e) {
-  const select = e.target.closest(".js-interview-status");
-  if (!select) return;
-
-  fetch(`/interviews/${select.dataset.id}/status/`, {
-    method: "POST",
-    headers: {
-      "X-CSRFToken": getCookie("csrftoken"),
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ status: select.value }),
-  });
-});
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== "") {
-    for (const cookie of document.cookie.split(";")) {
-      const c = cookie.trim();
-      if (c.startsWith(name + "=")) {
-        cookieValue = decodeURIComponent(c.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-</script>
-<script>
-document.addEventListener("change", function (e) {
-  const el = e.target.closest(".js-interview-status");
-  if (!el) return;
-
-  [...el.classList].forEach((c) => {
-    if (c.startsWith("status-int-")) el.classList.remove(c);
-  });
-  el.classList.add("status-int-" + el.value);
-});
-</script>
-
-<style>
-.table-wrap { overflow-x: hidden; }
-
-.table-wrap table { table-layout: fixed; width: 100%; }
-
-.table-wrap th, .table-wrap td { overflow: hidden; text-overflow: ellipsis; }
-
-.table-wrap td:nth-child(2) .fw-semibold,
-.table-wrap td:nth-child(2) .text-body-secondary,
-.table-wrap td:nth-child(4) { white-space: nowrap; }
-
-.status-select { font-weight: 600; }
-
-.status-int-scheduled { border-color: #0d6efd; } /* primary */
-.status-int-done      { border-color: #198754; } /* success */
-.status-int-canceled  { border-color: #dc3545; } /* danger */
-
-
-@media (max-width: 992px) {
-  .table-wrap td:nth-child(4),
-  .table-wrap th:nth-child(4) { display: none; }
-}
-</style>
-{% endblock %}
-

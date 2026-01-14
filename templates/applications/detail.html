@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block content %}
 <div class="container mt-4" style="max-width: 920px;">
@@ -14,63 +14,61 @@
 
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
-        Back
+        {% trans "Back" %}
       </a>
       <a class="btn btn-primary" href="{% url 'applications:edit' app.pk %}">
-        Edit
+        {% trans "Edit" %}
       </a>
-       <a class="btn btn-warning" href="{% url 'applications:delete' app.pk %}">
-        Delete
+      <a class="btn btn-warning" href="{% url 'applications:delete' app.pk %}">
+        {% trans "Delete" %}
       </a>
     </div>
   </div>
 
   <div class="row g-3">
 
-    <h2 class="h6 mb-3">Details</h2>
+    <h2 class="h6 mb-3">{% trans "Details" %}</h2>
 
-<dl class="row mb-0">
-  <dt class="col-sm-4 text-body-secondary">Applied</dt>
-  <dd class="col-sm-8">
-    {{ app.applied_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
-  </dd>
+    <dl class="row mb-0">
+      <dt class="col-sm-4 text-body-secondary">{% trans "Applied" %}</dt>
+      <dd class="col-sm-8">
+        {{ app.applied_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+      </dd>
 
-  <dt class="col-sm-4 text-body-secondary">HR reply</dt>
-  <dd class="col-sm-8">
-    {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
-  </dd>
+      <dt class="col-sm-4 text-body-secondary">{% trans "HR reply" %}</dt>
+      <dd class="col-sm-8">
+        {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+      </dd>
 
-  <dt class="col-sm-4 text-body-secondary">Last update</dt>
-  <dd class="col-sm-8">
-    {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
-  </dd>
+      <dt class="col-sm-4 text-body-secondary">{% trans "Last update" %}</dt>
+      <dd class="col-sm-8">
+        {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+      </dd>
 
-  <dt class="col-sm-4 text-body-secondary">Status</dt>
-  <dd class="col-sm-8">
-    <span class="badge bg-secondary">{{ app.status }}</span>
-  </dd>
+      <dt class="col-sm-4 text-body-secondary">{% trans "Status" %}</dt>
+      <dd class="col-sm-8">
+        <span class="badge bg-secondary">{{ app.status }}</span>
+      </dd>
 
-  <dt class="col-sm-4 text-body-secondary">Location</dt>
-  <dd class="col-sm-8">
-    {{ app.location|default:"—" }}
-  </dd>
+      <dt class="col-sm-4 text-body-secondary">{% trans "Location" %}</dt>
+      <dd class="col-sm-8">
+        {{ app.location|default:"—" }}
+      </dd>
 
-  <dt class="col-sm-4 text-body-secondary">Source</dt>
-  <dd class="col-sm-8">
-    {{ app.source|default:"—" }}
-  </dd>
+      <dt class="col-sm-4 text-body-secondary">{% trans "Source" %}</dt>
+      <dd class="col-sm-8">
+        {{ app.source|default:"—" }}
+      </dd>
+    </dl>
 
-</dl>
+    {% if app.notes %}
+      <hr>
+      <h2 class="h6 mb-2">{% trans "Notes" %}</h2>
+      <div class="text-body-secondary">
+        {{ app.notes|linebreaksbr }}
+      </div>
+    {% endif %}
 
-{% if app.notes %}
-  <hr>
-  <h2 class="h6 mb-2">Notes</h2>
-  <div class="text-body-secondary">
-    {{ app.notes|linebreaksbr }}
   </div>
-{% endif %}
-
-  </div>
-
 </div>
 {% endblock %}

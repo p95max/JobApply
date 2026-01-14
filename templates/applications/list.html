@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block page_css %}
 <link rel="stylesheet" href="{% static 'css/applications.css' %}">
@@ -18,10 +18,12 @@
   {% if items %}
     <div class="d-flex justify-content-between align-items-center mb-2 no-print">
       <div class="small text-body-secondary">
-        Selected: <span class="js-selected-count">0</span>
+        {% trans "Selected:" %} <span class="js-selected-count">0</span>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-danger js-bulk-delete" type="button" disabled>🗑️ Delete selected</button>
+        <button class="btn btn-sm btn-outline-danger js-bulk-delete" type="button" disabled>
+          🗑️ {% trans "Delete selected" %}
+        </button>
       </div>
     </div>
 
@@ -32,15 +34,21 @@
         </div>
       </div>
     </div>
-            {% include 'includes/paginator.html' %}
+
+    {% include 'includes/paginator.html' %}
+
   {% else %}
     <div class="card border-0 shadow-sm glass-card">
       <div class="card-body text-center py-5">
-        <h2 class="h5 mb-2">No applications found</h2>
+        <h2 class="h5 mb-2">{% trans "No applications found" %}</h2>
         <p class="text-body-secondary mb-3">
+          {% blocktrans %}
           Try clearing filters or add your first <span class="badge bg-secondary">application</span>.
+          {% endblocktrans %}
         </p>
-        <a class="btn btn-primary" href="{% url 'applications:create' %}">✚ Add application</a>
+        <a class="btn btn-primary" href="{% url 'applications:create' %}">
+          ✚ {% trans "Add application" %}
+        </a>
       </div>
     </div>
   {% endif %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block content %}
 <div class="container mt-4" style="max-width: 920px;">
@@ -7,15 +7,23 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h1 class="h4 mb-1">
-        {% if mode == "edit" %}Edit application{% else %}New application{% endif %}
+        {% if mode == "edit" %}
+          {% trans "Edit application" %}
+        {% else %}
+          {% trans "New application" %}
+        {% endif %}
       </h1>
       <div class="text-body-secondary small">
-        {% if mode == "edit" %}Update fields and save changes.{% else %}Fill in details and create a record.{% endif %}
+        {% if mode == "edit" %}
+          {% trans "Update fields and save changes." %}
+        {% else %}
+          {% trans "Fill in details and create a record." %}
+        {% endif %}
       </div>
     </div>
 
     <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
-      Back
+      {% trans "Back" %}
     </a>
   </div>
 
@@ -34,44 +42,49 @@
         <div class="row g-3">
           {% for field in form %}
             <div class="col-12 {% if field.name == 'title' or field.name == 'company' or field.name == 'location' or field.name == 'status' or field.name == 'source' %}col-lg-6{% endif %}">
-  <label class="form-label mb-1" for="{{ field.id_for_label }}">
-    {{ field.label }}
-    {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-  </label>
+              <label class="form-label mb-1" for="{{ field.id_for_label }}">
+                {{ field.label }}
+                {% if field.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
 
-  <div class="form-control-wrap">
-    {{ field }}
-  </div>
+              <div class="form-control-wrap">
+                {{ field }}
+              </div>
 
-  <div class="form-text min-h-24">
-    {% if field.help_text %}
-      {{ field.help_text }}
-    {% endif %}
-  </div>
+              <div class="form-text min-h-24">
+                {% if field.help_text %}
+                  {{ field.help_text }}
+                {% endif %}
+              </div>
 
-  {% if field.errors %}
-    <div class="invalid-feedback d-block">
-      {{ field.errors|striptags }}
-    </div>
-  {% endif %}
-</div>
-
+              {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ field.errors|striptags }}
+                </div>
+              {% endif %}
+            </div>
           {% endfor %}
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-4">
           <button class="btn btn-primary" type="submit">
-            {% if mode == "edit" %}Save changes{% else %}Create{% endif %}
+            {% if mode == "edit" %}
+              {% trans "Save changes" %}
+            {% else %}
+              {% trans "Create" %}
+            {% endif %}
           </button>
 
           {% if mode == "edit" %}
             <a class="btn btn-outline-danger" href="{% url 'applications:delete' obj.pk %}">
-              Delete
+              {% trans "Delete" %}
             </a>
           {% endif %}
 
           <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
-            Cancel
+            {% trans "Cancel" %}
           </a>
         </div>
       </form>
@@ -81,62 +94,3 @@
 
 </div>
 {% endblock %}
-
-<!--form fields limits-->
-<script>
-(function () {
-  const fields = document.querySelectorAll("input[data-maxlen], textarea[data-maxlen]");
-  if (!fields.length) return;
-
-  function ensureCounter(el) {
-    const id = el.id || ("field-" + Math.random().toString(16).slice(2));
-    el.id = id;
-
-    let counter = document.querySelector(`[data-counter-for="${id}"]`);
-    if (counter) return counter;
-
-    counter = document.createElement("div");
-    counter.className = "form-text d-flex justify-content-end mt-1";
-    counter.dataset.counterFor = id;
-
-    // place after the field (or after wrapper)
-    if (el.parentElement && el.parentElement.classList.contains("form-control-wrap")) {
-      el.parentElement.insertAdjacentElement("afterend", counter);
-    } else {
-      el.insertAdjacentElement("afterend", counter);
-    }
-    return counter;
-  }
-
-  function update(el) {
-    const max = parseInt(el.dataset.maxlen, 10);
-    if (!max) return;
-
-    const counter = ensureCounter(el);
-    const len = (el.value || "").length;
-
-    counter.textContent = `${len} / ${max}`;
-
-    // bootstrap-ish visuals
-    el.classList.remove("is-invalid", "is-valid");
-    counter.classList.remove("text-danger", "text-warning", "text-body-secondary");
-
-    if (len > max) {
-      el.classList.add("is-invalid");
-      counter.classList.add("text-danger");
-    } else if (len >= Math.floor(max * 0.9)) {
-      counter.classList.add("text-warning");
-    } else {
-      counter.classList.add("text-body-secondary");
-      el.classList.add("is-valid");
-    }
-  }
-
-  fields.forEach((el) => {
-    update(el);
-    el.addEventListener("input", () => update(el));
-    el.addEventListener("change", () => update(el));
-  });
-})();
-</script>
-

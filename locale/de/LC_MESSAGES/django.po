@@ -1,0 +1,663 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-14 21:31+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: config/settings.py:111 templates/includes/navbar.html:27
+#: templates/includes/navbar.html:49
+msgid "English"
+msgstr ""
+
+#: config/settings.py:112 templates/includes/navbar.html:27
+#: templates/includes/navbar.html:49
+msgid "Deutsch"
+msgstr ""
+
+#: templates/account/logout.html:10 templates/account/logout.html:25
+msgid "Sign out"
+msgstr ""
+
+#: templates/account/logout.html:13
+msgid "Are you sure you want to sign out?"
+msgstr ""
+
+#: templates/account/logout.html:28 templates/applications/delete.html:28
+#: templates/applications/form.html:87 templates/interviews/delete.html:34
+#: templates/interviews/form.html:61
+msgid "Cancel"
+msgstr ""
+
+#: templates/account/logout.html:34
+msgid "Tip: if you sign out, you’ll need Google OAuth to sign in again."
+msgstr ""
+
+#: templates/accounts/consent.html:8
+msgid "Consent"
+msgstr ""
+
+#: templates/accounts/consent.html:11
+msgid ""
+"\n"
+"        - To use JobApply, you must confirm that you agree to grant access "
+"to your Google account for authentication and, only when you enable them, "
+"selected Google services (e.g., Google Drive backups, Google Sheets, Google "
+"Calendar) to provide the requested features;\n"
+"        <br>\n"
+"        - Google Drive access is optional and is only requested/used if you "
+"enable Cloud Backups to upload your backups to your own Drive;\n"
+"        <br>\n"
+"        - The administration is not responsible for the storage and "
+"protection of your personal data.\n"
+"        "
+msgstr ""
+
+#: templates/accounts/consent.html:26
+msgid "I agree"
+msgstr ""
+
+#: templates/accounts/consent.html:31
+#: templates/accounts/google_login_gate.html:24
+#: templates/accounts/google_login_gate.html:30
+msgid "Continue"
+msgstr ""
+
+#: templates/accounts/google_login_gate.html:10
+msgid "Continue with Google"
+msgstr ""
+
+#: templates/accounts/google_login_gate.html:12
+msgid "Complete the verification to proceed."
+msgstr ""
+
+#: templates/applications/delete.html:8
+msgid "Delete application"
+msgstr ""
+
+#: templates/applications/delete.html:11 templates/interviews/delete.html:11
+msgid "This action cannot be undone."
+msgstr ""
+
+#: templates/applications/delete.html:25 templates/interviews/delete.html:31
+msgid "Yes, delete"
+msgstr ""
+
+#: templates/applications/detail.html:17 templates/applications/form.html:26
+#: templates/interviews/form.html:13
+msgid "Back"
+msgstr ""
+
+#: templates/applications/detail.html:20
+#: templates/includes/apps_list_table.html:94 templates/interviews/list.html:83
+msgid "Edit"
+msgstr ""
+
+#: templates/applications/detail.html:23 templates/applications/form.html:82
+#: templates/includes/apps_list_table.html:97 templates/interviews/list.html:87
+msgid "Delete"
+msgstr ""
+
+#: templates/applications/detail.html:30
+msgid "Details"
+msgstr ""
+
+#: templates/applications/detail.html:33
+#: templates/includes/apps_list_header.html:40
+#: templates/includes/apps_list_table.html:21
+#: templates/includes/apps_list_table.html:75
+msgid "Applied"
+msgstr ""
+
+#: templates/applications/detail.html:38
+msgid "HR reply"
+msgstr ""
+
+#: templates/applications/detail.html:43
+msgid "Last update"
+msgstr ""
+
+#: templates/applications/detail.html:48
+#: templates/includes/apps_list_header.html:36
+#: templates/includes/apps_list_table.html:49 templates/interviews/list.html:28
+#: templates/reports/statistics.html:31
+msgid "Status"
+msgstr ""
+
+#: templates/applications/detail.html:53
+#: templates/includes/apps_list_table.html:42 templates/interviews/list.html:29
+msgid "Location"
+msgstr ""
+
+#: templates/applications/detail.html:58
+msgid "Source"
+msgstr ""
+
+#: templates/applications/detail.html:66 templates/interviews/list.html:30
+msgid "Notes"
+msgstr ""
+
+#: templates/applications/form.html:11
+msgid "Edit application"
+msgstr ""
+
+#: templates/applications/form.html:13
+msgid "New application"
+msgstr ""
+
+#: templates/applications/form.html:18
+msgid "Update fields and save changes."
+msgstr ""
+
+#: templates/applications/form.html:20
+msgid "Fill in details and create a record."
+msgstr ""
+
+#: templates/applications/form.html:74
+msgid "Save changes"
+msgstr ""
+
+#: templates/applications/form.html:76
+msgid "Create"
+msgstr ""
+
+#: templates/applications/list.html:21
+msgid "Selected:"
+msgstr ""
+
+#: templates/applications/list.html:25
+msgid "Delete selected"
+msgstr ""
+
+#: templates/applications/list.html:43
+msgid "No applications found"
+msgstr ""
+
+#: templates/applications/list.html:45
+msgid ""
+"\n"
+"          Try clearing filters or add your first <span class=\"badge bg-"
+"secondary\">application</span>.\n"
+"          "
+msgstr ""
+
+#: templates/applications/list.html:50
+#: templates/includes/apps_list_header.html:12
+msgid "Add application"
+msgstr ""
+
+#: templates/base.html:7 templates/includes/navbar.html:10
+msgid "JobApply"
+msgstr ""
+
+#: templates/base.html:32
+msgid "Close"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:5
+msgid "Your Applications"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:9
+msgid "Print"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:23
+msgid "Search"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:30
+msgid "Title, company, location..."
+msgstr ""
+
+#: templates/includes/apps_list_header.html:39
+msgid "All"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:41
+#: templates/includes/apps_list_table.html:76
+msgid "HR Screen"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:42
+#: templates/includes/apps_list_table.html:77
+msgid "Interview"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:43
+#: templates/includes/apps_list_table.html:78
+msgid "Offer"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:44
+#: templates/includes/apps_list_table.html:79
+msgid "Rejected"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:50
+msgid "Month"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:57
+msgid "Sort"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:61
+msgid "Applied ↓"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:64
+msgid "Applied ↑"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:67
+msgid "Updated ↓"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:70
+msgid "Updated ↑"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:77
+msgid "Apply"
+msgstr ""
+
+#: templates/includes/apps_list_header.html:80
+msgid "Reset"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:9
+msgid "Select all"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:28
+msgid "Title"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:35
+msgid "Company"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:54
+msgid "Note"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:55
+msgid "Actions"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:64
+msgid "Select row"
+msgstr ""
+
+#: templates/includes/navbar.html:14 templates/includes/navbar.html:36
+msgid "Applications"
+msgstr ""
+
+#: templates/includes/navbar.html:15 templates/includes/navbar.html:37
+msgid "Interviews"
+msgstr ""
+
+#: templates/includes/navbar.html:16 templates/reports/_nav.html:5
+msgid "Services"
+msgstr ""
+
+#: templates/includes/navbar.html:34
+msgid "Logout"
+msgstr ""
+
+#: templates/includes/navbar.html:38
+msgid "Reports"
+msgstr ""
+
+#: templates/includes/navbar.html:56
+msgid "Sign in with Google"
+msgstr ""
+
+#: templates/includes/paginator.html:4
+msgid "Applications pagination"
+msgstr ""
+
+#: templates/includes/paginator.html:12
+msgid "First"
+msgstr ""
+
+#: templates/includes/paginator.html:20
+msgid "Previous"
+msgstr ""
+
+#: templates/includes/paginator.html:38
+msgid "Next"
+msgstr ""
+
+#: templates/includes/paginator.html:46
+msgid "Last"
+msgstr ""
+
+#: templates/includes/paginator.html:52
+#, python-format
+msgid ""
+"\n"
+"      Page %(page_obj.number)s of %(page_obj.paginator.num_pages)s · "
+"%(page_obj.paginator.count)s total\n"
+"    "
+msgstr ""
+
+#: templates/interviews/delete.html:8
+msgid "Delete interview"
+msgstr ""
+
+#: templates/interviews/form.html:9 templates/interviews/list.html:14
+#: templates/interviews/list.html:109
+msgid "Schedule interview"
+msgstr ""
+
+#: templates/interviews/form.html:58
+msgid "Save"
+msgstr ""
+
+#: templates/interviews/form.html:67
+msgid ""
+"\n"
+"        Tip: if you don’t see an application in the dropdown — set its "
+"status to\n"
+"        <span class=\"text-danger\">Interview</span> in Applications.\n"
+"        "
+msgstr ""
+
+#: templates/interviews/list.html:9
+msgid "Your Interviews"
+msgstr ""
+
+#: templates/interviews/list.html:26
+msgid "Time"
+msgstr ""
+
+#: templates/interviews/list.html:27
+msgid "Application"
+msgstr ""
+
+#: templates/interviews/list.html:61
+msgid "Scheduled"
+msgstr ""
+
+#: templates/interviews/list.html:62
+msgid "Done"
+msgstr ""
+
+#: templates/interviews/list.html:63
+msgid "Canceled"
+msgstr ""
+
+#: templates/interviews/list.html:101
+msgid "No interviews scheduled"
+msgstr ""
+
+#: templates/interviews/list.html:103
+msgid ""
+"\n"
+"          You can schedule an interview only for applications with status\n"
+"          <span class=\"badge bg-secondary\">Interview</span>.\n"
+"          "
+msgstr ""
+
+#: templates/reports/_nav.html:7
+msgid "Statistics, export & import, cloud backups"
+msgstr ""
+
+#: templates/reports/_nav.html:13 templates/reports/drive_backups.html:14
+msgid "Statistics"
+msgstr ""
+
+#: templates/reports/_nav.html:16
+msgid "Import/Export"
+msgstr ""
+
+#: templates/reports/_nav.html:19 templates/reports/drive_backups.html:9
+msgid "Cloud backups"
+msgstr ""
+
+#: templates/reports/drive_backups.html:10
+msgid "via Google Drive"
+msgstr ""
+
+#: templates/reports/drive_backups.html:15
+msgid "Local import/export"
+msgstr ""
+
+#: templates/reports/drive_backups.html:28
+msgid "Connection"
+msgstr ""
+
+#: templates/reports/drive_backups.html:30
+msgid ""
+"\n"
+"            Permission scope: <span class=\"font-monospace\">drive.file</"
+"span> (only files created by this app).\n"
+"            "
+msgstr ""
+
+#: templates/reports/drive_backups.html:37
+msgid "Connected as:"
+msgstr ""
+
+#: templates/reports/drive_backups.html:44
+msgid "Open your Drive folder"
+msgstr ""
+
+#: templates/reports/drive_backups.html:50
+msgid "Drive is not connected."
+msgstr ""
+
+#: templates/reports/drive_backups.html:54
+msgid "Enable Drive backups"
+msgstr ""
+
+#: templates/reports/drive_backups.html:60
+msgid "Status: Google Drive connected."
+msgstr ""
+
+#: templates/reports/drive_backups.html:65
+#: templates/reports/drive_backups.html:79
+msgid "Disconnect"
+msgstr ""
+
+#: templates/reports/drive_backups.html:71
+msgid ""
+"Connected, but offline access is missing. Backups may fail after the session "
+"expires."
+msgstr ""
+
+#: templates/reports/drive_backups.html:76
+msgid "Reconnect to enable offline access"
+msgstr ""
+
+#: templates/reports/drive_backups.html:92
+msgid "Your Cloud Backups"
+msgstr ""
+
+#: templates/reports/drive_backups.html:97
+msgid "Upload CSV"
+msgstr ""
+
+#: templates/reports/drive_backups.html:100
+msgid "Upload XLSX"
+msgstr ""
+
+#: templates/reports/drive_backups.html:108
+msgid "Connect Google Drive to start uploading backups."
+msgstr ""
+
+#: templates/reports/drive_backups.html:113
+msgid "Reconnect to enable offline access, then backups will work reliably."
+msgstr ""
+
+#: templates/reports/drive_backups.html:122
+msgid "File"
+msgstr ""
+
+#: templates/reports/drive_backups.html:123
+msgid "Action"
+msgstr ""
+
+#: templates/reports/drive_backups.html:135
+msgid "Restore"
+msgstr ""
+
+#: templates/reports/drive_backups.html:144
+msgid "No backups yet."
+msgstr ""
+
+#: templates/reports/drive_backups.html:153
+msgid "Auto backup"
+msgstr ""
+
+#: templates/reports/drive_backups.html:157
+msgid "Running"
+msgstr ""
+
+#: templates/reports/drive_backups.html:161
+msgid "Stopped"
+msgstr ""
+
+#: templates/reports/drive_backups.html:167
+msgid ""
+"\n"
+"                Runs every 5 minutes. Keeps only <span class=\"fw-"
+"semibold\">3</span> files in Drive:\n"
+"                <span class=\"font-monospace\">latest</span>,\n"
+"                <span class=\"font-monospace\">backup-1</span>,\n"
+"                <span class=\"font-monospace\">backup-2</span>.\n"
+"                "
+msgstr ""
+
+#: templates/reports/drive_backups.html:177
+msgid "Drive not connected."
+msgstr ""
+
+#: templates/reports/drive_backups.html:178
+msgid "Connect Google Drive (offline access) to enable auto backups."
+msgstr ""
+
+#: templates/reports/drive_backups.html:194
+msgid "Disable"
+msgstr ""
+
+#: templates/reports/drive_backups.html:196
+msgid "Enable"
+msgstr ""
+
+#: templates/reports/import.html:13
+msgid "Import CSV"
+msgstr ""
+
+#: templates/reports/import.html:16
+msgid "Expected Header:"
+msgstr ""
+
+#: templates/reports/import.html:30
+msgid "Import completed."
+msgstr ""
+
+#: templates/reports/import.html:33
+msgid "Created:"
+msgstr ""
+
+#: templates/reports/import.html:36
+msgid "Updated:"
+msgstr ""
+
+#: templates/reports/import.html:47
+msgid "Import"
+msgstr ""
+
+#: templates/reports/import.html:52
+msgid ""
+"\n"
+"            Dedupe rule: if <span class=\"font-monospace\">id</span> exists "
+"for your account → update, otherwise create new.\n"
+"            "
+msgstr ""
+
+#: templates/reports/import.html:63
+msgid "Export"
+msgstr ""
+
+#: templates/reports/import.html:65
+msgid "Download your applications data or a CSV template."
+msgstr ""
+
+#: templates/reports/import.html:70
+msgid "Export CSV"
+msgstr ""
+
+#: templates/reports/import.html:74
+msgid "Export XLSX"
+msgstr ""
+
+#: templates/reports/import.html:78
+msgid "CSV template"
+msgstr ""
+
+#: templates/reports/import.html:83
+msgid ""
+"\n"
+"            Tip: for autosave/backups use\n"
+"            "
+msgstr ""
+
+#: templates/reports/import.html:87
+msgid "Cloud backups."
+msgstr ""
+
+#: templates/reports/statistics.html:12
+msgid "Total applications"
+msgstr ""
+
+#: templates/reports/statistics.html:22
+msgid "By status"
+msgstr ""
+
+#: templates/reports/statistics.html:23
+msgid "Current snapshot"
+msgstr ""
+
+#: templates/reports/statistics.html:32
+msgid "Count"
+msgstr ""
+
+#: templates/reports/statistics.html:49
+msgid "No applications yet. Add one to see stats."
+msgstr ""
+
+#: templates/reports/statistics.html:59
+msgid "What you can do"
+msgstr ""
+
+#: templates/reports/statistics.html:61
+msgid ""
+"Import and export your data locally in CSV/XLSX format for backups or "
+"analysis."
+msgstr ""
+
+#: templates/reports/statistics.html:62
+msgid ""
+"Import and export backups to restore or migrate your applications via Google "
+"Drive."
+msgstr ""
+
+#: templates/reports/statistics.html:63
+msgid "All statistics and data are user-isolated (per-user scope)."
+msgstr ""
