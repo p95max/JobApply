@@ -37,6 +37,14 @@
       </a>
     </th>
 
+    <th class="col-source">
+      <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "source" %}-source{% else %}source{% endif %}">
+        {% trans "Source" %}
+        {% if cur == "source" %}▲{% elif cur == "-source" %}▼{% endif %}
+      </a>
+    </th>
+
+
     <th class="col-location">
       <a class="sort-link" href="?{% if base_qs %}{{ base_qs }}&{% endif %}sort={% if cur == "location" %}-location{% else %}location{% endif %}">
         {% trans "Location" %}
@@ -68,7 +76,12 @@
     <td class="text-body-secondary col-applied">{{ app.applied_at|date:"d.m.Y" }}</td>
     <td class="fw-semibold col-title">{{ app.title }}</td>
     <td class="col-company">{{ app.company }}</td>
+    <td class="text-body-secondary col-source">
+      {{ app.get_source_display|default:app.source|default:"—" }}
+    </td>
     <td class="text-body-secondary col-location">{{ app.location }}</td>
+
+
 
     <td class="col-status">
       <select class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }}" data-id="{{ app.id }}">
