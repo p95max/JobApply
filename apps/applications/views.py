@@ -74,6 +74,7 @@ def list_applications(request):
             "company", "-company",
             "location", "-location",
             "status", "-status",
+            "source", "-source",
         }
         if sort not in allowed_sorts:
             sort = "-applied_at"
