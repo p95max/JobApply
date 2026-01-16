@@ -86,18 +86,16 @@ def list_applications(request):
         qs = qs.order_by(sort)
 
         if print_mode:
-            items = qs
+            items = qs.order_by(sort)
             page_obj = None
             paginator = None
-            per_page = PER_PAGE_DEFAULT
+            per_page = None
         else:
             try:
                 per_page = int(request.GET.get("per_page") or PER_PAGE_DEFAULT)
             except ValueError:
                 per_page = PER_PAGE_DEFAULT
-
             per_page = max(PER_PAGE_MIN, min(PER_PAGE_MAX, per_page))
-
             paginator = Paginator(qs, per_page)
             page_obj = paginator.get_page(request.GET.get("page"))
             items = page_obj.object_list

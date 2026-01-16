@@ -125,5 +125,11 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("click", function (e) {
   const btn = e.target.closest(".js-print");
   if (!btn) return;
-  window.print();
+
+  const printUrl = btn.dataset.printUrl || location.href + (location.href.includes('?') ? '&' : '?') + 'print=1';
+
+  const printWindow = window.open(printUrl, '_blank');
+  printWindow.onload = function() {
+    printWindow.print();
+  };
 });
