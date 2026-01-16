@@ -5,9 +5,13 @@
     <h1 class="h4 mb-1">{% trans "Your Applications" %}</h1>
   </div>
   <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-secondary js-print">
-      🖨️ {% trans "Print" %}
-    </button>
+
+  <button type="button" class="btn btn-outline-secondary js-print"
+          data-print-url="?{{ base_qs }}&print=1">
+    🖨️ Print
+  </button>
+
+
     <a class="btn btn-primary" href="{% url 'applications:create' %}">
       ✚ {% trans "Add application" %}
     </a>

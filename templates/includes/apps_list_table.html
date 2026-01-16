@@ -72,7 +72,14 @@
       <input class="form-check-input js-row-check" type="checkbox" value="{{ app.id }}" aria-label="{% trans 'Select row' %}">
     </td>
 
-    <td class="text-end text-body-secondary col-num">{{ forloop.counter }}</td>
+    <td class="text-end text-body-secondary col-num">
+        {% if page_obj %}
+          {{ page_obj.start_index|add:forloop.counter0 }}
+        {% else %}
+          {{ forloop.counter }}
+        {% endif %}
+      </td>
+
     <td class="text-body-secondary col-applied">{{ app.applied_at|date:"d.m.Y" }}</td>
     <td class="fw-semibold col-title">{{ app.title }}</td>
     <td class="col-company">{{ app.company }}</td>
@@ -98,7 +105,7 @@
     </td>
 
     <td class="text-body-secondary col-notes">
-      {{ app.notes|default_if_none:""|truncatechars:50 }}
+      {{ app.notes|default_if_none:"" }}
     </td>
 
     <td class="text-end no-print col-actions">

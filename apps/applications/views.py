@@ -40,6 +40,7 @@ def list_applications(request):
         status = (request.GET.get("status") or "").strip()
         month = (request.GET.get("month") or "").strip()
         sort = (request.GET.get("sort") or "-applied_at").strip()
+        print_mode = (request.GET.get("print") == "1")
 
         if q:
             qs = qs.filter(
@@ -59,7 +60,10 @@ def list_applications(request):
                     datetime(
                         year + (1 if mon == 12 else 0),
                         (1 if mon == 12 else mon + 1),
-                        1, 0, 0, 0
+                        1,
+                        0,
+                        0,
+                        0,
                     )
                 )
                 qs = qs.filter(applied_at__gte=start, applied_at__lt=end)
@@ -72,24 +76,31 @@ def list_applications(request):
             "updated_at", "-updated_at",
             "title", "-title",
             "company", "-company",
+            "source", "-source",
             "location", "-location",
             "status", "-status",
-            "source", "-source",
         }
         if sort not in allowed_sorts:
             sort = "-applied_at"
 
         qs = qs.order_by(sort)
 
-        try:
-            per_page = int(request.GET.get("per_page") or PER_PAGE_DEFAULT)
-        except ValueError:
+        if print_mode:
+            items = qs
+            page_obj = None
+            paginator = None
             per_page = PER_PAGE_DEFAULT
+        else:
+            try:
+                per_page = int(request.GET.get("per_page") or PER_PAGE_DEFAULT)
+            except ValueError:
+                per_page = PER_PAGE_DEFAULT
 
-        per_page = max(PER_PAGE_MIN, min(PER_PAGE_MAX, per_page))
+            per_page = max(PER_PAGE_MIN, min(PER_PAGE_MAX, per_page))
 
-        paginator = Paginator(qs, per_page)
-        page_obj = paginator.get_page(request.GET.get("page"))
+            paginator = Paginator(qs, per_page)
+            page_obj = paginator.get_page(request.GET.get("page"))
+            items = page_obj.object_list
 
         params = request.GET.copy()
         params.pop("page", None)
@@ -99,7 +110,7 @@ def list_applications(request):
             request,
             "applications/list.html",
             {
-                "items": page_obj.object_list,
+                "items": items,
                 "page_obj": page_obj,
                 "paginator": paginator,
                 "q": q,
@@ -108,6 +119,7 @@ def list_applications(request):
                 "sort": sort,
                 "per_page": per_page,
                 "base_qs": base_qs,
+                "print_mode": print_mode,
             },
         )
     except Exception:
@@ -126,6 +138,7 @@ def list_applications(request):
                 "sort": "-applied_at",
                 "per_page": PER_PAGE_DEFAULT,
                 "base_qs": "",
+                "print_mode": False,
             },
         )
 
