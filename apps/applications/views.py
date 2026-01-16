@@ -41,6 +41,7 @@ def list_applications(request):
         month = (request.GET.get("month") or "").strip()
         sort = (request.GET.get("sort") or "-applied_at").strip()
         print_mode = (request.GET.get("print") == "1")
+        all_apps_total = qs.count()
 
         if q:
             qs = qs.filter(
@@ -118,6 +119,8 @@ def list_applications(request):
                 "per_page": per_page,
                 "base_qs": base_qs,
                 "print_mode": print_mode,
+                "all_apps_total": all_apps_total,
+
             },
         )
     except Exception:
@@ -137,6 +140,7 @@ def list_applications(request):
                 "per_page": PER_PAGE_DEFAULT,
                 "base_qs": "",
                 "print_mode": False,
+                "all_apps_total": 0,
             },
         )
 
