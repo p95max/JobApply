@@ -1,116 +1,141 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static %}
+{% load i18n %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/interviews.css' %}">
+  <link rel="stylesheet" href="{% static 'css/print.css' %}">
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{% static 'js/interviews_list.js' %}"></script>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div id="interviews-page">
 
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h4 mb-1">{% trans "Your Interviews" %}</h1>
-    </div>
+  <div class="container mt-4">
 
-    <div class="d-flex gap-2">
-      <a class="btn btn-primary" href="{% url 'interviews:create' %}">
-        ✚ {% trans "Schedule interview" %}
-      </a>
-    </div>
-  </div>
-
-  {% if items %}
-    <div class="card border-0 shadow-sm glass-card">
-      <div class="table-wrap">
-        <table class="table table-hover align-middle mb-0 w-100">
-
-          <thead class="table-light">
-            <tr>
-              <th>{% trans "Time" %}</th>
-              <th>{% trans "Application" %}</th>
-              <th>{% trans "Status" %}</th>
-              <th>{% trans "Location" %}</th>
-              <th>{% trans "Notes" %}</th>
-              <th class="text-end"></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for it in items %}
-              <tr>
-                <td>
-                  <div class="fw-semibold">
-                    {{ it.starts_at|date:"H:i - d.m.Y" }}
-                  </div>
-                  <div class="text-body-secondary small">
-                    {{ it.ends_at|date:"H:i - d.m.Y" }}
-                  </div>
-                </td>
-
-                <td>
-                  <div class="fw-semibold">
-                    {{ it.application.title }}
-                  </div>
-                  <div class="text-body-secondary small">
-                    {{ it.application.company }}{% if it.application.location %} • {{ it.application.location }}{% endif %}
-                  </div>
-                </td>
-
-                <td>
-                  <select
-                    class="form-select form-select-sm js-interview-status status-select status-int-{{ it.status }}"
-                    data-id="{{ it.id }}"
-                  >
-                    <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>{% trans "Scheduled" %}</option>
-                    <option value="done" {% if it.status == "done" %}selected{% endif %}>{% trans "Done" %}</option>
-                    <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
-                  </select>
-                </td>
-
-                <td class="text-body-secondary">
-                  {{ it.location|default:"—" }}
-                </td>
-
-                <td class="text-body-secondary">
-                  {% if it.notes %}
-                    {{ it.notes|truncatechars:80 }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
-
-                <td class="text-end">
-                  <div class="btn-group">
-                    <a class="btn btn-sm btn-outline-primary"
-                       href="{% url 'interviews:edit' it.pk %}">
-                      ✏️ {% trans "Edit" %}
-                    </a>
-                    <a class="btn btn-sm btn-outline-danger"
-                       href="{% url 'interviews:delete' it.pk %}">
-                      🗑️ {% trans "Delete" %}
-                    </a>
-                  </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-
-        </table>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div>
+        <h1 class="h4 mb-1">{% trans "Your Interviews" %}</h1>
       </div>
-    </div>
-  {% else %}
-    <div class="card border-0 shadow-sm glass-card">
-      <div class="card-body text-center py-5">
-        <h2 class="h5 mb-2">{% trans "No interviews scheduled" %}</h2>
-        <p class="text-body-secondary mb-3">
-          {% blocktrans %}
-          You can schedule an interview only for applications with status
-          <span class="badge bg-secondary">Interview</span>.
-          {% endblocktrans %}
-        </p>
+
+      <div class="d-flex gap-2">
         <a class="btn btn-primary" href="{% url 'interviews:create' %}">
           ✚ {% trans "Schedule interview" %}
         </a>
       </div>
     </div>
-  {% endif %}
+
+    {% if items %}
+      <div class="card border-0 shadow-sm glass-card">
+        <div class="table-wrap">
+          <table class="table table-hover align-middle mb-0 interviews-table">
+
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Time" %}</th>
+                <th>{% trans "Application" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Location" %}</th>
+                <th>{% trans "Notes" %}</th>
+                <th class="text-end"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for it in items %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">
+                      {{ it.starts_at|date:"H:i - d.m.Y" }}
+                    </div>
+                    <div class="text-body-secondary small">
+                      {{ it.ends_at|date:"H:i - d.m.Y" }}
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="fw-semibold">
+                      {{ it.application.title }}
+                    </div>
+                    <div class="text-body-secondary small">
+                      {{ it.application.company }}{% if it.application.location %} • {{ it.application.location }}{% endif %}
+                    </div>
+                  </td>
+
+              <td class="col-status">
+                <select
+                    class="form-select form-select-sm no-print js-interview-status int-status-select status-int-{{ it.status }}"
+                    data-id="{{ it.id }}">
+                  <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>{% trans "Scheduled" %}</option>
+                  <option value="done" {% if it.status == "done" %}selected{% endif %}>{% trans "Done" %}</option>
+                  <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
+                </select>
+
+                <span class="print-only fw-medium status-badge status-int-{{ it.status }}">
+                  {{ it.get_status_display|default:it.status|title }}
+                </span>
+              </td>
+
+
+
+                <span class="print-only fw-medium status-badge status-int-{{ it.status }}">
+                  {{ it.get_status_display|default:it.status|title }}
+                </span>
+              </td>
+
+
+                  <td class="text-body-secondary">
+                    {{ it.location|default:"—" }}
+                  </td>
+
+                  <td class="text-body-secondary">
+                    {% if it.notes %}
+                      {{ it.notes|truncatechars:80 }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td class="text-end">
+                    <div class="btn-group">
+                      <a class="btn btn-sm btn-outline-primary"
+                         href="{% url 'interviews:edit' it.pk %}">
+                        ✏️ {% trans "Edit" %}
+                      </a>
+                      <a class="btn btn-sm btn-outline-danger"
+                         href="{% url 'interviews:delete' it.pk %}">
+                        🗑️ {% trans "Delete" %}
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="card border-0 shadow-sm glass-card">
+        <div class="card-body text-center py-5">
+          <h2 class="h5 mb-2">{% trans "No interviews scheduled" %}</h2>
+          <p class="text-body-secondary mb-3">
+            {% blocktrans %}
+            You can schedule an interview only for applications with status
+            <span class="badge bg-secondary">Interview</span>.
+            {% endblocktrans %}
+          </p>
+          <a class="btn btn-primary" href="{% url 'interviews:create' %}">
+            ✚ {% trans "Schedule interview" %}
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
 
 </div>
 {% endblock %}

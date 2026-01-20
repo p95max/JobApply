@@ -1,0 +1,86 @@
+#interviews-page .table-wrap {
+  overflow-x: hidden;
+}
+
+#interviews-page table {
+  width: 100%;
+  table-layout: auto !important;
+}
+
+#interviews-page th,
+#interviews-page td {
+  text-align: left !important;
+  padding-left: 12px !important;
+  white-space: normal !important;
+  word-wrap: break-word;
+  vertical-align: middle;
+}
+
+#interviews-page .js-interview-status.int-status-select {
+  --st-color: #6c757d;
+  --st-bg: rgba(108, 117, 125, 0.08);
+  border: 2px solid var(--st-color) !important;
+  background-color: var(--st-bg) !important;
+  border-radius: 999px;
+  padding-left: 10px;
+  padding-right: 28px;
+  color: var(--st-color) !important;
+}
+
+#interviews-page .js-interview-status.int-status-select option {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+#interviews-page .status-int-scheduled {
+  --st-color: #0d6efd;
+  --st-bg: rgba(13, 110, 253, 0.10);
+}
+
+#interviews-page .status-int-done {
+  --st-color: #198754;
+  --st-bg: rgba(25, 135, 84, 0.10);
+}
+
+#interviews-page .status-int-canceled {
+  --st-color: #dc3545;
+  --st-bg: rgba(220, 53, 69, 0.10);
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: inline !important;
+  }
+}
+
+.status-int-planned,
+.status-int-plan,
+.status-int-schedule,
+.status-int-scheduled {
+  --st-color: #0d6efd;
+  --st-bg: rgba(13, 110, 253, 0.10);
+}
+
+.status-int-complete,
+.status-int-completed,
+.status-int-finished,
+.status-int-done {
+  --st-color: #198754;
+  --st-bg: rgba(25, 135, 84, 0.10);
+}
+
+.status-int-cancelled,
+.status-int-canceled,
+.status-int-no_show,
+.status-int-noshow {
+  --st-color: #dc3545;
+  --st-bg: rgba(220, 53, 69, 0.10);
+}
