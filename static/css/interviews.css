@@ -20,11 +20,12 @@
   --st-color: #6c757d;
   --st-bg: rgba(108, 117, 125, 0.08);
   border: 2px solid var(--st-color) !important;
-  background-color: var(--st-bg) !important;
+  background: var(--st-bg) !important;
   border-radius: 999px;
   padding-left: 10px;
   padding-right: 28px;
   color: var(--st-color) !important;
+  background-image: none !important;
 }
 
 #interviews-page .js-interview-status.int-status-select option {
@@ -32,19 +33,38 @@
   color: #ffffff !important;
 }
 
-#interviews-page .status-int-scheduled {
+/* Основные состояния — применяются к .js-interview-status + .status-int-xxx */
+#interviews-page .js-interview-status.status-int-scheduled,
+#interviews-page .js-interview-status.status-int-planned,
+#interviews-page .js-interview-status.status-int-plan,
+#interviews-page .js-interview-status.status-int-schedule {
   --st-color: #0d6efd;
   --st-bg: rgba(13, 110, 253, 0.10);
+  border-color: var(--st-color) !important;
+  background: var(--st-bg) !important;
+  color: var(--st-color) !important;
 }
 
-#interviews-page .status-int-done {
+#interviews-page .js-interview-status.status-int-done,
+#interviews-page .js-interview-status.status-int-complete,
+#interviews-page .js-interview-status.status-int-completed,
+#interviews-page .js-interview-status.status-int-finished {
   --st-color: #198754;
   --st-bg: rgba(25, 135, 84, 0.10);
+  border-color: var(--st-color) !important;
+  background: var(--st-bg) !important;
+  color: var(--st-color) !important;
 }
 
-#interviews-page .status-int-canceled {
+#interviews-page .js-interview-status.status-int-canceled,
+#interviews-page .js-interview-status.status-int-cancelled,
+#interviews-page .js-interview-status.status-int-no_show,
+#interviews-page .js-interview-status.status-int-noshow {
   --st-color: #dc3545;
   --st-bg: rgba(220, 53, 69, 0.10);
+  border-color: var(--st-color) !important;
+  background: var(--st-bg) !important;
+  color: var(--st-color) !important;
 }
 
 .print-only {
@@ -59,28 +79,4 @@
   .print-only {
     display: inline !important;
   }
-}
-
-.status-int-planned,
-.status-int-plan,
-.status-int-schedule,
-.status-int-scheduled {
-  --st-color: #0d6efd;
-  --st-bg: rgba(13, 110, 253, 0.10);
-}
-
-.status-int-complete,
-.status-int-completed,
-.status-int-finished,
-.status-int-done {
-  --st-color: #198754;
-  --st-bg: rgba(25, 135, 84, 0.10);
-}
-
-.status-int-cancelled,
-.status-int-canceled,
-.status-int-no_show,
-.status-int-noshow {
-  --st-color: #dc3545;
-  --st-bg: rgba(220, 53, 69, 0.10);
 }

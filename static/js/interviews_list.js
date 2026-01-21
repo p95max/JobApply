@@ -25,6 +25,10 @@ document.addEventListener("change", async (e) => {
     "status-int-canceled"
   );
   el.classList.add(`status-int-${status}`);
+
+  if (!el.classList.contains("int-status-select")) {
+    el.classList.add("int-status-select");
+  }
 });
 
 function getCookie(name) {

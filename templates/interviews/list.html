@@ -65,19 +65,20 @@
                     </div>
                   </td>
 
-              <td class="col-status">
-                <select
-                    class="form-select form-select-sm no-print js-interview-status int-status-select status-int-{{ it.status }}"
-                    data-id="{{ it.id }}">
-                  <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>{% trans "Scheduled" %}</option>
-                  <option value="done" {% if it.status == "done" %}selected{% endif %}>{% trans "Done" %}</option>
-                  <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
-                </select>
+            <td class="col-status">
+              <select
+                class="form-select form-select-sm no-print js-interview-status int-status-select status-int-{{ it.status }}"
+                data-id="{{ it.id }}">
+                <option value="scheduled" {% if it.status == "scheduled" %}selected{% endif %}>{% trans "Scheduled" %}</option>
+                <option value="done"     {% if it.status == "done"     %}selected{% endif %}>{% trans "Done"     %}</option>
+                <option value="canceled" {% if it.status == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
+              </select>
 
-                <span class="print-only fw-medium status-badge status-int-{{ it.status }}">
-                  {{ it.get_status_display|default:it.status|title }}
-                </span>
-              </td>
+              <span class="print-only fw-medium status-badge status-int-{{ it.status }}">
+                {{ it.get_status_display|default:it.status|title }}
+              </span>
+            </td>
+
 
 
 
