@@ -53,5 +53,6 @@ class GmailMessage(models.Model):
             models.Index(fields=["user", "detected_type"]),
         ]
 
+
     def __str__(self) -> str:
         return f"GmailMessage({self.message_id}, {self.detected_type})"
