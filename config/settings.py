@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.applications",
     "apps.interviews",
     "apps.reports",
+    "apps.gmail_stats",
 ]
 
 MIDDLEWARE = [
@@ -144,13 +145,19 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 # Google-only (UI + flow)
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "SCOPE": ["profile", "email", "https://www.googleapis.com/auth/drive.file"],
+        "SCOPE": [
+            "profile",
+            "email",
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/gmail.readonly",
+        ],
         "AUTH_PARAMS": {
             "access_type": "offline",
             "prompt": "consent",
         },
     }
 }
+
 
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
