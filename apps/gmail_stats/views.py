@@ -1,21 +1,24 @@
 from __future__ import annotations
 
-from apps.gmail_stats.models import GmailMessage
-
 from datetime import timedelta
-
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
 
+from apps.gmail_stats.models import GmailMessage
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
 
 
+@login_required
+def gmail_dashboard(request):
+    return render(request, "gmail_stats/dashboard.html")
+
 
 @login_required
-def gmail_stats(request):
+def gmail_stats_api(request):
     days = int(request.GET.get("days", "180"))
     since = timezone.now() - timedelta(days=days)
 
@@ -36,14 +39,18 @@ def gmail_stats(request):
         }
     )
 
+
 @login_required
-def gmail_sync_view(request):
+def gmail_sync_api(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
     days = int(request.GET.get("days", "180"))
 
     creds = get_google_credentials_for_user(request.user)
     if not creds:
         return JsonResponse(
-            {"error": "Google Gmail not connected (missing token or refresh token). Reconnect Google with gmail.readonly scope."},
+            {"error": "Google Gmail not connected. Reconnect Google with gmail.readonly scope."},
             status=403,
         )
 
@@ -53,12 +60,9 @@ def gmail_sync_view(request):
         gmail.list_message_ids(query=f"newer_than:{min(days, 7)}d", max_results=1)
     except Exception as e:
         return JsonResponse(
-            {"error": f"Gmail access failed: {e}. Usually means missing gmail.readonly scope -> reconnect."},
+            {"error": f"Gmail access failed: {e}. Usually missing gmail.readonly -> reconnect."},
             status=403,
         )
-
-    if request.method != "POST":
-        return JsonResponse({"error": "POST only"}, status=405)
 
     res = sync_gmail_messages_for_user(
         user=request.user,
@@ -67,4 +71,3 @@ def gmail_sync_view(request):
         max_results_each=500,
     )
     return JsonResponse({"ok": True, "result": res})
-

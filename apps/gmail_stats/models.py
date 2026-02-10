@@ -47,14 +47,6 @@ class GmailMessage(models.Model):
     confidence = models.PositiveSmallIntegerField(default=0)
     is_user_verified = models.BooleanField(default=False)
 
-    application = models.ForeignKey(
-        "applications.Application",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="gmail_messages",
-    )
-
     class Meta:
         indexes = [
             models.Index(fields=["user", "received_at"]),

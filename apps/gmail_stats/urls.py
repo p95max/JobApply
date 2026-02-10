@@ -1,7 +1,10 @@
 from django.urls import path
-from apps.gmail_stats.views import gmail_stats, gmail_sync_view
+from apps.gmail_stats import views
 
 urlpatterns = [
-    path("stats/gmail/", gmail_stats, name="gmail_stats"),
-    path("stats/gmail/sync/", gmail_sync_view, name="gmail_sync"),
+    path("gmail/", views.gmail_dashboard, name="gmail_dashboard"),
+
+    path("gmail/api/stats/", views.gmail_stats_api, name="gmail_stats_api"),
+    path("gmail/api/sync/", views.gmail_sync_api, name="gmail_sync_api"),
 ]
+
