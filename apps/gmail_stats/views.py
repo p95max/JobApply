@@ -57,6 +57,9 @@ def gmail_sync_view(request):
             status=403,
         )
 
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
     res = sync_gmail_messages_for_user(
         user=request.user,
         gmail_client=gmail,

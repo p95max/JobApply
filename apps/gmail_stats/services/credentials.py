@@ -42,7 +42,13 @@ def get_google_credentials_for_user(user) -> Optional[Credentials]:
     if not app:
         return None
 
+
+
     access_token = token.token
+
+    if not access_token:
+        return None
+
     refresh_token = token.token_secret
     expires_at = token.expires_at
 
@@ -69,8 +75,9 @@ def get_google_credentials_for_user(user) -> Optional[Credentials]:
         token_uri=GOOGLE_TOKEN_URL,
         client_id=app.client_id,
         client_secret=app.secret,
-        scopes=[],
+        scopes=None,
     )
+
     return creds
 
 
