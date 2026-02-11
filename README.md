@@ -20,6 +20,8 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 
 - **Google-only sign-in** (django-allauth)
 - **Printable & PDF-Ready Applications Dashboard with Filters and Sorting**
+- **The application integrates with Gmail to automatically sync, classify,
+    and calculate job-related responses such as rejections, interview invitations, and acknowledgements for analytics.**
 - **Optional Google Drive connection**
   - Create `JobApply/` folder (and optional `backups/` subfolder)
   - Upload backups (CSV/XLSX)
@@ -48,9 +50,11 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 - **Poetry** for dependency management (installed in container)
 - **Pytest**
 - Google integrations:
-  - **django-allauth** (OAuth)
+  - **django-allauth** for OAuth authentication
   - **Google Drive API** via `google-api-python-client`
-  - **Cloudflare Turnstile** (pre-auth anti-bot protection)
+  - **Gmail API** via `google-api-python-client` (read-only analytics & sync)
+  - **Cloudflare Turnstile** for pre-authentication bot protection
+  - 
 ---
 
 ## Quick start (Docker, dev mode)
@@ -184,9 +188,10 @@ This project is intentionally Google-first:
 
 ## Google Drive integration (flagship feature)
 
-### 1) Enable the Google Drive API (mandatory for backups)
+### 1) Enable the Google Drive/Gmail API (mandatory for backups and analytics)
 In Google Cloud Console:
-- **APIs & Services → Library → Google Drive API → Enable**
+- **Your Project → APIs & Services → Library → Google Drive API → Enable**
+- **Your Project → APIs & Services → Library → Gmail API → Enable**
 
 If Drive API is not enabled, you can still sign in, but Drive operations will fail.
 
@@ -224,6 +229,28 @@ JobApply can run **automatic backups to Google Drive** on a schedule.
 - Requires Google Drive connection with **offline access** (`refresh_token`) and the **Drive API enabled** in Google Cloud Console
 
 > The feature is optional and controlled via the **Cloud Backups** toggle in the UI.
+
+---
+
+### Gmail Statistics (Read-Only Sync)
+
+JobApply can automatically analyze your Gmail inbox to calculate job-related responses.
+
+- **Manual or on-demand sync** via UI or management command
+- Fetches emails using the **Gmail API (read-only)**
+- Stores message metadata locally for fast analytics
+- Automatically classifies emails into:
+  - `Rejection`
+  - `Interview invitation`
+  - `Auto-acknowledgement`
+  - `General response`
+  - `Noise`
+- Provides aggregated statistics by selected time period
+- **Per-user isolation:** each user syncs and analyzes only their own mailbox
+- Requires Google connection with **gmail.readonly scope** and the **Gmail API enabled** in Google Cloud Console
+
+> The feature does not send, modify, or delete emails — all operations are strictly read-only.
+
 
 ---
 
