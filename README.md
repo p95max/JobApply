@@ -1,8 +1,12 @@
 # JobApply
 
+---
+
 **JobApply** is a Django-based job application tracker built around a **Google-first workflow**:
+
 - **Google OAuth** is the only authentication method (no passwords).
-- **Google Drive backups** are the flagship integration (CSV/XLSX export + restore-ready storage).
+- **Google Drive backups** provide automated, rotation-based cloud backups.
+- **Gmail Statistics (read-only)** enables automated sync and classification of job-related email responses.
 - **Google Calendar integration** is planned next (roadmap).
 
 The project is designed for **dev-friendly, one-command startup via Docker Compose**.
