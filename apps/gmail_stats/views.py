@@ -10,6 +10,7 @@ from apps.gmail_stats.models import GmailMessage
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_stats.models import GmailSyncState
 
 
 @login_required
@@ -28,16 +29,16 @@ def gmail_stats_api(request):
     rejections = qs.filter(detected_type="rejection").count()
     invites = qs.filter(detected_type="invite").count()
     auto_ack = qs.filter(detected_type="auto_ack").count()
+    state = GmailSyncState.objects.filter(user=request.user).first()
 
-    return JsonResponse(
-        {
-            "days": days,
-            "responses": responses,
-            "rejections": rejections,
-            "invites": invites,
-            "auto_ack": auto_ack,
-        }
-    )
+    return JsonResponse({
+        "days": days,
+        "responses": responses,
+        "rejections": rejections,
+        "invites": invites,
+        "auto_ack": auto_ack,
+        "last_synced_at": state.last_synced_at.isoformat() if state and state.last_synced_at else None,
+    })
 
 
 @login_required

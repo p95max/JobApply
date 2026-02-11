@@ -1,6 +1,3 @@
-console.log("GMAIL_STATS_JS_LOADED_VERSION=2026-02-11");
-
-
 document.addEventListener("DOMContentLoaded", () => {
   const daysSelect = document.getElementById("daysSelect");
   const btnRefresh = document.getElementById("btnRefresh");
@@ -34,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const STATS_URL = (cfg.dataset.statsUrl || "").trim();
   const SYNC_URL = (cfg.dataset.syncUrl || "").trim();
 
-  console.log("[gmail_stats] statsUrl=", STATS_URL, "syncUrl=", SYNC_URL);
 
   if (!STATS_URL || STATS_URL.includes("{%")) {
     showAlert(
@@ -99,10 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const r = data.result || {};
-      if (syncStatusText) {
-        syncStatusText.textContent =
-          `Synced. Created: ${r.created ?? 0}, skipped: ${r.skipped_existing ?? 0}, candidates: ${r.fetched_candidates ?? 0}.`;
-      }
+        if (syncStatusText) {
+          if (data.last_synced_at) {
+            const dt = new Date(data.last_synced_at);
+            syncStatusText.textContent = "Last sync: " + dt.toLocaleString();
+          } else {
+            syncStatusText.textContent = "Not synced yet.";
+          }
+        }
+
 
       await loadStats();
       showAlert("Sync completed.", "success");
