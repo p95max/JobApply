@@ -1,6 +1,8 @@
 from django.urls import path
 from apps.gmail_stats import views
 
+app_name = "gmail_stats"
+
 urlpatterns = [
     path("gmail/", views.gmail_dashboard, name="gmail_dashboard"),
 
