@@ -105,6 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
+
+
       await loadStats();
       showAlert("Sync completed.", "success");
     } catch (e) {

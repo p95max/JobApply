@@ -6,11 +6,10 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from apps.gmail_stats.models import GmailMessage
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.models import GmailSyncState
+from apps.gmail_stats.models import GmailMessage, GmailSyncState
 
 
 @login_required
@@ -29,7 +28,9 @@ def gmail_stats_api(request):
     rejections = qs.filter(detected_type="rejection").count()
     invites = qs.filter(detected_type="invite").count()
     auto_ack = qs.filter(detected_type="auto_ack").count()
+
     state = GmailSyncState.objects.filter(user=request.user).first()
+    last_synced_at = state.last_synced_at.isoformat() if state and state.last_synced_at else None
 
     return JsonResponse({
         "days": days,
@@ -37,7 +38,7 @@ def gmail_stats_api(request):
         "rejections": rejections,
         "invites": invites,
         "auto_ack": auto_ack,
-        "last_synced_at": state.last_synced_at.isoformat() if state and state.last_synced_at else None,
+        "last_synced_at": last_synced_at,
     })
 
 
