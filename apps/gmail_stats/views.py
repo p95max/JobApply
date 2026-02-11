@@ -58,11 +58,21 @@ def gmail_sync_api(request):
 
     try:
         gmail.list_message_ids(query=f"newer_than:{min(days, 7)}d", max_results=1)
+    except RuntimeError as e:
+        msg = str(e)
+        if "accessNotConfigured" in msg or "Gmail API has not been used" in msg:
+            return JsonResponse(
+                {"error": "Gmail API is disabled for your Google Cloud project. Enable Gmail API in Google Cloud Console and retry."},
+                status=403,
+            )
+        if "insufficientPermissions" in msg:
+            return JsonResponse(
+                {"error": "Missing permission (gmail.readonly). Reconnect Google and grant Gmail access."},
+                status=403,
+            )
+        return JsonResponse({"error": f"Gmail access failed: {msg}"}, status=403)
     except Exception as e:
-        return JsonResponse(
-            {"error": f"Gmail access failed: {e}. Usually missing gmail.readonly -> reconnect."},
-            status=403,
-        )
+        return JsonResponse({"error": f"Gmail access failed: {e}"}, status=403)
 
     res = sync_gmail_messages_for_user(
         user=request.user,
@@ -71,3 +81,4 @@ def gmail_sync_api(request):
         max_results_each=500,
     )
     return JsonResponse({"ok": True, "result": res})
+

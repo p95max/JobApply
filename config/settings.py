@@ -159,6 +159,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 
+
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
 

@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from apps.accounts.views_turnstile import google_login_gate
 from allauth.socialaccount.providers.google.views import oauth2_login
-from django.conf.urls.i18n import i18n_patterns
+from django.conf.urls.static import static
 
 
 from config import settings
@@ -42,3 +42,6 @@ urlpatterns = [
 
 if admin_path:
     urlpatterns.append(path(admin_path, admin.site.urls))
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
