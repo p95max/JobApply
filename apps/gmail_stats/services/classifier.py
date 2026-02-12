@@ -16,7 +16,7 @@ def _norm(text: str) -> str:
 
 def classify(subject: str, snippet: str) -> Classified:
     """
-    Heuristic classifier. No ML. Good enough for MVP.
+    Heuristic classifier. No ML.
     Returns (type, confidence 0..100).
     """
     text = _norm(f"{subject} {snippet}")
