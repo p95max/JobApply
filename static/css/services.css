@@ -1,0 +1,23 @@
+.services-tabs .nav-link {
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.services-tabs .nav-link:hover {
+  color: var(--bs-body-color);
+  background: transparent;
+}
+
+.services-tabs .nav-link.active {
+  color: var(--bs-body-color);
+  border-bottom: 2px solid var(--bs-primary);
+  background: transparent;
+}
+
+.services-tabs {
+  border-bottom: 1px solid var(--bs-border-color);
+}

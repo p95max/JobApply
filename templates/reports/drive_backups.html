@@ -4,17 +4,9 @@
 {% block content %}
 <div class="container mt-4" style="max-width: 920px;">
 
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-      <h1 class="h4 mb-1">{% trans "Cloud backups" %}</h1>
-      <div class="text-muted small">{% trans "via Google Drive" %}</div>
-    </div>
 
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="{% url 'reports:statistics' %}">📊 {% trans "Statistics" %}</a>
-      <a class="btn btn-outline-secondary" href="{% url 'reports:import' %}">⬆ {% trans "Local import/export" %}</a>
-    </div>
-  </div>
+    {% include "reports/_nav.html" %}
+
 
   {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
