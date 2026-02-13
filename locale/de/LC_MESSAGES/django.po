@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: JobApply\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-14 21:48+0100\n"
+"POT-Creation-Date: 2026-02-13 19:38+0100\n"
 "PO-Revision-Date: 2026-01-14 21:45+0100\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
@@ -17,15 +17,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/applications/models.py:10 templates/applications/detail.html:33
-#: templates/includes/apps_list_header.html:40
+#: apps/applications/models.py:10 code.txt:5085 code.txt:5347 code.txt:5420
+#: code.txt:5494 templates/applications/detail.html:33
+#: templates/includes/apps_list_header.html:50
 #: templates/includes/apps_list_table.html:21
-#: templates/includes/apps_list_table.html:75
+#: templates/includes/apps_list_table.html:95
 msgid "Applied"
 msgstr "Beworben"
 
-#: apps/applications/models.py:11 templates/includes/apps_list_header.html:41
-#: templates/includes/apps_list_table.html:76
+#: apps/applications/models.py:11 code.txt:5348 code.txt:5495
+#: templates/includes/apps_list_header.html:51
+#: templates/includes/apps_list_table.html:96
 msgid "HR Screen"
 msgstr "HR-Vorauswahl"
 
@@ -33,18 +35,21 @@ msgstr "HR-Vorauswahl"
 msgid "Recruiter replied"
 msgstr "Rückmeldung vom Recruiter"
 
-#: apps/applications/models.py:13 templates/includes/apps_list_header.html:42
-#: templates/includes/apps_list_table.html:77
+#: apps/applications/models.py:13 code.txt:5349 code.txt:5496
+#: templates/includes/apps_list_header.html:52
+#: templates/includes/apps_list_table.html:97
 msgid "Interview"
 msgstr "Interview"
 
-#: apps/applications/models.py:14 templates/includes/apps_list_header.html:43
-#: templates/includes/apps_list_table.html:78
+#: apps/applications/models.py:14 code.txt:5350 code.txt:5497
+#: templates/includes/apps_list_header.html:53
+#: templates/includes/apps_list_table.html:98
 msgid "Offer"
 msgstr "Angebot"
 
-#: apps/applications/models.py:15 templates/includes/apps_list_header.html:44
-#: templates/includes/apps_list_table.html:79
+#: apps/applications/models.py:15 code.txt:5351 code.txt:5498
+#: templates/includes/apps_list_header.html:54
+#: templates/includes/apps_list_table.html:99
 msgid "Rejected"
 msgstr "Abgelehnt"
 
@@ -52,53 +57,54 @@ msgstr "Abgelehnt"
 msgid "Archived"
 msgstr "Archiviert"
 
-#: apps/interviews/models.py:12 templates/interviews/list.html:61
+#: apps/interviews/models.py:12 code.txt:5861 templates/interviews/list.html:72
 msgid "Scheduled"
 msgstr "Geplant"
 
-#: apps/interviews/models.py:13 templates/interviews/list.html:62
+#: apps/interviews/models.py:13 code.txt:5862 templates/interviews/list.html:73
 msgid "Done"
 msgstr "Abgeschlossen"
 
-#: apps/interviews/models.py:14 templates/interviews/list.html:63
+#: apps/interviews/models.py:14 code.txt:5863 templates/interviews/list.html:74
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: config/settings.py:111 templates/includes/navbar.html:27
-#: templates/includes/navbar.html:49
-msgid "English"
-msgstr "Englisch"
+#: code.txt:4813 code.txt:5539 templates/base.html:7
+#: templates/includes/navbar.html:10
+msgid "JobApply"
+msgstr "JobApply"
 
-#: config/settings.py:112 templates/includes/navbar.html:27
-#: templates/includes/navbar.html:49
-msgid "Deutsch"
-msgstr "Deutsch"
+#: code.txt:4838 templates/base.html:33
+msgid "Close"
+msgstr "Schließen"
 
-#: templates/account/logout.html:10 templates/account/logout.html:25
+#: code.txt:4891 code.txt:4906 templates/account/logout.html:10
+#: templates/account/logout.html:25
 msgid "Sign out"
 msgstr "Abmelden"
 
-#: templates/account/logout.html:13
+#: code.txt:4894 templates/account/logout.html:13
 msgid "Are you sure you want to sign out?"
 msgstr "Möchten Sie sich wirklich abmelden?"
 
+#: code.txt:4909 code.txt:5039 code.txt:5219 code.txt:5693 code.txt:5767
 #: templates/account/logout.html:28 templates/applications/delete.html:28
 #: templates/applications/form.html:87 templates/interviews/delete.html:34
 #: templates/interviews/form.html:61
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: templates/account/logout.html:34
+#: code.txt:4915 templates/account/logout.html:34
 msgid "Tip: if you sign out, you’ll need Google OAuth to sign in again."
 msgstr ""
 "Hinweis: Nach der Abmeldung ist die Anmeldung erneut über Google OAuth "
 "erforderlich."
 
-#: templates/accounts/consent.html:8
+#: code.txt:4934 templates/accounts/consent.html:8
 msgid "Consent"
 msgstr "Zustimmung"
 
-#: templates/accounts/consent.html:11
+#: code.txt:4937 templates/accounts/consent.html:11
 #, fuzzy
 #| msgid ""
 #| "- To use JobApply, you must confirm that you agree to grant access to "
@@ -137,120 +143,131 @@ msgstr ""
 "- Die Administration ist nicht verantwortlich für die Speicherung und den "
 "Schutz Ihrer personenbezogenen Daten."
 
-#: templates/accounts/consent.html:26
+#: code.txt:4952 templates/accounts/consent.html:26
 msgid "I agree"
 msgstr "Ich stimme zu"
 
-#: templates/accounts/consent.html:31
+#: code.txt:4957 code.txt:4993 code.txt:4999 templates/accounts/consent.html:31
 #: templates/accounts/google_login_gate.html:24
 #: templates/accounts/google_login_gate.html:30
 msgid "Continue"
 msgstr "Weiter"
 
-#: templates/accounts/google_login_gate.html:10
+#: code.txt:4979 templates/accounts/google_login_gate.html:10
 msgid "Continue with Google"
 msgstr "Mit Google fortfahren"
 
-#: templates/accounts/google_login_gate.html:12
+#: code.txt:4981 templates/accounts/google_login_gate.html:12
 msgid "Complete the verification to proceed."
 msgstr "Bitte schließen Sie die Verifizierung ab, um fortzufahren."
 
-#: templates/applications/delete.html:8
+#: code.txt:5019 templates/applications/delete.html:8
 msgid "Delete application"
 msgstr "Bewerbung löschen"
 
-#: templates/applications/delete.html:11 templates/interviews/delete.html:11
+#: code.txt:5022 code.txt:5670 templates/applications/delete.html:11
+#: templates/interviews/delete.html:11
 msgid "This action cannot be undone."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
-#: templates/applications/delete.html:25 templates/interviews/delete.html:31
+#: code.txt:5036 code.txt:5690 templates/applications/delete.html:25
+#: templates/interviews/delete.html:31
 msgid "Yes, delete"
 msgstr "Ja, löschen"
 
+#: code.txt:5069 code.txt:5158 code.txt:5719
 #: templates/applications/detail.html:17 templates/applications/form.html:26
 #: templates/interviews/form.html:13
 msgid "Back"
 msgstr "Zurück"
 
+#: code.txt:5072 code.txt:5513 code.txt:5896
 #: templates/applications/detail.html:20
-#: templates/includes/apps_list_table.html:94 templates/interviews/list.html:83
+#: templates/includes/apps_list_table.html:114
+#: templates/interviews/list.html:107
 msgid "Edit"
 msgstr "Bearbeiten"
 
+#: code.txt:5075 code.txt:5214 code.txt:5516 code.txt:5900
 #: templates/applications/detail.html:23 templates/applications/form.html:82
-#: templates/includes/apps_list_table.html:97 templates/interviews/list.html:87
+#: templates/includes/apps_list_table.html:117
+#: templates/interviews/list.html:111
 msgid "Delete"
 msgstr "Löschen"
 
-#: templates/applications/detail.html:30
+#: code.txt:5082 templates/applications/detail.html:30
 msgid "Details"
 msgstr "Details"
 
-#: templates/applications/detail.html:38
+#: code.txt:5090 templates/applications/detail.html:38
 msgid "HR reply"
 msgstr "HR-Rückmeldung"
 
-#: templates/applications/detail.html:43
+#: code.txt:5095 templates/applications/detail.html:43
 msgid "Last update"
 msgstr "Letzte Aktualisierung"
 
+#: code.txt:5100 code.txt:5343 code.txt:5456 code.txt:5829 code.txt:6314
 #: templates/applications/detail.html:48
-#: templates/includes/apps_list_header.html:36
-#: templates/includes/apps_list_table.html:49 templates/interviews/list.html:28
+#: templates/includes/apps_list_header.html:46
+#: templates/includes/apps_list_table.html:57 templates/interviews/list.html:40
 #: templates/reports/statistics.html:31
 msgid "Status"
 msgstr "Status"
 
+#: code.txt:5105 code.txt:5449 code.txt:5830
 #: templates/applications/detail.html:53
-#: templates/includes/apps_list_table.html:42 templates/interviews/list.html:29
+#: templates/includes/apps_list_table.html:50 templates/interviews/list.html:41
 msgid "Location"
 msgstr "Ort"
 
-#: templates/applications/detail.html:58
+#: code.txt:5110 code.txt:5441 templates/applications/detail.html:58
+#: templates/includes/apps_list_table.html:42
 msgid "Source"
 msgstr "Quelle"
 
-#: templates/applications/detail.html:66 templates/interviews/list.html:30
+#: code.txt:5118 code.txt:5831 templates/applications/detail.html:66
+#: templates/interviews/list.html:42
 msgid "Notes"
 msgstr "Notizen"
 
-#: templates/applications/form.html:11
+#: code.txt:5143 templates/applications/form.html:11
 msgid "Edit application"
 msgstr "Bewerbung bearbeiten"
 
-#: templates/applications/form.html:13
+#: code.txt:5145 templates/applications/form.html:13
 msgid "New application"
 msgstr "Neue Bewerbung"
 
-#: templates/applications/form.html:18
+#: code.txt:5150 templates/applications/form.html:18
 msgid "Update fields and save changes."
 msgstr "Felder aktualisieren und Änderungen speichern."
 
-#: templates/applications/form.html:20
+#: code.txt:5152 templates/applications/form.html:20
 msgid "Fill in details and create a record."
 msgstr "Details ausfüllen und Eintrag erstellen."
 
-#: templates/applications/form.html:74
+#: code.txt:5206 templates/applications/form.html:74
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
-#: templates/applications/form.html:76
+#: code.txt:5208 templates/applications/form.html:76
 msgid "Create"
 msgstr "Erstellen"
 
-#: templates/applications/list.html:21
+#: code.txt:5256 templates/applications/list.html:22
 msgid "Selected:"
 msgstr "Ausgewählt:"
 
-#: templates/applications/list.html:25
+#: code.txt:5260 templates/applications/list.html:26
 msgid "Delete selected"
 msgstr "Ausgewählte löschen"
 
-#: templates/applications/list.html:43
+#: code.txt:5278 templates/applications/list.html:44
 msgid "No applications found"
 msgstr "Keine Bewerbungen gefunden"
 
-#: templates/applications/list.html:45
+#: code.txt:5280 templates/applications/list.html:46
 #, fuzzy
 #| msgid "Try clearing filters or add your first application."
 msgid ""
@@ -262,140 +279,145 @@ msgstr ""
 "Versuchen Sie, die Filter zurückzusetzen oder fügen Sie Ihre erste Bewerbung "
 "hinzu."
 
-#: templates/applications/list.html:50
-#: templates/includes/apps_list_header.html:12
+#: code.txt:5285 code.txt:5319 templates/applications/list.html:51
+#: templates/includes/apps_list_header.html:22
 msgid "Add application"
 msgstr "Bewerbung hinzufügen"
 
-#: templates/base.html:7 templates/includes/navbar.html:10
-msgid "JobApply"
-msgstr "JobApply"
-
-#: templates/base.html:32
-msgid "Close"
-msgstr "Schließen"
-
-#: templates/includes/apps_list_header.html:5
+#: code.txt:5302 templates/includes/apps_list_header.html:5
 msgid "Your Applications"
 msgstr "Ihre Bewerbungen"
 
-#: templates/includes/apps_list_header.html:9
-msgid "Print"
-msgstr "Drucken"
+#: code.txt:5305 templates/includes/apps_list_header.html:8
+msgid "Total"
+msgstr ""
 
-#: templates/includes/apps_list_header.html:23
+#: code.txt:5330 templates/includes/apps_list_header.html:33
 msgid "Search"
 msgstr "Suche"
 
-#: templates/includes/apps_list_header.html:30
+#: code.txt:5337 templates/includes/apps_list_header.html:40
 msgid "Title, company, location..."
 msgstr "Titel, Unternehmen, Ort …"
 
-#: templates/includes/apps_list_header.html:39
+#: code.txt:5346 templates/includes/apps_list_header.html:49
 msgid "All"
 msgstr "Alle"
 
-#: templates/includes/apps_list_header.html:50
+#: code.txt:5357 templates/includes/apps_list_header.html:60
 msgid "Month"
 msgstr "Monat"
 
-#: templates/includes/apps_list_header.html:57
+#: code.txt:5364 templates/includes/apps_list_header.html:67
 msgid "Sort"
 msgstr "Sortieren"
 
-#: templates/includes/apps_list_header.html:61
+#: code.txt:5368 templates/includes/apps_list_header.html:71
 msgid "Applied ↓"
 msgstr "Beworben ↓"
 
-#: templates/includes/apps_list_header.html:64
+#: code.txt:5371 templates/includes/apps_list_header.html:74
 msgid "Applied ↑"
 msgstr "Beworben ↑"
 
-#: templates/includes/apps_list_header.html:67
+#: code.txt:5374 templates/includes/apps_list_header.html:77
 msgid "Updated ↓"
 msgstr "Aktualisiert ↓"
 
-#: templates/includes/apps_list_header.html:70
+#: code.txt:5377 templates/includes/apps_list_header.html:80
 msgid "Updated ↑"
 msgstr "Aktualisiert ↑"
 
-#: templates/includes/apps_list_header.html:77
+#: code.txt:5384 templates/includes/apps_list_header.html:87
 msgid "Apply"
 msgstr "Anwenden"
 
-#: templates/includes/apps_list_header.html:80
+#: code.txt:5387 templates/includes/apps_list_header.html:90
 msgid "Reset"
 msgstr "Reset"
 
-#: templates/includes/apps_list_table.html:9
+#: code.txt:5408 templates/includes/apps_list_table.html:9
 msgid "Select all"
 msgstr "Alle auswählen"
 
-#: templates/includes/apps_list_table.html:28
+#: code.txt:5427 templates/includes/apps_list_table.html:28
 msgid "Title"
 msgstr "Titel"
 
-#: templates/includes/apps_list_table.html:35
+#: code.txt:5434 templates/includes/apps_list_table.html:35
 msgid "Company"
 msgstr "Unternehmen"
 
-#: templates/includes/apps_list_table.html:54
+#: code.txt:5461 templates/includes/apps_list_table.html:62
 msgid "Note"
 msgstr "Notiz"
 
-#: templates/includes/apps_list_table.html:55
+#: code.txt:5462 templates/includes/apps_list_table.html:63
 msgid "Actions"
 msgstr "Aktionen"
 
-#: templates/includes/apps_list_table.html:64
+#: code.txt:5471 templates/includes/apps_list_table.html:72
 msgid "Select row"
 msgstr "Zeile auswählen"
 
-#: templates/includes/navbar.html:14 templates/includes/navbar.html:36
+#: code.txt:5543 code.txt:5565 templates/includes/navbar.html:14
+#: templates/includes/navbar.html:37
 msgid "Applications"
 msgstr "Bewerbungen"
 
-#: templates/includes/navbar.html:15 templates/includes/navbar.html:37
+#: code.txt:5544 code.txt:5566 templates/includes/navbar.html:15
+#: templates/includes/navbar.html:38
 msgid "Interviews"
 msgstr "Interviews"
 
-#: templates/includes/navbar.html:16 templates/reports/_nav.html:5
+#: code.txt:5545 code.txt:5942 templates/includes/navbar.html:16
+#: templates/reports/_nav.html:6
 msgid "Services"
 msgstr "Services"
 
-#: templates/includes/navbar.html:34
+#: code.txt:5556 code.txt:5578 config/settings.py:112
+#: templates/includes/navbar.html:28 templates/includes/navbar.html:50
+msgid "English"
+msgstr "Englisch"
+
+#: code.txt:5556 code.txt:5578 config/settings.py:113
+#: templates/includes/navbar.html:28 templates/includes/navbar.html:50
+msgid "Deutsch"
+msgstr "Deutsch"
+
+#: code.txt:5563 templates/includes/navbar.html:35
 msgid "Logout"
 msgstr "Abmelden"
 
-#: templates/includes/navbar.html:38
+#: code.txt:5567 templates/includes/navbar.html:39
 msgid "Reports"
 msgstr "Berichte"
 
-#: templates/includes/navbar.html:56
+#: code.txt:5585 templates/includes/navbar.html:57
 msgid "Sign in with Google"
 msgstr "Mit Google anmelden"
 
-#: templates/includes/paginator.html:4
+#: code.txt:5600 templates/includes/paginator.html:4
 msgid "Applications pagination"
 msgstr "Seitennavigation Bewerbungen"
 
-#: templates/includes/paginator.html:12
+#: code.txt:5608 templates/includes/paginator.html:12
 msgid "First"
 msgstr "Erste"
 
-#: templates/includes/paginator.html:20
+#: code.txt:5616 templates/includes/paginator.html:20
 msgid "Previous"
 msgstr "Zurück"
 
-#: templates/includes/paginator.html:38
+#: code.txt:5634 templates/includes/paginator.html:38
 msgid "Next"
 msgstr "Weiter"
 
-#: templates/includes/paginator.html:46
+#: code.txt:5642 templates/includes/paginator.html:46
 msgid "Last"
 msgstr "Letzte"
 
-#: templates/includes/paginator.html:52
+#: code.txt:5648 templates/includes/paginator.html:52
 #, python-format
 msgid ""
 "\n"
@@ -408,20 +430,20 @@ msgstr ""
 "%(page_obj.paginator.count)s insgesamt\n"
 "    "
 
-#: templates/interviews/delete.html:8
+#: code.txt:5667 templates/interviews/delete.html:8
 msgid "Delete interview"
 msgstr "Interview löschen"
 
-#: templates/interviews/form.html:9 templates/interviews/list.html:14
-#: templates/interviews/list.html:109
+#: code.txt:5715 code.txt:5815 code.txt:5922 templates/interviews/form.html:9
+#: templates/interviews/list.html:26 templates/interviews/list.html:133
 msgid "Schedule interview"
 msgstr "Interview planen"
 
-#: templates/interviews/form.html:58
+#: code.txt:5764 templates/interviews/form.html:58
 msgid "Save"
 msgstr "Speichern"
 
-#: templates/interviews/form.html:67
+#: code.txt:5773 templates/interviews/form.html:67
 msgid ""
 "\n"
 "        Tip: if you don’t see an application in the dropdown — set its "
@@ -435,69 +457,77 @@ msgstr ""
 "        <span class=\"text-danger\">Interview</span>.\n"
 "        "
 
-#: templates/interviews/list.html:9
+#: code.txt:5810 templates/interviews/list.html:21
 msgid "Your Interviews"
 msgstr "Ihre Interviews"
 
-#: templates/interviews/list.html:26
+#: code.txt:5827 templates/interviews/list.html:38
 msgid "Time"
 msgstr "Zeit"
 
-#: templates/interviews/list.html:27
+#: code.txt:5828 templates/interviews/list.html:39
 msgid "Application"
 msgstr "Bewerbung"
 
-#: templates/interviews/list.html:101
+#: code.txt:5914 templates/interviews/list.html:125
 msgid "No interviews scheduled"
 msgstr "Keine Interviews geplant"
 
-#: templates/interviews/list.html:103
+#: code.txt:5916 templates/interviews/list.html:127
+#, fuzzy
+#| msgid ""
+#| "\n"
+#| "          You can schedule an interview only for applications with "
+#| "status\n"
+#| "          <span class=\"badge bg-secondary\">Interview</span>.\n"
+#| "          "
 msgid ""
 "\n"
-"          You can schedule an interview only for applications with status\n"
-"          <span class=\"badge bg-secondary\">Interview</span>.\n"
-"          "
+"            You can schedule an interview only for applications with status\n"
+"            <span class=\"badge bg-secondary\">Interview</span>.\n"
+"            "
 msgstr ""
 "\n"
 "          Ein Interview kann nur für Bewerbungen mit dem Status\n"
-"          <span class=\"badge bg-secondary\">Interview</span> geplant werden.\n"
+"          <span class=\"badge bg-secondary\">Interview</span> geplant "
+"werden.\n"
 "          "
 
-#: templates/reports/_nav.html:7
+#: code.txt:5944
 msgid "Statistics, export & import, cloud backups"
 msgstr "Statistiken, Import & Export, Cloud-Backups"
 
-#: templates/reports/_nav.html:13 templates/reports/drive_backups.html:14
+#: code.txt:5950 code.txt:5979
 #, fuzzy
 #| msgid "Status"
 msgid "Statistics"
 msgstr "Status"
 
-#: templates/reports/_nav.html:16
+#: code.txt:5953 templates/reports/_nav.html:30
 #, fuzzy
 #| msgid "Local import/export"
 msgid "Import/Export"
 msgstr "Lokaler Import/Export"
 
-#: templates/reports/_nav.html:19 templates/reports/drive_backups.html:9
+#: code.txt:5956 code.txt:5974 templates/reports/_nav.html:37
 #, fuzzy
 #| msgid "Cloud backups."
 msgid "Cloud backups"
 msgstr "Cloud-Backups."
 
-#: templates/reports/drive_backups.html:10
+#: code.txt:5975
 msgid "via Google Drive"
 msgstr "über Google Drive"
 
-#: templates/reports/drive_backups.html:15
+#: code.txt:5980
 msgid "Local import/export"
 msgstr "Lokaler Import/Export"
 
-#: templates/reports/drive_backups.html:28
+#: code.txt:5993 templates/reports/drive_backups.html:20
 msgid "Connection"
 msgstr "Verbindung"
 
-#: templates/reports/drive_backups.html:30
+#: code.txt:5995 templates/reports/drive_backups.html:22
 msgid ""
 "\n"
 "            Permission scope: <span class=\"font-monospace\">drive.file</"
@@ -509,93 +539,95 @@ msgstr ""
 "span> (nur von dieser App erstellte Dateien).\n"
 "            "
 
-#: templates/reports/drive_backups.html:37
+#: code.txt:6002 templates/reports/drive_backups.html:29
 msgid "Connected as:"
 msgstr "Verbunden als:"
 
-#: templates/reports/drive_backups.html:44
+#: code.txt:6009 templates/reports/drive_backups.html:36
 msgid "Open your Drive folder"
 msgstr "Drive-Ordner öffnen"
 
-#: templates/reports/drive_backups.html:50
+#: code.txt:6015 templates/reports/drive_backups.html:42
 msgid "Drive is not connected."
 msgstr "Google Drive ist nicht verbunden."
 
-#: templates/reports/drive_backups.html:54
+#: code.txt:6019 templates/reports/drive_backups.html:46
 msgid "Enable Drive backups"
 msgstr "Drive-Backups aktivieren"
 
-#: templates/reports/drive_backups.html:60
+#: code.txt:6025 templates/reports/drive_backups.html:52
 msgid "Status: Google Drive connected."
 msgstr "Status: Google Drive verbunden."
 
-#: templates/reports/drive_backups.html:65
-#: templates/reports/drive_backups.html:79
+#: code.txt:6030 code.txt:6044 templates/reports/drive_backups.html:57
+#: templates/reports/drive_backups.html:71
 msgid "Disconnect"
 msgstr "Trennen"
 
-#: templates/reports/drive_backups.html:71
+#: code.txt:6036 templates/reports/drive_backups.html:63
 msgid ""
 "Connected, but offline access is missing. Backups may fail after the session "
 "expires."
 msgstr ""
-"Verbunden, aber der Offlinezugriff fehlt. Sicherungen können nach Ablauf der Sitzung"
-"fehlschlagen."
+"Verbunden, aber der Offlinezugriff fehlt. Sicherungen können nach Ablauf der "
+"Sitzungfehlschlagen."
 
-#: templates/reports/drive_backups.html:76
+#: code.txt:6041 templates/reports/drive_backups.html:68
 msgid "Reconnect to enable offline access"
 msgstr "Erneut verbinden, um den Offlinezugriff zu aktivieren"
 
-#: templates/reports/drive_backups.html:92
+#: code.txt:6057 templates/reports/drive_backups.html:84
 msgid "Your Cloud Backups"
 msgstr "Ihre Cloud-Backups"
 
-#: templates/reports/drive_backups.html:97
+#: code.txt:6062 templates/reports/drive_backups.html:89
 msgid "Upload CSV"
 msgstr "CSV hochladen"
 
-#: templates/reports/drive_backups.html:100
+#: code.txt:6065 templates/reports/drive_backups.html:92
 msgid "Upload XLSX"
 msgstr "XLSX hochladen"
 
-#: templates/reports/drive_backups.html:108
+#: code.txt:6073 templates/reports/drive_backups.html:100
 msgid "Connect Google Drive to start uploading backups."
 msgstr ""
 "Verbinden Sie Google Drive, um mit dem Hochladen von Backups zu beginnen."
 
-#: templates/reports/drive_backups.html:113
+#: code.txt:6078 templates/reports/drive_backups.html:105
 msgid "Reconnect to enable offline access, then backups will work reliably."
-msgstr "Erneut verbinden, um den Offlinezugriff zu aktivieren. Backups funktionieren dann zuverlässig."
+msgstr ""
+"Erneut verbinden, um den Offlinezugriff zu aktivieren. Backups funktionieren "
+"dann zuverlässig."
 
-#: templates/reports/drive_backups.html:122
+#: code.txt:6087 templates/reports/drive_backups.html:114
 msgid "File"
 msgstr "Datei"
 
-#: templates/reports/drive_backups.html:123
+#: code.txt:6088 templates/reports/drive_backups.html:115
 msgid "Action"
 msgstr "Aktion"
 
-#: templates/reports/drive_backups.html:135
+#: code.txt:6100 templates/reports/drive_backups.html:127
 msgid "Restore"
 msgstr "Wiederherstellen"
 
-#: templates/reports/drive_backups.html:144
+#: code.txt:6109 templates/reports/drive_backups.html:136
 msgid "No backups yet."
 msgstr "Noch keine Backups vorhanden."
 
-#: templates/reports/drive_backups.html:153
+#: code.txt:6118 templates/reports/drive_backups.html:145
 msgid "Auto backup"
 msgstr "Automatische Sicherung"
 
-#: templates/reports/drive_backups.html:157
+#: code.txt:6122 templates/reports/drive_backups.html:149
 msgid "Running"
 msgstr "Aktiv"
 
-#: templates/reports/drive_backups.html:161
+#: code.txt:6126 templates/reports/drive_backups.html:153
 msgid "Stopped"
 msgstr "Gestoppt"
 
-#: templates/reports/drive_backups.html:167
+#: code.txt:6132 templates/reports/drive_backups.html:159
 msgid ""
 "\n"
 "                Runs every 5 minutes. Keeps only <span class=\"fw-"
@@ -613,52 +645,52 @@ msgstr ""
 "                <span class=\"font-monospace\">backup-2</span>.\n"
 "                "
 
-#: templates/reports/drive_backups.html:177
+#: code.txt:6142 templates/reports/drive_backups.html:169
 #, fuzzy
 #| msgid "Drive is not connected."
 msgid "Drive not connected."
 msgstr "Google Drive ist nicht verbunden."
 
-#: templates/reports/drive_backups.html:178
+#: code.txt:6143 templates/reports/drive_backups.html:170
 #, fuzzy
 #| msgid "Connect Google Drive to start uploading backups."
 msgid "Connect Google Drive (offline access) to enable auto backups."
 msgstr ""
 "Verbinden Sie Google Drive, um mit dem Hochladen von Backups zu beginnen."
 
-#: templates/reports/drive_backups.html:194
+#: code.txt:6159 templates/reports/drive_backups.html:186
 msgid "Disable"
 msgstr "Deaktivieren"
 
-#: templates/reports/drive_backups.html:196
+#: code.txt:6161 templates/reports/drive_backups.html:188
 msgid "Enable"
 msgstr "Aktivieren"
 
-#: templates/reports/import.html:13
+#: code.txt:6194 templates/reports/import.html:13
 msgid "Import CSV"
 msgstr "CSV importieren"
 
-#: templates/reports/import.html:16
+#: code.txt:6197 templates/reports/import.html:16
 msgid "Expected Header:"
 msgstr "Erwarteter Header:"
 
-#: templates/reports/import.html:30
+#: code.txt:6211 templates/reports/import.html:30
 msgid "Import completed."
 msgstr "Import abgeschlossen."
 
-#: templates/reports/import.html:33
+#: code.txt:6214 templates/reports/import.html:33
 msgid "Created:"
 msgstr "Erstellt:"
 
-#: templates/reports/import.html:36
+#: code.txt:6217 templates/reports/import.html:36
 msgid "Updated:"
 msgstr "Aktualisiert:"
 
-#: templates/reports/import.html:47
+#: code.txt:6228 templates/reports/import.html:47
 msgid "Import"
 msgstr "Importieren"
 
-#: templates/reports/import.html:52
+#: code.txt:6233 templates/reports/import.html:52
 msgid ""
 "\n"
 "            Dedupe rule: if <span class=\"font-monospace\">id</span> exists "
@@ -666,32 +698,32 @@ msgid ""
 "            "
 msgstr ""
 "\n"
-"            Deduplizierungsregel: Existiert für Ihr Konto eine "
-"<span class=\"font-monospace\">id</span> → aktualisieren, "
-"ansonsten neu erstellen.\n"
+"            Deduplizierungsregel: Existiert für Ihr Konto eine <span "
+"class=\"font-monospace\">id</span> → aktualisieren, ansonsten neu "
+"erstellen.\n"
 "            "
 
-#: templates/reports/import.html:63
+#: code.txt:6244 templates/reports/import.html:63
 msgid "Export"
 msgstr "Exportieren"
 
-#: templates/reports/import.html:65
+#: code.txt:6246 templates/reports/import.html:65
 msgid "Download your applications data or a CSV template."
 msgstr "Laden Sie Ihre Bewerbungsdaten oder eine CSV-Vorlage herunter."
 
-#: templates/reports/import.html:70
+#: code.txt:6251 templates/reports/import.html:70
 msgid "Export CSV"
 msgstr "CSV exportieren"
 
-#: templates/reports/import.html:74
+#: code.txt:6255 templates/reports/import.html:74
 msgid "Export XLSX"
 msgstr "XLSX exportieren"
 
-#: templates/reports/import.html:78
+#: code.txt:6259 templates/reports/import.html:78
 msgid "CSV template"
 msgstr "CSV-Vorlage"
 
-#: templates/reports/import.html:83
+#: code.txt:6264 templates/reports/import.html:83
 msgid ""
 "\n"
 "            Tip: for autosave/backups use\n"
@@ -701,37 +733,37 @@ msgstr ""
 "            Hinweis: Für automatische Backups verwenden Sie\n"
 "            "
 
-#: templates/reports/import.html:87
+#: code.txt:6268 templates/reports/import.html:87
 msgid "Cloud backups."
 msgstr "Cloud-Backups."
 
-#: templates/reports/statistics.html:12
+#: code.txt:6295 templates/reports/statistics.html:12
 msgid "Total applications"
 msgstr "Bewerbungen insgesamt"
 
-#: templates/reports/statistics.html:22
+#: code.txt:6305 templates/reports/statistics.html:22
 msgid "By status"
 msgstr "Nach Status"
 
-#: templates/reports/statistics.html:23
+#: code.txt:6306 templates/reports/statistics.html:23
 msgid "Current snapshot"
 msgstr "Aktueller Stand"
 
-#: templates/reports/statistics.html:32
+#: code.txt:6315 templates/reports/statistics.html:32
 msgid "Count"
 msgstr "Anzahl"
 
-#: templates/reports/statistics.html:49
+#: code.txt:6332 templates/reports/statistics.html:49
 msgid "No applications yet. Add one to see stats."
 msgstr ""
 "Noch keine Bewerbungen vorhanden. Fügen Sie eine hinzu, um Statistiken zu "
 "sehen."
 
-#: templates/reports/statistics.html:59
+#: code.txt:6342 templates/reports/statistics.html:59
 msgid "What you can do"
 msgstr "Was Sie tun können"
 
-#: templates/reports/statistics.html:61
+#: code.txt:6344 templates/reports/statistics.html:61
 msgid ""
 "Import and export your data locally in CSV/XLSX format for backups or "
 "analysis."
@@ -739,7 +771,7 @@ msgstr ""
 "Importieren und exportieren Sie Ihre Daten lokal im CSV/XLSX-Format für "
 "Backups oder Analysen."
 
-#: templates/reports/statistics.html:62
+#: code.txt:6345 templates/reports/statistics.html:62
 msgid ""
 "Import and export backups to restore or migrate your applications via Google "
 "Drive."
@@ -747,6 +779,27 @@ msgstr ""
 "Importieren und exportieren Sie Backups, um Bewerbungen über Google Drive "
 "wiederherzustellen oder zu migrieren."
 
-#: templates/reports/statistics.html:63
+#: code.txt:6346 templates/reports/statistics.html:63
 msgid "All statistics and data are user-isolated (per-user scope)."
 msgstr "Alle Statistiken und Daten sind benutzerspezifisch isoliert."
+
+#: templates/reports/_nav.html:8
+#, fuzzy
+#| msgid "Statistics, export & import, cloud backups"
+msgid "Stats/Gmail stats, export & import, cloud backups"
+msgstr "Statistiken, Import & Export, Cloud-Backups"
+
+#: templates/reports/_nav.html:16
+#, fuzzy
+#| msgid "Status"
+msgid "Stats"
+msgstr "Status"
+
+#: templates/reports/_nav.html:23
+#, fuzzy
+#| msgid "By status"
+msgid "Gmail stats"
+msgstr "Nach Status"
+
+#~ msgid "Print"
+#~ msgstr "Drucken"
