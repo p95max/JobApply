@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from apps.applications.models import JobApplication
 
@@ -20,7 +21,7 @@ class JobApplicationForm(forms.ModelForm):
                 "data-maxlen": str(TITLE_MAX),
             }
         ),
-        help_text=f"Max {TITLE_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": TITLE_MAX},
     )
     company = forms.CharField(
         max_length=COMPANY_MAX,
@@ -31,7 +32,7 @@ class JobApplicationForm(forms.ModelForm):
                 "data-maxlen": str(COMPANY_MAX),
             }
         ),
-        help_text=f"Max {COMPANY_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": COMPANY_MAX},
     )
     location = forms.CharField(
         required=False,
@@ -43,7 +44,7 @@ class JobApplicationForm(forms.ModelForm):
                 "data-maxlen": str(LOCATION_MAX),
             }
         ),
-        help_text=f"Max {LOCATION_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": LOCATION_MAX},
     )
     source = forms.CharField(
         required=False,
@@ -53,10 +54,10 @@ class JobApplicationForm(forms.ModelForm):
                 "class": "form-control w-100",
                 "maxlength": str(SOURCE_MAX),
                 "data-maxlen": str(SOURCE_MAX),
-                "placeholder": "LinkedIn / Indeed / Email / Referral...",
+                "placeholder": _("LinkedIn / Indeed / Email / Referral..."),
             }
         ),
-        help_text=f"Max {SOURCE_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": SOURCE_MAX},
     )
     notes = forms.CharField(
         required=False,
@@ -69,7 +70,7 @@ class JobApplicationForm(forms.ModelForm):
                 "data-maxlen": str(NOTES_MAX),
             }
         ),
-        help_text=f"Max {NOTES_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": NOTES_MAX},
     )
 
     class Meta:
@@ -97,20 +98,20 @@ class JobApplicationForm(forms.ModelForm):
     def clean_title(self) -> str:
         value = (self.cleaned_data.get("title") or "").strip()
         if not value:
-            raise forms.ValidationError("Title is required.")
+            raise forms.ValidationError(_("Title is required."))
         if len(value) > self.TITLE_MAX:
             raise forms.ValidationError(
-                f"Title must be {self.TITLE_MAX} characters or less."
+                _("Title must be %(max)s characters or less.") % {"max": self.TITLE_MAX}
             )
         return value
 
     def clean_company(self) -> str:
         value = (self.cleaned_data.get("company") or "").strip()
         if not value:
-            raise forms.ValidationError("Company is required.")
+            raise forms.ValidationError(_("Company is required."))
         if len(value) > self.COMPANY_MAX:
             raise forms.ValidationError(
-                f"Company must be {self.COMPANY_MAX} characters or less."
+                _("Company must be %(max)s characters or less.") % {"max": self.COMPANY_MAX}
             )
         return value
 
@@ -118,7 +119,7 @@ class JobApplicationForm(forms.ModelForm):
         value = (self.cleaned_data.get("location") or "").strip()
         if len(value) > self.LOCATION_MAX:
             raise forms.ValidationError(
-                f"Location must be {self.LOCATION_MAX} characters or less."
+                _("Location must be %(max)s characters or less.") % {"max": self.LOCATION_MAX}
             )
         return value
 
@@ -126,7 +127,7 @@ class JobApplicationForm(forms.ModelForm):
         value = (self.cleaned_data.get("source") or "").strip()
         if len(value) > self.SOURCE_MAX:
             raise forms.ValidationError(
-                f"Source must be {self.SOURCE_MAX} characters or less."
+                _("Source must be %(max)s characters or less.") % {"max": self.SOURCE_MAX}
             )
         return value
 
@@ -134,6 +135,6 @@ class JobApplicationForm(forms.ModelForm):
         value = (self.cleaned_data.get("notes") or "").strip()
         if len(value) > self.NOTES_MAX:
             raise forms.ValidationError(
-                f"Notes must be {self.NOTES_MAX} characters or less."
+                _("Notes must be %(max)s characters or less.") % {"max": self.NOTES_MAX}
             )
         return value

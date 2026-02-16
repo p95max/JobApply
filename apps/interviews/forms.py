@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from apps.applications.models import ApplicationStatus, JobApplication
 from .models import InterviewEvent
@@ -19,10 +20,10 @@ class InterviewEventForm(forms.ModelForm):
                 "class": "form-control w-100",
                 "maxlength": str(LOCATION_MAX),
                 "data-maxlen": str(LOCATION_MAX),
-                "placeholder": "Zoom / Google Meet / Onsite address...",
+                "placeholder": _("Zoom / Google Meet / Onsite address..."),
             }
         ),
-        help_text=f"Max {LOCATION_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": LOCATION_MAX},
     )
 
     notes = forms.CharField(
@@ -36,7 +37,7 @@ class InterviewEventForm(forms.ModelForm):
                 "data-maxlen": str(NOTES_MAX),
             }
         ),
-        help_text=f"Max {NOTES_MAX} characters.",
+        help_text=_("Max %(max)s characters.") % {"max": NOTES_MAX},
     )
 
     class Meta:
@@ -60,7 +61,7 @@ class InterviewEventForm(forms.ModelForm):
         value = (self.cleaned_data.get("location") or "").strip()
         if len(value) > self.LOCATION_MAX:
             raise forms.ValidationError(
-                f"Location must be {self.LOCATION_MAX} characters or less."
+                _("Location must be %(max)s characters or less.") % {"max": self.LOCATION_MAX}
             )
         return value
 
@@ -68,6 +69,6 @@ class InterviewEventForm(forms.ModelForm):
         value = (self.cleaned_data.get("notes") or "").strip()
         if len(value) > self.NOTES_MAX:
             raise forms.ValidationError(
-                f"Notes must be {self.NOTES_MAX} characters or less."
+                _("Notes must be %(max)s characters or less.") % {"max": self.NOTES_MAX}
             )
         return value

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-13 21:12+0100\n"
+"POT-Creation-Date: 2026-02-16 12:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,56 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/accounts/forms.py:15
+msgid "Sign up is disabled. Please use Google sign-in."
+msgstr ""
+
+#: apps/applications/forms.py:24 apps/applications/forms.py:35
+#: apps/applications/forms.py:47 apps/applications/forms.py:60
+#: apps/applications/forms.py:73 apps/interviews/forms.py:26
+#: apps/interviews/forms.py:40
+#, python-format
+msgid "Max %(max)s characters."
+msgstr "Maximal %(max)s Zeichen."
+
+#: apps/applications/forms.py:57
+msgid "LinkedIn / Indeed / Email / Referral..."
+msgstr "LinkedIn / Indeed / E-Mail / Empfehlung..."
+
+#: apps/applications/forms.py:101
+msgid "Title is required."
+msgstr "Titel ist erforderlich."
+
+#: apps/applications/forms.py:104
+#, python-format
+msgid "Title must be %(max)s characters or less."
+msgstr "Der Titel darf höchstens %(max)s Zeichen lang sein."
+
+#: apps/applications/forms.py:111
+msgid "Company is required."
+msgstr "Unternehmen ist erforderlich."
+
+#: apps/applications/forms.py:114
+#, python-format
+msgid "Company must be %(max)s characters or less."
+msgstr "Das Unternehmen darf höchstens %(max)s Zeichen lang sein."
+
+#: apps/applications/forms.py:122 apps/interviews/forms.py:64
+#, python-format
+msgid "Location must be %(max)s characters or less."
+msgstr "Der Ort darf höchstens %(max)s Zeichen lang sein."
+
+#: apps/applications/forms.py:130
+#, python-format
+msgid "Source must be %(max)s characters or less."
+msgstr "Die Quelle darf höchstens %(max)s Zeichen lang sein."
+
+#: apps/applications/forms.py:138 apps/interviews/forms.py:72
+#, python-format
+msgid "Notes must be %(max)s characters or less."
+msgstr "Die Notizen dürfen höchstens %(max)s Zeichen lang sein."
+
 #: apps/applications/models.py:10 templates/applications/detail.html:33
 #: templates/includes/apps_list_header.html:50
 #: templates/includes/apps_list_table.html:21
@@ -51,6 +101,10 @@ msgstr "Abgelehnt"
 #: apps/applications/models.py:16
 msgid "Archived"
 msgstr "Archiviert"
+
+#: apps/interviews/forms.py:23
+msgid "Zoom / Google Meet / Onsite address..."
+msgstr "Zoom / Google Meet / Personlich"
 
 #: apps/interviews/models.py:12 templates/interviews/list.html:72
 msgid "Scheduled"
@@ -89,8 +143,12 @@ msgid "Cancel"
 msgstr "Abbrechen"
 
 #: templates/account/logout.html:34
-msgid "Tip: if you sign out, you'll need Google OAuth to sign in again."
-msgstr "Hinweis: Wenn Sie sich abmelden, benötigen Sie Google OAuth, um sich erneut anzumelden."
+#, fuzzy
+#| msgid "Tip: if you sign out, you'll need Google OAuth to sign in again."
+msgid "Tip: if you sign out, you’ll need Google OAuth to sign in again."
+msgstr ""
+"Hinweis: Wenn Sie sich abmelden, benötigen Sie Google OAuth, um sich erneut "
+"anzumelden."
 
 #: templates/accounts/consent.html:8
 msgid "Consent"
@@ -113,15 +171,16 @@ msgid ""
 msgstr ""
 "\n"
 "        - Um JobApply zu nutzen, müssen Sie bestätigen, dass Sie den Zugriff "
-"auf Ihr Google-Konto zur Authentifizierung gewähren und nur wenn Sie diese aktivieren, "
-"ausgewählte Google-Dienste (z.B. Google Drive-Backups, Google Sheets, Google "
-"Calendar), um die angeforderten Funktionen bereitzustellen;\n"
+"auf Ihr Google-Konto zur Authentifizierung gewähren und nur wenn Sie diese "
+"aktivieren, ausgewählte Google-Dienste (z.B. Google Drive-Backups, Google "
+"Sheets, Google Calendar), um die angeforderten Funktionen bereitzustellen;\n"
 "        <br>\n"
-"        - Der Zugriff auf Google Drive ist optional und wird nur angefordert/verwendet, wenn Sie "
-"Cloud-Backups aktivieren, um Ihre Backups auf Ihr eigenes Drive hochzuladen;\n"
+"        - Der Zugriff auf Google Drive ist optional und wird nur angefordert/"
+"verwendet, wenn Sie Cloud-Backups aktivieren, um Ihre Backups auf Ihr "
+"eigenes Drive hochzuladen;\n"
 "        <br>\n"
-"        - Die Administration ist nicht verantwortlich für die Speicherung und "
-"den Schutz Ihrer persönlichen Daten.\n"
+"        - Die Administration ist nicht verantwortlich für die Speicherung "
+"und den Schutz Ihrer persönlichen Daten.\n"
 "        "
 
 #: templates/accounts/consent.html:26
@@ -248,8 +307,8 @@ msgid ""
 "          "
 msgstr ""
 "\n"
-"          Versuchen Sie, Filter zu löschen oder fügen Sie Ihre erste <span class=\"badge bg-"
-"secondary\">Bewerbung</span> hinzu.\n"
+"          Versuchen Sie, Filter zu löschen oder fügen Sie Ihre erste <span "
+"class=\"badge bg-secondary\">Bewerbung</span> hinzu.\n"
 "          "
 
 #: templates/applications/list.html:51
@@ -282,7 +341,8 @@ msgid ""
 msgstr ""
 "\n"
 "        Automatisierte Schätzung von Antworten und Absagen aus Ihrem Gmail.\n"
-"        Die Zahlen sind ungefähr und möglicherweise nicht vollständig genau.\n"
+"        Die Zahlen sind ungefähr und möglicherweise nicht vollständig "
+"genau.\n"
 "        "
 
 #: templates/gmail_stats/dashboard.html:33
@@ -370,30 +430,46 @@ msgid "Sort"
 msgstr "Sortieren"
 
 #: templates/includes/apps_list_header.html:71
-msgid "Latest first"
-msgstr "Neueste zuerst"
-
-#: templates/includes/apps_list_header.html:72
-msgid "Oldest first"
-msgstr "Älteste zuerst"
-
-#: templates/includes/apps_list_header.html:73
-msgid "Company (A-Z)"
-msgstr "Firma (A-Z)"
+#, fuzzy
+#| msgid "Applied"
+msgid "Applied ↓"
+msgstr "Beworben"
 
 #: templates/includes/apps_list_header.html:74
-msgid "Company (Z-A)"
-msgstr "Firma (Z-A)"
+#, fuzzy
+#| msgid "Applied"
+msgid "Applied ↑"
+msgstr "Beworben"
 
-#: templates/includes/apps_list_header.html:75
-msgid "Title (A-Z)"
-msgstr "Titel (A-Z)"
+#: templates/includes/apps_list_header.html:77
+#, fuzzy
+#| msgid "Updated:"
+msgid "Updated ↓"
+msgstr "Aktualisiert:"
 
-#: templates/includes/apps_list_header.html:76
-msgid "Title (Z-A)"
-msgstr "Titel (Z-A)"
+#: templates/includes/apps_list_header.html:80
+#, fuzzy
+#| msgid "Updated:"
+msgid "Updated ↑"
+msgstr "Aktualisiert:"
 
-#: templates/includes/apps_list_table.html:34
+#: templates/includes/apps_list_header.html:87
+#, fuzzy
+#| msgid "JobApply"
+msgid "Apply"
+msgstr "JobApply"
+
+#: templates/includes/apps_list_header.html:90
+msgid "Reset"
+msgstr ""
+
+#: templates/includes/apps_list_table.html:9
+#, fuzzy
+#| msgid "Select row"
+msgid "Select all"
+msgstr "Zeile auswählen"
+
+#: templates/includes/apps_list_table.html:28
 msgid "Title"
 msgstr "Titel"
 
@@ -484,9 +560,16 @@ msgid "Save"
 msgstr "Speichern"
 
 #: templates/interviews/form.html:67
+#, fuzzy
+#| msgid ""
+#| "\n"
+#| "        Tip: if you don't see an application in the dropdown — set its "
+#| "status to\n"
+#| "        <span class=\"text-danger\">Interview</span> in Applications.\n"
+#| "        "
 msgid ""
 "\n"
-"        Tip: if you don't see an application in the dropdown — set its "
+"        Tip: if you don’t see an application in the dropdown — set its "
 "status to\n"
 "        <span class=\"text-danger\">Interview</span> in Applications.\n"
 "        "
@@ -494,7 +577,8 @@ msgstr ""
 "\n"
 "        Hinweis: Wenn Sie keine Bewerbung im Dropdown sehen – setzen Sie den "
 "Status auf\n"
-"        <span class=\"text-danger\">Vorstellungsgespräch</span> in Bewerbungen.\n"
+"        <span class=\"text-danger\">Vorstellungsgespräch</span> in "
+"Bewerbungen.\n"
 "        "
 
 #: templates/interviews/list.html:21
@@ -521,8 +605,10 @@ msgid ""
 "            "
 msgstr ""
 "\n"
-"            Sie können ein Vorstellungsgespräch nur für Bewerbungen mit dem Status\n"
-"            <span class=\"badge bg-secondary\">Vorstellungsgespräch</span> planen.\n"
+"            Sie können ein Vorstellungsgespräch nur für Bewerbungen mit dem "
+"Status\n"
+"            <span class=\"badge bg-secondary\">Vorstellungsgespräch</span> "
+"planen.\n"
 "            "
 
 #: templates/reports/_nav.html:8
@@ -587,8 +673,8 @@ msgid ""
 "Connected, but offline access is missing. Backups may fail after the session "
 "expires."
 msgstr ""
-"Verbunden, aber Offline-Zugriff fehlt. Backups können nach Ablauf der Sitzung "
-"fehlschlagen."
+"Verbunden, aber Offline-Zugriff fehlt. Backups können nach Ablauf der "
+"Sitzung fehlschlagen."
 
 #: templates/reports/drive_backups.html:68
 msgid "Reconnect to enable offline access"
@@ -608,11 +694,14 @@ msgstr "XLSX hochladen"
 
 #: templates/reports/drive_backups.html:100
 msgid "Connect Google Drive to start uploading backups."
-msgstr "Verbinden Sie Google Drive, um mit dem Hochladen von Backups zu beginnen."
+msgstr ""
+"Verbinden Sie Google Drive, um mit dem Hochladen von Backups zu beginnen."
 
 #: templates/reports/drive_backups.html:105
 msgid "Reconnect to enable offline access, then backups will work reliably."
-msgstr "Verbinden Sie sich erneut, um Offline-Zugriff zu aktivieren, dann funktionieren Backups zuverlässig."
+msgstr ""
+"Verbinden Sie sich erneut, um Offline-Zugriff zu aktivieren, dann "
+"funktionieren Backups zuverlässig."
 
 #: templates/reports/drive_backups.html:114
 msgid "File"
@@ -666,7 +755,9 @@ msgstr "Drive nicht verbunden."
 
 #: templates/reports/drive_backups.html:170
 msgid "Connect Google Drive (offline access) to enable auto backups."
-msgstr "Verbinden Sie Google Drive (Offline-Zugriff), um automatische Backups zu aktivieren."
+msgstr ""
+"Verbinden Sie Google Drive (Offline-Zugriff), um automatische Backups zu "
+"aktivieren."
 
 #: templates/reports/drive_backups.html:186
 msgid "Disable"
@@ -708,7 +799,8 @@ msgid ""
 "            "
 msgstr ""
 "\n"
-"            Deduplizierungsregel: wenn <span class=\"font-monospace\">id</span> für Ihr Konto existiert → aktualisieren, andernfalls neu erstellen.\n"
+"            Deduplizierungsregel: wenn <span class=\"font-monospace\">id</"
+"span> für Ihr Konto existiert → aktualisieren, andernfalls neu erstellen.\n"
 "            "
 
 #: templates/reports/import.html:63
@@ -774,8 +866,8 @@ msgid ""
 "Import and export your data locally in CSV/XLSX format for backups or "
 "analysis."
 msgstr ""
-"Importieren und exportieren Sie Ihre Daten lokal im CSV/XLSX-Format für Backups oder "
-"Analysen."
+"Importieren und exportieren Sie Ihre Daten lokal im CSV/XLSX-Format für "
+"Backups oder Analysen."
 
 #: templates/reports/statistics.html:62
 msgid ""
@@ -788,3 +880,21 @@ msgstr ""
 #: templates/reports/statistics.html:63
 msgid "All statistics and data are user-isolated (per-user scope)."
 msgstr "Alle Statistiken und Daten sind benutzerisoliert (benutzerspezifisch)."
+
+#~ msgid "Latest first"
+#~ msgstr "Neueste zuerst"
+
+#~ msgid "Oldest first"
+#~ msgstr "Älteste zuerst"
+
+#~ msgid "Company (A-Z)"
+#~ msgstr "Firma (A-Z)"
+
+#~ msgid "Company (Z-A)"
+#~ msgstr "Firma (Z-A)"
+
+#~ msgid "Title (A-Z)"
+#~ msgstr "Titel (A-Z)"
+
+#~ msgid "Title (Z-A)"
+#~ msgstr "Titel (Z-A)"
