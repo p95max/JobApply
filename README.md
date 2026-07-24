@@ -2,7 +2,7 @@
 
 ---
 
-**JobApply** is a Django-based job application tracker built around a **Google-first workflow**:
+**JobApply** is a focused Django job application tracker built around a **Google-first workflow**. It avoids feature bloat and unnecessary AI, providing only the tools needed to manage applications, process Gmail responses, plan interviews, and maintain backups.
 
 - **Google OAuth** is the only authentication method (no passwords).
 - **Google Drive backups** provide automated, rotation-based cloud backups.
