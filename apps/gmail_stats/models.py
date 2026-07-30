@@ -4,6 +4,17 @@ from django.conf import settings
 from django.db import models
 
 
+class GmailDirection(models.TextChoices):
+    INBOUND = "inbound", "Inbound"
+    OUTBOUND = "outbound", "Outbound"
+    UNKNOWN = "unknown", "Unknown"
+
+
+class GmailProcessingStatus(models.TextChoices):
+    NEW = "new", "New"
+    FAILED = "failed", "Failed"
+
+
 class GmailSyncState(models.Model):
     """Tracks last sync moment for incremental runs."""
 
@@ -35,13 +46,28 @@ class GmailMessage(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    message_id = models.CharField(max_length=255, unique=True)
+    message_id = models.CharField(max_length=255)
     thread_id = models.CharField(max_length=255, db_index=True)
 
+    direction = models.CharField(
+        max_length=16,
+        choices=GmailDirection.choices,
+        default=GmailDirection.UNKNOWN,
+        db_index=True,
+    )
     received_at = models.DateTimeField(db_index=True)
+    from_name = models.CharField(max_length=255, blank=True)
     from_email = models.EmailField(blank=True)
+    to_emails = models.JSONField(default=list)
     subject = models.CharField(max_length=500, blank=True)
     snippet = models.TextField(blank=True)
+    processing_status = models.CharField(
+        max_length=16,
+        choices=GmailProcessingStatus.choices,
+        default=GmailProcessingStatus.NEW,
+        db_index=True,
+    )
+    processing_error = models.TextField(blank=True)
 
     detected_type = models.CharField(max_length=32, choices=TYPES, default=TYPE_UNKNOWN, db_index=True)
     confidence = models.PositiveSmallIntegerField(default=0)
@@ -51,6 +77,12 @@ class GmailMessage(models.Model):
         indexes = [
             models.Index(fields=["user", "received_at"]),
             models.Index(fields=["user", "detected_type"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "message_id"],
+                name="unique_gmail_message_per_user",
+            )
         ]
 
 

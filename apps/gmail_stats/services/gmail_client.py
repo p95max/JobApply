@@ -51,10 +51,18 @@ class GmailClient:
                     userId="me",
                     id=message_id,
                     format="metadata",
-                    metadataHeaders=["Subject", "From", "Date"],
+                    metadataHeaders=["Subject", "From", "To", "Cc", "Delivered-To", "Date"],
                 )
                 .execute()
             )
             return msg
         except HttpError as e:
             raise RuntimeError(f"Gmail API get failed (id={message_id}): {e}") from e
+
+    def get_profile_email(self) -> str:
+        """Return the email address of the authenticated Gmail mailbox."""
+        try:
+            profile = self._svc.users().getProfile(userId="me").execute()
+            return str(profile.get("emailAddress") or "")
+        except HttpError as e:
+            raise RuntimeError(f"Gmail API profile failed: {e}") from e

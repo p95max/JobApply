@@ -19,11 +19,17 @@ def gmail_dashboard(request):
 
 @login_required
 def gmail_stats_api(request):
-    days = int(request.GET.get("days", "180"))
+    try:
+        days = int(request.GET.get("days", "180"))
+    except ValueError:
+        return JsonResponse({"error": "days must be an integer"}, status=400)
+    if not 1 <= days <= 365:
+        return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
     since = timezone.now() - timedelta(days=days)
 
     qs = GmailMessage.objects.filter(user=request.user, received_at__gte=since)
 
+    qs = qs.exclude(direction="outbound")
     responses = qs.exclude(detected_type__in=["unknown", "noise"]).count()
     rejections = qs.filter(detected_type="rejection").count()
     invites = qs.filter(detected_type="invite").count()
@@ -47,7 +53,12 @@ def gmail_sync_api(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
 
-    days = int(request.GET.get("days", "180"))
+    try:
+        days = int(request.GET.get("days", "180"))
+    except ValueError:
+        return JsonResponse({"error": "days must be an integer"}, status=400)
+    if not 1 <= days <= 365:
+        return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
 
     creds = get_google_credentials_for_user(request.user)
     if not creds:
