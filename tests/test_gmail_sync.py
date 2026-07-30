@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from django.urls import reverse
 
+from apps.accounts.models import UserProfile
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus
 from apps.gmail_stats.services.direction import determine_direction, parse_recipients, parse_sender
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
@@ -133,6 +134,7 @@ def test_message_failure_does_not_abort_other_messages(django_user_model):
 @pytest.mark.django_db
 def test_outbound_messages_are_excluded_from_statistics(client, django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
     GmailMessage.objects.create(
         user=user,
         message_id="outbound",
