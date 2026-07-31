@@ -13,7 +13,19 @@
       {% if user.is_authenticated %}
         <a class="btn btn-outline-light btn-sm nav-anim" href="/applications/">{% trans "Applications" %}</a>
         <a class="btn btn-outline-light btn-sm nav-anim" href="/interviews/">{% trans "Interviews" %}</a>
-        <a class="btn btn-outline-light btn-sm nav-anim" href="/reports/statistics/">{% trans "Services" %}</a>
+        <div class="dropdown">
+          <button class="btn btn-outline-light btn-sm nav-anim dropdown-toggle" type="button"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            {% trans "Services" %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{% url 'reports:statistics' %}">{% trans "Stats" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'gmail_stats:gmail_dashboard' %}">{% trans "Gmail stats" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'gmail_stats:gmail_assistant' %}">{% trans "Gmail Assistant" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'reports:import' %}">{% trans "Import/Export" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'reports:drive_backups' %}">{% trans "Cloud backups" %}</a></li>
+          </ul>
+        </div>
 
 
         <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">

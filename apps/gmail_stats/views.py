@@ -32,7 +32,7 @@ def gmail_assistant(request):
     proposal_queryset = (
         ApplicationUpdateProposal.objects.filter(user=request.user)
         .select_related("message", "analysis", "application")
-        .order_by("-created_at")
+        .order_by("-message__received_at", "-created_at")
     )
     proposals = proposal_queryset
     status = request.GET.get("status", ProposalStatus.PENDING)
@@ -80,7 +80,7 @@ def accept_gmail_proposal(request, pk: int):
             request,
             "Proposal was already accepted." if result.already_accepted else "Proposal accepted.",
         )
-    return redirect("gmail_stats:gmail_proposal_detail", pk=pk)
+    return redirect("gmail_stats:gmail_assistant")
 
 
 @login_required
@@ -105,7 +105,7 @@ def edit_and_accept_gmail_proposal(request, pk: int):
         messages.error(request, str(error))
     else:
         messages.success(request, "Proposal accepted with your edits.")
-    return redirect("gmail_stats:gmail_proposal_detail", pk=pk)
+    return redirect("gmail_stats:gmail_assistant")
 
 
 @login_required

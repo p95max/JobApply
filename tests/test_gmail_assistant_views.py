@@ -55,6 +55,64 @@ def test_assistant_requires_authentication(client):
 
 
 @pytest.mark.django_db
+def test_assistant_lists_newest_email_first(client, proposal):
+    newer_message = GmailMessage.objects.create(
+        user=proposal.user,
+        message_id="message-newer",
+        thread_id="thread-newer",
+        received_at=proposal.message.received_at + timedelta(hours=1),
+        subject="Newer Gmail update",
+    )
+    newer_analysis = GmailAnalysis.objects.create(
+        user=proposal.user,
+        message=newer_message,
+        event_type=GmailEventType.GENERAL_UPDATE,
+        is_job_related=True,
+    )
+    ApplicationUpdateProposal.objects.create(
+        user=proposal.user,
+        message=newer_message,
+        analysis=newer_analysis,
+        application=proposal.application,
+        proposal_type=ProposalType.UPDATE_APPLICATION,
+    )
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert response.content.index(b"Newer Gmail update") < response.content.index(
+        proposal.message.subject.encode()
+    )
+
+
+@pytest.mark.django_db
+def test_assistant_highlights_rejection_proposals(client, proposal):
+    proposal.analysis.event_type = GmailEventType.REJECTION
+    proposal.analysis.save(update_fields=["event_type"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"border-danger" in response.content
+    assert b"bg-danger" in response.content
+
+
+@pytest.mark.django_db
+def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"can take about 30 seconds" in response.content
+    assert b'aiAnalysisSync' in response.content
+    assert b'aiAnalysisSave' not in response.content
+    assert reverse("gmail_stats:gmail_assistant").encode() in response.content
+
+
+@pytest.mark.django_db
 def test_write_endpoints_reject_get_requests(client, proposal):
     client.force_login(proposal.user)
     urls = [
@@ -89,6 +147,7 @@ def test_accept_endpoint_applies_a_pending_proposal(client, proposal):
     response = client.post(reverse("gmail_stats:accept_gmail_proposal", args=[proposal.pk]))
 
     assert response.status_code == 302
+    assert response.url == reverse("gmail_stats:gmail_assistant")
     proposal.refresh_from_db()
     proposal.application.refresh_from_db()
     assert proposal.status == ProposalStatus.ACCEPTED

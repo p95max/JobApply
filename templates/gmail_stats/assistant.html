@@ -11,12 +11,18 @@
       <h1 class="h4 mb-1">{% trans "Gmail Assistant" %}</h1>
       <p class="text-muted mb-0">{% trans "Review suggestions before any application or interview is changed." %}</p>
     </div>
-    <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
+      <button id="aiAnalysisSync" type="button" class="btn btn-primary btn-sm">{% trans "Sync Gmail" %}</button>
+    </div>
   </div>
 
   <div class="card mb-4">
     <div class="card-body">
-      <form method="post" action="{% url 'gmail_stats:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
+      <div id="aiAnalysisProgress" class="alert alert-info d-none" role="status">
+        {% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}
+      </div>
+      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_stats:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
         <div>
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
@@ -27,7 +33,6 @@
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
           <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
         </div>
-        <button class="btn btn-outline-primary btn-sm">{% trans "Save" %}</button>
       </form>
     </div>
   </div>
@@ -39,14 +44,14 @@
   </div>
 
   {% for proposal in proposals %}
-    <div class="card mb-3">
+    <div class="card mb-3 {% if proposal.analysis.event_type == 'rejection' %}border-danger{% endif %}">
       <div class="card-body">
         <div class="d-flex justify-content-between gap-3">
           <div>
             <div class="fw-semibold">{{ proposal.message.subject|default:"—" }}</div>
             <div class="small text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
           </div>
-          <span class="badge bg-secondary">{{ proposal.analysis.event_type }}</span>
+          <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% else %}bg-secondary{% endif %}">{{ proposal.analysis.event_type }}</span>
         </div>
         <div class="small mt-2">{% trans "Match" %}: {{ proposal.match_method|default:"unmatched" }} ({{ proposal.match_score }})</div>
         <a class="btn btn-outline-primary btn-sm mt-3" href="{% url 'gmail_stats:gmail_proposal_detail' proposal.pk %}">{% trans "Review" %}</a>
@@ -56,4 +61,44 @@
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  const settingsForm = document.getElementById("aiAnalysisSettings");
+  const toggle = document.getElementById("aiEnabled");
+  const progress = document.getElementById("aiAnalysisProgress");
+  const syncButton = document.getElementById("aiAnalysisSync");
+  const wasEnabled = {{ settings.ai_enabled|yesno:"true,false" }};
+
+  settingsForm.addEventListener("submit", () => {
+    const enabled = toggle.checked;
+    if (enabled && !wasEnabled) {
+      progress.classList.remove("d-none");
+    }
+    toggle.disabled = true;
+  });
+  toggle.addEventListener("change", () => settingsForm.requestSubmit());
+
+  syncButton.addEventListener("click", async () => {
+    progress.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progress.classList.remove("alert-danger");
+    progress.classList.add("alert-info");
+    progress.classList.remove("d-none");
+    syncButton.disabled = true;
+    try {
+      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}", {
+        method: "POST",
+        headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
+      window.location.reload();
+    } catch (error) {
+      progress.textContent = error.message;
+      progress.classList.remove("alert-info");
+      progress.classList.add("alert-danger");
+      syncButton.disabled = false;
+    }
+  });
+</script>
 {% endblock %}
