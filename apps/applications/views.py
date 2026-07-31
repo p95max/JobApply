@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import JobApplicationForm
 from .models import JobApplication
+from apps.gmail_stats.models import GmailMessage
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,14 @@ def update_status(request, pk: int):
 def application_detail(request, pk: int):
     try:
         app = get_object_or_404(JobApplication, pk=pk, user=request.user)
-        gmail_messages = app.gmail_messages.select_related("analysis").prefetch_related("proposals").order_by("-received_at")
+        gmail_messages = (
+            GmailMessage.objects.filter(user=request.user)
+            .filter(Q(application=app) | Q(proposals__application=app))
+            .select_related("analysis")
+            .prefetch_related("proposals")
+            .distinct()
+            .order_by("-received_at")
+        )
         return render(
             request,
             "applications/detail.html",
