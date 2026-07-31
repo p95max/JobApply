@@ -7,6 +7,7 @@ import pytest
 from apps.gmail_stats.services.ai_analyzer import (
     AIAnalysisContext,
     AIAnalyzerConfig,
+    AIAnalyzerError,
     AIConfigurationError,
     AIResponseValidationError,
     OpenAIEmailAnalyzer,
