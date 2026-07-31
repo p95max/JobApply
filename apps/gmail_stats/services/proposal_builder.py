@@ -8,7 +8,7 @@ from apps.gmail_stats.models import (
     ProposalStatus,
     ProposalType,
 )
-from apps.gmail_stats.services.status_policy import proposed_status, should_set_recruiter_reply_at
+from apps.gmail_stats.services.status_policy import proposed_status, should_set_recruiter_reply_at, status_reference_at
 
 _ACTION_EVENTS = {
     GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
@@ -132,25 +132,13 @@ def _application_changes(*, message: Any, analysis: Any, application: Any) -> di
         event_type=analysis.event_type,
         current_status=application.status,
         message_received_at=message.received_at,
-        application_updated_at=_status_reference_at(application),
+        application_updated_at=status_reference_at(application),
     )
     if status:
         changes["status"] = {"old": application.status, "new": status}
     if application.recruiter_reply_at is None and should_set_recruiter_reply_at(analysis.event_type):
         changes["recruiter_reply_at"] = {"old": None, "new": message.received_at.isoformat()}
     return changes
-
-
-def _status_reference_at(application: Any) -> Any:
-    """Use the real application date while an application is still awaiting a reply.
-
-    ``updated_at`` records technical writes too, such as importing historical
-    Gmail confirmations.  Treating it as a status timestamp would incorrectly
-    suppress a later historical rejection.
-    """
-    if application.status == "applied" and application.applied_at:
-        return application.applied_at
-    return application.updated_at
 
 
 def _interview_changes(*, event_type: str, application: Any, extracted: dict[str, Any]) -> tuple[dict[str, Any], str]:

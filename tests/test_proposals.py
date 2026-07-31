@@ -220,6 +220,9 @@ def test_historical_rejection_after_application_date_proposes_rejected_status(pr
     )[0]
 
     assert proposal.changes["application"]["status"] == {"old": "applied", "new": "rejected"}
+    apply_proposal(proposal=proposal, user=user)
+    application.refresh_from_db()
+    assert application.status == ApplicationStatus.REJECTED
 
 
 @pytest.mark.django_db

@@ -10,7 +10,7 @@ from django.utils.dateparse import parse_datetime
 
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_stats.models import ApplicationUpdateProposal, ProposalStatus, ProposalType
-from apps.gmail_stats.services.status_policy import proposed_status
+from apps.gmail_stats.services.status_policy import proposed_status, status_reference_at
 
 _APPLICATION_FIELDS = {"title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at"}
 _INTERVIEW_FIELDS = {"starts_at", "location", "notes", "status"}
@@ -118,7 +118,7 @@ def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides
             event_type=proposal.analysis.event_type,
             current_status=application.status,
             message_received_at=proposal.message.received_at,
-            application_updated_at=application.updated_at,
+            application_updated_at=status_reference_at(application),
         )
         if new_status != expected:
             raise ProposalApplyError("status transition is no longer allowed")

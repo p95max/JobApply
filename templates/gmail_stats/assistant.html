@@ -19,10 +19,10 @@
 
   {% if dev_tools_enabled %}
     <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
-      <span>{% trans "Development tools: remove this account's cached Gmail messages, analyses, and proposals. Applications and Google connection are kept." %}</span>
+      <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
       <form method="post" action="{% url 'gmail_stats:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
         {% csrf_token %}
-        <button class="btn btn-outline-danger btn-sm">{% trans "Reset Gmail Assistant data" %}</button>
+        <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
       </form>
     </div>
   {% endif %}

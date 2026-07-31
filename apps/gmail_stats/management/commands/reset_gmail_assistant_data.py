@@ -7,7 +7,7 @@ from apps.gmail_stats.services.reset import reset_gmail_assistant_data
 
 
 class Command(BaseCommand):
-    help = "Delete cached Gmail Assistant data for one user without deleting applications or Google credentials."
+    help = "Delete Gmail Assistant data and applications for one user; Google credentials are kept."
 
     def add_arguments(self, parser):
         parser.add_argument("--user-id", type=int, required=True)

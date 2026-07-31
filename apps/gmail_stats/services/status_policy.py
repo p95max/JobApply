@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from django.utils import timezone
 
@@ -45,6 +46,18 @@ def is_stale_message(message_received_at: datetime | None, application_updated_a
     if not timezone.is_aware(message_received_at) or not timezone.is_aware(application_updated_at):
         return False
     return message_received_at <= application_updated_at
+
+
+def status_reference_at(application: Any) -> datetime | None:
+    """Return the timestamp that represents the current application status.
+
+    An application still in ``applied`` state has no recruiter-driven state
+    transition yet, so its real application date is more reliable than an ORM
+    ``updated_at`` timestamp produced while importing historical Gmail data.
+    """
+    if application.status == ApplicationStatus.APPLIED and application.applied_at:
+        return application.applied_at
+    return application.updated_at
 
 
 def proposed_status(

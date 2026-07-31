@@ -146,7 +146,7 @@ def test_dev_reset_removes_only_current_users_gmail_assistant_data(client, propo
     assert not GmailMessage.objects.filter(user=proposal.user).exists()
     assert not ApplicationUpdateProposal.objects.filter(user=proposal.user).exists()
     assert not GmailSyncState.objects.filter(user=proposal.user).exists()
-    assert JobApplication.objects.filter(pk=proposal.application_id, user=proposal.user).exists()
+    assert not JobApplication.objects.filter(pk=proposal.application_id, user=proposal.user).exists()
 
 
 @pytest.mark.django_db

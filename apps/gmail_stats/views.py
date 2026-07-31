@@ -194,7 +194,10 @@ def reset_gmail_assistant(request):
     if not django_settings.GMAIL_ASSISTANT_DEV_TOOLS:
         raise Http404
     result = reset_gmail_assistant_data(user=request.user)
-    messages.success(request, f"Dev reset completed: {result['messages']} Gmail message(s) removed.")
+    messages.success(
+        request,
+        f"Dev reset completed: {result['messages']} Gmail message(s) and {result['applications']} application(s) removed.",
+    )
     return redirect("gmail_stats:gmail_assistant")
 
 
