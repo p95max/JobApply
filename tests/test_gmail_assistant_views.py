@@ -109,6 +109,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b"can take about 30 seconds" in response.content
     assert b'aiAnalysisSync' in response.content
     assert b'aiAnalysisSave' not in response.content
+    assert b'services-dropdown' in response.content
     assert reverse("gmail_stats:gmail_assistant").encode() in response.content
 
 
