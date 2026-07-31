@@ -296,7 +296,7 @@ def test_invitation_without_datetime_can_be_completed_with_a_manual_override(pro
         overrides={"interview": {"starts_at": "2026-08-06T09:00:00+02:00"}},
     )
 
-    assert result.interview and result.interview.starts_at.isoformat().startswith("2026-08-06T07:00:00")
+    assert result.interview and result.interview.starts_at.isoformat().startswith("2026-08-06T09:00:00+02:00")
 
 
 @pytest.mark.django_db
