@@ -122,12 +122,38 @@ def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
     )
 
     result = sync_gmail_messages_for_user(user=user, gmail_client=client)
-
     analysis = GmailAnalysis.objects.get(user=user)
     assert result["analyzed_by_rules"] == 1
     assert result["analyses_created"] == 1
     assert analysis.classifier == AnalysisClassifier.RULE
     assert analysis.message.processing_status == GmailProcessingStatus.ANALYZED
+
+
+@pytest.mark.django_db
+def test_successful_sync_clears_the_previous_safe_error(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    settings = GmailAssistantSettings.objects.create(
+        user=user,
+        last_error_at=datetime.now(timezone.utc),
+        last_error_message="message_processing_failed",
+    )
+    client = FakeGmailClient(
+        {
+            "message-1": message(
+                sender="recruiter@example.org",
+                subject="Application update",
+                text="We will get back to you about your application.",
+            )
+        }
+    )
+
+    result = sync_gmail_messages_for_user(user=user, gmail_client=client)
+
+    settings.refresh_from_db()
+    assert result["failed"] == 0
+    assert settings.last_successful_run_at is not None
+    assert settings.last_error_at is None
+    assert settings.last_error_message == ""
 
 
 @pytest.mark.django_db
@@ -283,6 +309,28 @@ def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_
 
     assert response.status_code == 403
     assert "gmail.readonly" in response.json()["error"]
+
+
+@pytest.mark.django_db
+def test_sync_api_reports_disabled_gmail_api(client, django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+
+    class DisabledGmailClient:
+        def __init__(self, credentials):
+            self.credentials = credentials
+
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            raise RuntimeError("accessNotConfigured")
+
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: object())
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", DisabledGmailClient)
+    client.force_login(user)
+
+    response = client.post(reverse("gmail_stats:gmail_sync_api"))
+
+    assert response.status_code == 403
+    assert "Gmail API is disabled" in response.json()["error"]
 
 
 @pytest.mark.django_db

@@ -371,5 +371,14 @@ def sync_gmail_messages_for_user(
                     ]
                 )
             else:
-                settings.save(update_fields=["last_successful_run_at", "updated_at"])
+                settings.last_error_at = None
+                settings.last_error_message = ""
+                settings.save(
+                    update_fields=[
+                        "last_successful_run_at",
+                        "last_error_at",
+                        "last_error_message",
+                        "updated_at",
+                    ]
+                )
     return counters
