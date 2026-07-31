@@ -64,7 +64,6 @@ def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassifica
     """Classify a Gmail message with deterministic, explainable job-email rules."""
     content = _normalize(" ".join((subject or "", snippet or "", text or "")))
     context = _matching_terms(content, _JOB_CONTEXT_TERMS)
-    is_job_related = bool(context)
 
     noise = _matching_terms(content, ("newsletter", "job alert", "unsubscribe", "marketing", "rabatt"))
     if noise:
@@ -151,6 +150,7 @@ def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassifica
             "confirm your application",
             "confirm your email",
             "bewerbung bestätigen",
+            "bestätigen sie ihre bewerbung",
             "e-mail adresse bestätigen",
         ),
     )
