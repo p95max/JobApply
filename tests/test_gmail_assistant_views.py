@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -14,6 +15,7 @@ from apps.gmail_stats.models import (
     GmailAssistantSettings,
     GmailEventType,
     GmailMessage,
+    GmailSyncState,
     ProposalStatus,
     ProposalType,
 )
@@ -115,6 +117,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
 
 
 @pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
 def test_write_endpoints_reject_get_requests(client, proposal):
     client.force_login(proposal.user)
     urls = [
@@ -124,9 +127,34 @@ def test_write_endpoints_reject_get_requests(client, proposal):
         reverse("gmail_stats:reject_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_stats:ignore_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_stats:gmail_assistant_settings"),
+        reverse("gmail_stats:reset_gmail_assistant"),
     ]
 
     assert all(client.get(url).status_code == 405 for url in urls)
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
+def test_dev_reset_removes_only_current_users_gmail_assistant_data(client, proposal):
+    GmailSyncState.objects.create(user=proposal.user, last_synced_at=timezone.now())
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_stats:reset_gmail_assistant"))
+
+    assert response.status_code == 302
+    assert not GmailMessage.objects.filter(user=proposal.user).exists()
+    assert not ApplicationUpdateProposal.objects.filter(user=proposal.user).exists()
+    assert not GmailSyncState.objects.filter(user=proposal.user).exists()
+    assert JobApplication.objects.filter(pk=proposal.application_id, user=proposal.user).exists()
+
+
+@pytest.mark.django_db
+def test_dev_reset_endpoint_is_hidden_without_dev_tools(client, proposal):
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_stats:reset_gmail_assistant"))
+
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

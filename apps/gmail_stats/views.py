@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -13,6 +14,7 @@ from apps.gmail_stats.services.credentials import get_google_credentials_for_use
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_stats.services.reset import reset_gmail_assistant_data
 from apps.gmail_stats.models import (
     ApplicationUpdateProposal,
     GmailAssistantSettings,
@@ -48,6 +50,7 @@ def gmail_assistant(request):
             "proposal_statuses": ProposalStatus,
             "settings": settings,
             "pending_count": proposal_queryset.filter(status=ProposalStatus.PENDING).count(),
+            "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
         },
     )
 
@@ -182,6 +185,16 @@ def gmail_assistant_settings(request):
                 )
     else:
         messages.success(request, "AI analysis setting updated.")
+    return redirect("gmail_stats:gmail_assistant")
+
+
+@login_required
+@require_POST
+def reset_gmail_assistant(request):
+    if not django_settings.GMAIL_ASSISTANT_DEV_TOOLS:
+        raise Http404
+    result = reset_gmail_assistant_data(user=request.user)
+    messages.success(request, f"Dev reset completed: {result['messages']} Gmail message(s) removed.")
     return redirect("gmail_stats:gmail_assistant")
 
 

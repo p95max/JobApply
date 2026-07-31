@@ -17,6 +17,16 @@
     </div>
   </div>
 
+  {% if dev_tools_enabled %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
+      <span>{% trans "Development tools: remove this account's cached Gmail messages, analyses, and proposals. Applications and Google connection are kept." %}</span>
+      <form method="post" action="{% url 'gmail_stats:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm">{% trans "Reset Gmail Assistant data" %}</button>
+      </form>
+    </div>
+  {% endif %}
+
   <div class="card mb-4">
     <div class="card-body">
       <div id="aiAnalysisProgress" class="alert alert-info d-none" role="status">
