@@ -4,7 +4,6 @@ from datetime import timedelta
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -42,13 +41,10 @@ def gmail_assistant(request):
     except ValueError:
         selected_status = ProposalStatus.PENDING
     proposals = proposal_queryset.filter(status=selected_status.value)
-    proposal_counts = {proposal_status: 0 for proposal_status in ProposalStatus.values}
-    proposal_counts.update(
-        {
-            item["status"]: item["count"]
-            for item in proposal_queryset.values("status").annotate(count=Count("id"))
-        }
-    )
+    proposal_counts = {
+        proposal_status: proposal_queryset.filter(status=proposal_status).count()
+        for proposal_status in ProposalStatus.values
+    }
     settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
     return render(
         request,

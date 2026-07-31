@@ -92,13 +92,21 @@ def test_assistant_lists_newest_email_first(client, proposal):
 def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
     proposal.status = ProposalStatus.ACCEPTED
     proposal.save(update_fields=["status"])
+    ApplicationUpdateProposal.objects.create(
+        user=proposal.user,
+        message=proposal.message,
+        analysis=proposal.analysis,
+        application=proposal.application,
+        proposal_type=ProposalType.UPDATE_APPLICATION,
+        status=ProposalStatus.ACCEPTED,
+    )
     client.force_login(proposal.user)
 
     response = client.get(reverse("gmail_stats:gmail_assistant"))
 
     assert response.status_code == 200
     assert b"Pending <span class=\"badge rounded-pill text-bg-light ms-1\">0</span>" in response.content
-    assert b"Accepted <span class=\"badge rounded-pill text-bg-light ms-1\">1</span>" in response.content
+    assert b"Accepted <span class=\"badge rounded-pill text-bg-light ms-1\">2</span>" in response.content
 
 
 @pytest.mark.django_db
@@ -197,6 +205,7 @@ def test_dev_reset_removes_only_current_users_gmail_assistant_data(client, propo
 
 
 @pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=False)
 def test_dev_reset_endpoint_is_hidden_without_dev_tools(client, proposal):
     client.force_login(proposal.user)
 
@@ -324,7 +333,7 @@ def test_application_detail_highlights_a_rejection(client, proposal):
     response = client.get(reverse("applications:detail", args=[proposal.application.pk]))
 
     assert response.status_code == 200
-    assert b"border-danger" in response.content
+    assert b"gmail-timeline-item is-rejection" in response.content
     assert b"text-danger" in response.content
     assert b"Rejection" in response.content
 
