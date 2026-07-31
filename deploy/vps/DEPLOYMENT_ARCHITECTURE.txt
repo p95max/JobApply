@@ -1,0 +1,484 @@
+JobApply — deployment architecture for a low-cost 1 GB VPS
+===========================================================
+
+Purpose
+-------
+
+This deployment profile is designed for personal use on a very small VPS:
+
+- 1 vCPU
+- 1 GB RAM
+- 20-30 GB disk
+- Debian 12 or Ubuntu 24.04
+- no Docker
+- local PostgreSQL as the primary database
+- external backups to Google Drive
+- optional warm recovery copy in Neon
+
+The main goal is to keep monthly infrastructure cost close to the VPS price while preserving predictable performance, data safety and simple operations.
+
+
+Architecture overview
+---------------------
+
+Internet
+  |
+  v
+Caddy on ports 80/443
+  |
+  v
+Gunicorn on 127.0.0.1:8000
+  |
+  v
+Django application
+  |
+  +--> local PostgreSQL on 127.0.0.1:5432
+  |
+  +--> Gmail API
+  |
+  +--> Google Drive API
+  |
+  +--> OpenAI API, only when explicitly enabled
+
+Background operations:
+
+- jobapply-gmail-worker.service
+- jobapply-backup.timer
+- jobapply-neon-sync.timer
+
+The web process, Gmail worker and scheduled jobs are controlled by systemd.
+
+
+Why Docker is not used
+----------------------
+
+Docker is convenient for development and multi-service environments, but on a 1 GB VPS it adds avoidable overhead:
+
+- several container processes remain resident;
+- each Python service runs in a separate container;
+- image builds need extra memory and disk space;
+- bind mounts and Compose configuration increase operational complexity;
+- PostgreSQL memory is harder to inspect and tune directly;
+- restarts and logs are less transparent than native systemd units.
+
+A native deployment gives the operating system direct control over:
+
+- Gunicorn;
+- PostgreSQL;
+- scheduled backup jobs;
+- restart policy;
+- logs through journald;
+- CPU and IO priority.
+
+Docker files remain in the repository for local development. The no-Docker production profile is an additional deployment option, not a replacement for the existing development workflow.
+
+
+Main components
+---------------
+
+1. Caddy
+
+Caddy is the public reverse proxy.
+
+Responsibilities:
+
+- listens on ports 80 and 443;
+- automatically obtains and renews TLS certificates;
+- serves static and media files directly;
+- forwards dynamic requests to Gunicorn;
+- keeps Gunicorn private on 127.0.0.1.
+
+Why Caddy:
+
+- simpler configuration than Nginx plus Certbot;
+- automatic HTTPS;
+- low idle memory usage;
+- easy service management with systemd.
+
+
+2. Gunicorn
+
+Gunicorn runs the Django WSGI application.
+
+Configuration:
+
+- 1 worker;
+- 2 threads;
+- bind only to 127.0.0.1:8000;
+- request timeout of 90 seconds;
+- periodic worker recycling after approximately 500 requests.
+
+Why one worker:
+
+A second worker would duplicate most of Django's process memory. For one personal user, concurrency requirements are very low. One threaded worker provides enough concurrency for normal browser requests while saving RAM.
+
+Why worker recycling is enabled:
+
+Long-running Python processes can slowly accumulate memory because of fragmentation, library caches or rare leaks. max-requests and max-requests-jitter periodically replace the worker without manual intervention.
+
+
+3. Local PostgreSQL
+
+The primary database runs on the VPS itself.
+
+Advantages:
+
+- no network latency for every ORM query;
+- no cold starts;
+- no dependency on a free external database service;
+- no external compute quotas;
+- application continues to work if Neon is unavailable;
+- easier restore and maintenance.
+
+Recommended memory limits for a 1 GB VPS:
+
+shared_buffers = 64MB
+effective_cache_size = 256MB
+work_mem = 2MB
+maintenance_work_mem = 32MB
+max_connections = 20
+
+These values are intentionally conservative. JobApply is a personal application and does not need a large connection pool or aggressive PostgreSQL caching.
+
+The PostgreSQL port must not be exposed publicly. Only local connections from the VPS are required.
+
+
+4. Gmail Assistant worker
+
+The Gmail Assistant worker remains a dedicated systemd service because it performs periodic mailbox synchronization and analysis.
+
+It is separated from Gunicorn so that:
+
+- a Gmail API timeout does not block web requests;
+- the worker can restart independently;
+- logs are isolated;
+- resource use can be inspected separately.
+
+The worker uses the application's existing interval configuration. For a personal mailbox, a 15-minute interval is sufficient and avoids unnecessary Gmail and AI calls.
+
+If memory pressure becomes high, the worker can be replaced later by a systemd timer that starts a single-run management command. The current repository provides a continuous worker command, so the first production configuration keeps that supported implementation.
+
+
+5. Backup strategy
+
+The deployment uses three backup layers.
+
+Layer 1: local PostgreSQL dump
+
+Every day, jobapply-backup.timer creates a custom-format pg_dump file.
+
+Properties:
+
+- consistent PostgreSQL snapshot;
+- compressed custom format;
+- validated with pg_restore --list;
+- temporary file is renamed only after validation;
+- local files older than seven days are removed;
+- permissions are restricted to the jobapply user.
+
+Layer 2: Google Drive off-site backup
+
+The validated dump is copied with rclone to:
+
+gdrive:JobApply/database-backups/
+
+This is the real long-term off-site backup because dump files are immutable snapshots. They protect against:
+
+- complete VPS loss;
+- local disk corruption;
+- accidental database deletion;
+- bad application updates;
+- failure or removal of the Neon project.
+
+Layer 3: Neon warm recovery database
+
+Once per week, jobapply-neon-sync.timer replaces a dedicated Neon database with a fresh local dump.
+
+The script:
+
+- requires a direct Neon PostgreSQL endpoint;
+- rejects pooled endpoints;
+- creates a consistent local dump;
+- restores with --clean and --single-transaction;
+- stops on the first restore error;
+- compares django_migrations count between source and backup.
+
+Neon is treated as a warm recovery copy, not as the only backup and not as the production database.
+
+The Neon database must be dedicated exclusively to JobApply recovery because the synchronization intentionally replaces its schema and data.
+
+
+6. systemd
+
+systemd manages all production processes.
+
+Services:
+
+- jobapply-web.service
+- jobapply-gmail-worker.service
+- jobapply-backup.service
+- jobapply-neon-sync.service
+
+Timers:
+
+- jobapply-backup.timer
+- jobapply-neon-sync.timer
+
+Benefits:
+
+- automatic restart after failure;
+- automatic startup after reboot;
+- no permanent backup worker process;
+- centralized logs through journalctl;
+- native CPU and IO scheduling;
+- simple manual execution and status inspection.
+
+Backup and Neon synchronization use Type=oneshot. They consume memory only while running and exit after completion.
+
+Nice and IOSchedulingPriority reduce the chance that backup activity makes the web interface slow on a single-vCPU server.
+
+
+Memory optimization decisions
+-----------------------------
+
+1. One Gunicorn worker
+
+This avoids duplicating Django memory while keeping two request threads.
+
+2. No permanent backup worker
+
+Database backup and Neon sync run as timers. No Python process remains resident for this work.
+
+3. Local PostgreSQL with conservative settings
+
+PostgreSQL caches and connections are limited for the actual one-user workload.
+
+4. Two GB swap
+
+The installation script creates a 2 GB swap file if the server has no active swap.
+
+Swap is an emergency safety net, not normal application memory. It helps prevent the Linux OOM killer during:
+
+- Poetry installation;
+- package updates;
+- Django migrations;
+- pg_dump or pg_restore;
+- temporary memory spikes.
+
+Consistent swap use during normal idle operation indicates that the server needs additional tuning or more RAM.
+
+5. No Redis
+
+The current production profile does not add Redis because the application can operate without it. Adding another resident service would consume memory without a clear personal-use benefit.
+
+6. Static files served by Caddy
+
+Gunicorn does not spend Python worker capacity serving static assets.
+
+7. AI disabled by default
+
+OpenAI analysis remains optional. The Gmail Assistant can operate in rule-only mode. This prevents unnecessary API cost and avoids processing every email through AI.
+
+8. Long polling intervals
+
+A 15-minute Gmail interval is sufficient for personal use. More frequent checks would increase API usage and wake the worker more often without meaningful benefit.
+
+9. No application-level database connection pool
+
+For one user and one Gunicorn worker, an additional pooler such as PgBouncer is unnecessary. PostgreSQL's own small connection limit is sufficient.
+
+
+Disk optimization decisions
+---------------------------
+
+- only seven days of dumps are retained locally;
+- long-term copies are stored in Google Drive;
+- Git repository, virtualenv and static files stay under /opt/jobapply;
+- PostgreSQL remains local for low latency;
+- Docker images and build cache do not consume disk;
+- journal size should be monitored on very small disks.
+
+Recommended optional journald limits:
+
+SystemMaxUse=200M
+RuntimeMaxUse=50M
+MaxRetentionSec=14day
+
+After changing journald configuration, restart systemd-journald.
+
+
+Security decisions
+------------------
+
+- Gunicorn listens only on localhost;
+- PostgreSQL is not exposed publicly;
+- HTTPS terminates at Caddy;
+- secrets remain in /opt/jobapply/.env;
+- .env should be readable only by the jobapply user and root;
+- backup files use mode 0600;
+- systemd services run as an unprivileged jobapply user;
+- systemd services use PrivateTmp and NoNewPrivileges;
+- Gmail access remains read-only;
+- the Neon URL must use a separate recovery database;
+- OpenAI remains disabled unless explicitly configured.
+
+Recommended permissions:
+
+chown jobapply:jobapply /opt/jobapply/.env
+chmod 600 /opt/jobapply/.env
+
+The server firewall should allow only:
+
+- SSH;
+- HTTP;
+- HTTPS.
+
+PostgreSQL port 5432 must remain closed externally.
+
+
+Expected resource use
+---------------------
+
+Approximate idle memory targets:
+
+- base operating system: 180-250 MB;
+- PostgreSQL: 80-150 MB;
+- Gunicorn and Django: 150-250 MB;
+- Gmail worker: 70-150 MB;
+- Caddy: 20-40 MB.
+
+Expected total:
+
+- approximately 500-800 MB during normal idle operation;
+- temporary peaks may use swap.
+
+Actual use depends on the Linux distribution, Python version, loaded Django modules and mailbox activity.
+
+Useful commands:
+
+free -h
+ps aux --sort=-rss | head -20
+systemd-cgtop
+du -sh /opt/jobapply /var/lib/postgresql /var/backups/jobapply
+journalctl --disk-usage
+
+
+Deployment workflow
+-------------------
+
+Initial deployment:
+
+1. install OS packages;
+2. create the jobapply system user;
+3. enable swap;
+4. configure local PostgreSQL;
+5. clone the repository to /opt/jobapply;
+6. create the Poetry virtualenv;
+7. install production dependencies and Gunicorn;
+8. create and secure .env;
+9. run migrations and collectstatic;
+10. install systemd units and scripts;
+11. configure Caddy;
+12. configure rclone;
+13. configure the optional Neon recovery URL;
+14. verify all services and timers.
+
+Application update:
+
+1. pull the new Git commit;
+2. install changed production dependencies;
+3. run migrations;
+4. collect static files;
+5. restart web and Gmail worker services;
+6. inspect service logs;
+7. confirm the health of backups and timers.
+
+A future auto-deploy script can follow the Argus pattern, but it is intentionally not included in the first minimal version. Manual deployment is easier to audit and safer while the production setup is new.
+
+
+Failure and recovery behavior
+-----------------------------
+
+If Gunicorn fails:
+
+- systemd restarts it automatically;
+- Caddy may temporarily return a gateway error;
+- PostgreSQL and backup timers remain unaffected.
+
+If the Gmail worker fails:
+
+- systemd restarts it;
+- the web interface and existing data remain available;
+- no application proposal is applied automatically.
+
+If Neon is unavailable:
+
+- the weekly sync fails and is visible in journalctl;
+- the primary local database continues to work;
+- Google Drive dumps remain available.
+
+If Google Drive upload fails:
+
+- the local validated dump remains in /var/backups/jobapply;
+- the timer retries on the next scheduled run;
+- Neon remains an additional recovery copy.
+
+If the VPS is lost:
+
+- create a new server;
+- install JobApply;
+- download a dump from Google Drive;
+- restore it into local PostgreSQL;
+- reconnect or verify external OAuth configuration;
+- start systemd services.
+
+
+Operational checks
+------------------
+
+Web service:
+
+systemctl status jobapply-web.service
+journalctl -u jobapply-web.service -n 100 --no-pager
+
+Gmail worker:
+
+systemctl status jobapply-gmail-worker.service
+journalctl -u jobapply-gmail-worker.service -n 100 --no-pager
+
+Timers:
+
+systemctl list-timers --all | grep jobapply
+
+Manual backup:
+
+systemctl start jobapply-backup.service
+journalctl -u jobapply-backup.service -n 100 --no-pager
+
+Manual Neon sync:
+
+systemctl start jobapply-neon-sync.service
+journalctl -u jobapply-neon-sync.service -n 100 --no-pager
+
+Django checks:
+
+cd /opt/jobapply
+sudo -u jobapply .venv/bin/python manage.py check --deploy
+sudo -u jobapply .venv/bin/python manage.py showmigrations
+
+
+Final rationale
+---------------
+
+This architecture is intentionally simple:
+
+- one cheap VPS;
+- one local PostgreSQL instance;
+- one small Gunicorn process;
+- one Gmail worker;
+- native systemd timers;
+- Caddy for HTTPS;
+- Google Drive for durable dump history;
+- Neon as an optional warm recovery database.
+
+It avoids paid managed infrastructure, avoids Docker overhead and keeps the application fully usable even when external backup services are temporarily unavailable.
