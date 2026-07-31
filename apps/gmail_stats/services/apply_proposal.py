@@ -41,7 +41,7 @@ def apply_proposal(
     with transaction.atomic():
         locked = (
             ApplicationUpdateProposal.objects.select_for_update()
-            .select_related("message", "analysis", "application")
+            .select_related("message", "analysis")
             .filter(pk=proposal.pk, user=user)
             .first()
         )
