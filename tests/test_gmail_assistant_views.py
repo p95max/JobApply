@@ -173,6 +173,24 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
 
 
 @pytest.mark.django_db
+def test_assistant_shows_safe_last_sync_status(client, proposal):
+    GmailAssistantSettings.objects.create(
+        user=proposal.user,
+        last_successful_run_at=timezone.now(),
+        last_error_at=timezone.now(),
+        last_error_message="RuntimeError",
+    )
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"Last successful Gmail sync" in response.content
+    assert b"latest Gmail sync needs attention" in response.content
+    assert b"RuntimeError" not in response.content
+
+
+@pytest.mark.django_db
 @override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
 def test_write_endpoints_reject_get_requests(client, proposal):
     client.force_login(proposal.user)

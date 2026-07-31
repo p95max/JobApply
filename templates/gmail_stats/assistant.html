@@ -45,6 +45,19 @@
           <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
         </div>
       </form>
+      <div class="small text-muted mt-3">
+        {% trans "Last successful Gmail sync" %}:
+        {% if settings.last_successful_run_at %}
+          {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
+        {% else %}
+          {% trans "Never" %}
+        {% endif %}
+      </div>
+      {% if settings.last_error_message %}
+        <div class="alert alert-warning small mb-0 mt-2" role="alert">
+          {% trans "The latest Gmail sync needs attention. Try syncing again or reconnect Google if the problem continues." %}
+        </div>
+      {% endif %}
     </div>
   </div>
 
