@@ -210,6 +210,7 @@ def sync_gmail_messages_for_user(
         "failed": 0,
         "ignored_noise": 0,
         "outbound_ignored": 0,
+        "analyses_created": 0,
         "analyzed_by_rules": 0,
         "analyzed_by_ai": 0,
         "proposals_created": 0,
@@ -249,6 +250,7 @@ def sync_gmail_messages_for_user(
                     classifier=AnalysisClassifier.RULE,
                     extracted_data=_rule_data(rule),
                 )
+                counters["analyses_created"] += 1
                 _update_message_status(message=message, status=GmailProcessingStatus.IGNORED)
                 counters["ignored_noise"] += 1
                 counters["analyzed_by_rules"] += 1
@@ -285,6 +287,7 @@ def sync_gmail_messages_for_user(
                         is_job_related=result.is_job_related,
                         model_name=config.model,
                     )
+                    counters["analyses_created"] += 1
                     counters["analyzed_by_ai"] += 1
                 except AIAnalyzerError as error:
                     logger.warning(
@@ -299,6 +302,7 @@ def sync_gmail_messages_for_user(
                         classifier=AnalysisClassifier.RULE,
                         extracted_data=_rule_data(rule),
                     )
+                    counters["analyses_created"] += 1
                     _update_message_status(
                         message=message,
                         status=GmailProcessingStatus.ANALYZED,
@@ -314,6 +318,7 @@ def sync_gmail_messages_for_user(
                     classifier=AnalysisClassifier.RULE,
                     extracted_data=_rule_data(rule),
                 )
+                counters["analyses_created"] += 1
                 counters["analyzed_by_rules"] += 1
 
             match = match_for_message(

@@ -1,5 +1,7 @@
 # JobApply
 
+[![CI](https://github.com/p95max/JobApply/actions/workflows/ci.yml/badge.svg)](https://github.com/p95max/JobApply/actions/workflows/ci.yml)
+
 ---
 
 **JobApply** is a focused Django job application tracker built around a **Google-first workflow**. It avoids feature bloat and unnecessary AI, providing only the tools needed to manage applications, process Gmail responses, plan interviews, and maintain backups.

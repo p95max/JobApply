@@ -98,6 +98,13 @@ class FailingAnalyzer(FakeAnalyzer):
         raise AIAnalyzerError("provider unavailable")
 
 
+class MissingKeyAnalyzer(FakeAnalyzer):
+    config = AIAnalyzerConfig(enabled=True, api_key="", model="gpt-4.1-mini")
+
+    def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
+        raise AssertionError("AI must not run without an API key")
+
+
 @pytest.mark.django_db
 def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
@@ -115,6 +122,7 @@ def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
 
     analysis = GmailAnalysis.objects.get(user=user)
     assert result["analyzed_by_rules"] == 1
+    assert result["analyses_created"] == 1
     assert analysis.classifier == AnalysisClassifier.RULE
     assert analysis.message.processing_status == GmailProcessingStatus.ANALYZED
 
@@ -139,6 +147,7 @@ def test_ai_pipeline_uses_fake_analyzer_and_creates_pending_proposals(django_use
 
     analysis = GmailAnalysis.objects.get(user=user)
     assert result["analyzed_by_ai"] == 1
+    assert result["analyses_created"] == 1
     assert result["proposals_created"] == 2
     assert len(analyzer.calls) == 1
     assert analysis.classifier == AnalysisClassifier.RULE_AI
@@ -200,3 +209,23 @@ def test_ai_failure_keeps_the_rule_result_and_does_not_abort_the_batch(django_us
     assert analysis.classifier == AnalysisClassifier.RULE
     assert analysis.message.processing_status == GmailProcessingStatus.ANALYZED
     assert analysis.message.processing_error == "AIAnalyzerError"
+
+
+@pytest.mark.django_db
+def test_missing_api_key_keeps_the_pipeline_in_rule_only_mode(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+    client = FakeGmailClient(
+        {
+            "message-1": message(
+                sender="recruiter@example.org",
+                subject="Interview invitation",
+                text="We would like to invite you to an interview for your application.",
+            )
+        }
+    )
+
+    result = sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=MissingKeyAnalyzer())
+
+    assert result["analyzed_by_ai"] == 0
+    assert result["analyzed_by_rules"] == 1

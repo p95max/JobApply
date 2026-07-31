@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: jobapply
+          POSTGRES_USER: jobapply
+          POSTGRES_PASSWORD: jobapply
+        options: >-
+          --health-cmd "pg_isready -U jobapply -d jobapply"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+        ports:
+          - 5432:5432
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      POSTGRES_DB: jobapply
+      POSTGRES_USER: jobapply
+      POSTGRES_PASSWORD: jobapply
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      TURNSTILE_ENABLED: "0"
+      GMAIL_ASSISTANT_AI_ENABLED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Poetry
+        run: pipx install poetry==2.2.1
+
+      - name: Verify dependency lock
+        run: poetry check --lock
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run tests
+        run: poetry run pytest -ra -vv
+
+      - name: Run Ruff
+        run: poetry run ruff check .
+
+      - name: Run Django checks
+        run: poetry run python manage.py check
+
+      - name: Verify migrations
+        run: poetry run python manage.py makemigrations --check --dry-run
