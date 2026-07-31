@@ -28,6 +28,9 @@ class FakeGmailClient:
             raise result
         return result
 
+    def get_message_full(self, message_id: str) -> dict:
+        return self.get_message_minimal(message_id)
+
 
 def gmail_message(*, sender: str, recipients: str = "user@example.com") -> dict:
     return {
@@ -128,7 +131,7 @@ def test_message_failure_does_not_abort_other_messages(django_user_model):
 
     assert result["failed"] == 1
     assert GmailMessage.objects.get(user=user, message_id="bad-id").processing_status == GmailProcessingStatus.FAILED
-    assert GmailMessage.objects.get(user=user, message_id="good-id").processing_status == GmailProcessingStatus.NEW
+    assert GmailMessage.objects.get(user=user, message_id="good-id").processing_status == GmailProcessingStatus.ANALYZED
 
 
 @pytest.mark.django_db
