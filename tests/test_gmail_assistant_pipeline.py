@@ -8,21 +8,21 @@ from django.urls import reverse
 
 from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
-from apps.gmail_stats.models import (
+from apps.gmail_assistant.models import (
     AnalysisClassifier,
     GmailAnalysis,
     GmailAssistantSettings,
-    GmailProcessingStatus,
     ProposalStatus,
 )
-from apps.gmail_stats.services.ai_analyzer import (
+from apps.gmail_assistant.services.ai_analyzer import (
     AIAnalysisContext,
     AIAnalyzerConfig,
     AIAnalyzerError,
     AIExtraction,
     InterviewExtraction,
 )
-from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
+from apps.gmail_stats.models import GmailProcessingStatus
 
 
 def _body(value: str) -> str:

@@ -6,9 +6,10 @@ import pytest
 from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus
-from apps.gmail_stats.models import GmailEventType
-from apps.gmail_stats.services.classifier import classify, classify_event
-from apps.gmail_stats.services.status_policy import proposed_status, should_set_recruiter_reply_at
+from apps.gmail_assistant.models import GmailEventType
+from apps.gmail_assistant.services.classifier import classify, classify_event
+from apps.gmail_assistant.services.status_policy import proposed_status, should_set_recruiter_reply_at
+from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
 
 
 @pytest.mark.parametrize(
@@ -45,6 +46,24 @@ def test_classifier_does_not_treat_broad_words_as_job_events(text):
 def test_legacy_classifier_keeps_dashboard_categories():
     assert classify("Interview invitation", "for your application").detected_type == "invite"
     assert classify("Application has been received", "thank you").detected_type == "auto_ack"
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    GMAIL_ASSISTANT_FIXTURES,
+    ids=lambda fixture: fixture.name,
+)
+def test_classify_sanitized_fixture_corpus(fixture):
+    result = classify_event(fixture.subject, fixture.text)
+
+    assert result.event_type == fixture.event_type
+    assert result.evidence or fixture.event_type == GmailEventType.UNKNOWN
+
+
+def test_fixture_corpus_includes_an_outbound_duplicate_and_prompt_injection():
+    assert any(fixture.direction == "outbound" for fixture in GMAIL_ASSISTANT_FIXTURES)
+    assert sum(fixture.duplicate_group == "ats-receipt" for fixture in GMAIL_ASSISTANT_FIXTURES) == 2
+    assert any(fixture.name == "prompt_injection" for fixture in GMAIL_ASSISTANT_FIXTURES)
 
 
 @pytest.mark.parametrize(

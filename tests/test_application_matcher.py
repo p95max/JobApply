@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from apps.gmail_stats.services.application_matcher import (
+from apps.gmail_assistant.services.application_matcher import (
     EmailMatchData,
     match_applications,
     normalize_company,

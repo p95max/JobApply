@@ -341,6 +341,27 @@ docker compose exec web poetry run python manage.py check
 docker compose exec web poetry run python manage.py makemigrations --check --dry-run
 ```
 
+### Migration verification
+
+Verify the current development database without changing its application data:
+
+```bash
+docker compose exec -T web poetry run python manage.py migrate --plan
+docker compose exec -T web poetry run python manage.py migrate --noinput
+docker compose exec -T web poetry run python manage.py showmigrations gmail_stats
+```
+
+To verify a clean database, use a separate Compose project. It creates the
+temporary `jobapply-migration-check` volume only; the final command removes
+that temporary volume and leaves the regular `jobapply` database untouched.
+
+```bash
+docker compose -p jobapply-migration-check up -d db
+docker compose -p jobapply-migration-check run --rm --no-deps --entrypoint "" web poetry run python manage.py migrate --noinput
+docker compose -p jobapply-migration-check run --rm --no-deps --entrypoint "" web poetry run python manage.py check
+docker compose -p jobapply-migration-check down -v
+```
+
 ---
 
 ## Roadmap (next integration)

@@ -26,7 +26,7 @@
 
     <li class="nav-item">
       <a class="nav-link {% if request.resolver_match.url_name == 'gmail_assistant' or request.resolver_match.url_name == 'gmail_proposals' or request.resolver_match.url_name == 'gmail_proposal_detail' %}active{% endif %}"
-         href="{% url 'gmail_stats:gmail_assistant' %}">
+         href="{% url 'gmail_assistant:gmail_assistant' %}">
         🤖 <span class="ms-1">{% trans "Gmail Assistant" %}</span>
       </a>
     </li>

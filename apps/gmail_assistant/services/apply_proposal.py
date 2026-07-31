@@ -9,8 +9,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from apps.applications.models import ApplicationStatus, JobApplication
-from apps.gmail_stats.models import ApplicationUpdateProposal, ProposalStatus, ProposalType
-from apps.gmail_stats.services.status_policy import proposed_status, status_reference_at
+from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus, ProposalType
+from apps.gmail_assistant.services.status_policy import proposed_status, status_reference_at
 
 _APPLICATION_FIELDS = {"title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at"}
 _INTERVIEW_FIELDS = {"starts_at", "location", "notes", "status"}

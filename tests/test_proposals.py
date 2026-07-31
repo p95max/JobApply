@@ -6,17 +6,17 @@ import pytest
 from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus, JobApplication
-from apps.gmail_stats.models import (
+from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
     GmailAnalysis,
     GmailEventType,
-    GmailMessage,
     ProposalStatus,
     ProposalType,
 )
-from apps.gmail_stats.services.application_matcher import ApplicationMatch, MatchCandidate
-from apps.gmail_stats.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
-from apps.gmail_stats.services.proposal_builder import build_proposals
+from apps.gmail_stats.models import GmailMessage
+from apps.gmail_assistant.services.application_matcher import ApplicationMatch, MatchCandidate
+from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
+from apps.gmail_assistant.services.proposal_builder import build_proposals
 from apps.interviews.models import InterviewEvent, InterviewStatus
 
 

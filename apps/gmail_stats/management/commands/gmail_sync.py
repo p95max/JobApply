@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 
 from apps.gmail_stats.services.gmail_client import GmailClient
-from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 
 

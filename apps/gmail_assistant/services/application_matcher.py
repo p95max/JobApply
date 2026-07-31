@@ -121,7 +121,7 @@ def match_applications(
 def match_for_message(*, user: Any, message: Any, extracted_data: dict[str, Any]) -> ApplicationMatch:
     """Match one Gmail message using only applications owned by the supplied user."""
     from apps.applications.models import JobApplication
-    from apps.gmail_stats.models import GmailAnalysis
+    from apps.gmail_assistant.models import GmailAnalysis
 
     email = EmailMatchData(
         thread_id=message.thread_id,

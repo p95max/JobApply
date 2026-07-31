@@ -8,7 +8,7 @@ from django.urls import reverse
 from apps.accounts.models import UserProfile
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus
 from apps.gmail_stats.services.direction import determine_direction, parse_recipients, parse_sender
-from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 
 
 class FakeGmailClient:

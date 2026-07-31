@@ -38,6 +38,7 @@ urlpatterns = [
     path("interviews/", include("apps.interviews.urls")),
     path("reports/", include("apps.reports.urls")),
     path("gmail_stats/", include("apps.gmail_stats.urls")),
+    path("gmail_stats/", include("apps.gmail_assistant.urls")),
 ]
 
 if admin_path:

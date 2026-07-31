@@ -5,7 +5,8 @@ from typing import Any
 from django.db import transaction
 
 from apps.applications.models import JobApplication
-from apps.gmail_stats.models import GmailAssistantSettings, GmailMessage, GmailSyncState
+from apps.gmail_assistant.models import GmailAssistantSettings
+from apps.gmail_stats.models import GmailMessage, GmailSyncState
 
 
 def reset_gmail_assistant_data(*, user: Any) -> dict[str, int]:

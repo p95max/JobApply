@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container py-4" style="max-width: 900px;">
-  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'gmail_stats:gmail_assistant' %}">{% trans "Back" %}</a>
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Back" %}</a>
   <h1 class="h4">{{ proposal.message.subject|default:"—" }}</h1>
   <p class="text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
 
@@ -47,15 +47,15 @@
   </div></div>
 
   {% if proposal.application_id or proposal.proposal_type == "create_application" %}
-    <form method="post" action="{% url 'gmail_stats:accept_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-primary">{% trans "Accept" %}</button></form>
+    <form method="post" action="{% url 'gmail_assistant:accept_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-primary">{% trans "Accept" %}</button></form>
   {% else %}
     <span class="text-muted me-2">{% trans "Assign this proposal to an application before accepting it." %}</span>
   {% endif %}
-  <form method="post" action="{% url 'gmail_stats:reject_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-danger">{% trans "Reject" %}</button></form>
-  <form method="post" action="{% url 'gmail_stats:ignore_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary">{% trans "Ignore" %}</button></form>
+  <form method="post" action="{% url 'gmail_assistant:reject_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-danger">{% trans "Reject" %}</button></form>
+  <form method="post" action="{% url 'gmail_assistant:ignore_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary">{% trans "Ignore" %}</button></form>
 
   {% if candidates and proposal.proposal_type != "create_application" %}
-    <form method="post" action="{% url 'gmail_stats:assign_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
+    <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
       {% csrf_token %}
       <label class="form-label" for="applicationId">{% trans "Choose another application" %}</label>
       <select class="form-select mb-2" name="application_id" id="applicationId">
@@ -65,7 +65,7 @@
     </form>
   {% endif %}
 
-  <form method="post" action="{% url 'gmail_stats:edit_accept_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
+  <form method="post" action="{% url 'gmail_assistant:edit_accept_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
     {% csrf_token %}
     <h2 class="h6">{% trans "Edit and accept" %}</h2>
     <div class="row g-2">

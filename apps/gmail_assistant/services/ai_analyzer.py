@@ -12,7 +12,7 @@ from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v1"  # Kept in the Assistant app because it governs AI extraction.
 SCHEMA_VERSION = "v1"
 MAX_EMAIL_TEXT_CHARS = 12000
 _MAX_EVIDENCE_ITEMS = 3

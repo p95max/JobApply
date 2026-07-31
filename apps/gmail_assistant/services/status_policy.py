@@ -6,7 +6,7 @@ from typing import Any
 from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus
-from apps.gmail_stats.models import GmailEventType
+from apps.gmail_assistant.models import GmailEventType
 
 
 _EVENT_STATUS = {

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.gmail_stats.models import (
+from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
     GmailEventType,
     ProposalStatus,
     ProposalType,
 )
-from apps.gmail_stats.services.status_policy import proposed_status, should_set_recruiter_reply_at, status_reference_at
+from apps.gmail_assistant.services.status_policy import proposed_status, should_set_recruiter_reply_at, status_reference_at
 
 _ACTION_EVENTS = {
     GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,

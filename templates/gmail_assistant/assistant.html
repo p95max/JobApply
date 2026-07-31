@@ -20,7 +20,7 @@
   {% if dev_tools_enabled %}
     <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
       <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
-      <form method="post" action="{% url 'gmail_stats:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
+      <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
         {% csrf_token %}
         <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
       </form>
@@ -33,7 +33,7 @@
         <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
         <span id="aiAnalysisProgressText">{% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}</span>
       </div>
-      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_stats:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
+      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
         <div>
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
@@ -80,7 +80,7 @@
           <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% else %}bg-secondary{% endif %}">{{ proposal.analysis.event_type }}</span>
         </div>
         <div class="small mt-2">{% trans "Match" %}: {{ proposal.match_method|default:"unmatched" }} ({{ proposal.match_score }})</div>
-        <a class="btn btn-outline-primary btn-sm mt-3" href="{% url 'gmail_stats:gmail_proposal_detail' proposal.pk %}">{% trans "Review" %}</a>
+        <a class="btn btn-outline-primary btn-sm mt-3" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{% trans "Review" %}</a>
       </div>
     </div>
   {% empty %}

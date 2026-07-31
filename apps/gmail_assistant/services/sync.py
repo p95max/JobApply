@@ -7,28 +7,25 @@ from typing import Any
 from django.db import DatabaseError, transaction
 from django.utils import timezone as django_timezone
 
-from apps.gmail_stats.models import (
+from apps.gmail_assistant.models import (
     AnalysisClassifier,
     GmailAnalysis,
     GmailAssistantSettings,
-    GmailDirection,
-    GmailMessage,
-    GmailProcessingStatus,
-    GmailSyncState,
 )
-from apps.gmail_stats.services.ai_analyzer import (
+from apps.gmail_assistant.services.ai_analyzer import (
     AIAnalysisContext,
     AIAnalyzerError,
     AIAnalyzerConfig,
     OpenAIEmailAnalyzer,
     SanitizedEmail,
 )
-from apps.gmail_stats.services.application_matcher import match_for_message
-from apps.gmail_stats.services.classifier import RuleClassification, classify_event
+from apps.gmail_assistant.services.application_matcher import match_for_message
+from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
 from apps.gmail_stats.services.direction import determine_direction
 from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
-from apps.gmail_stats.services.proposal_builder import build_proposals
-from apps.gmail_stats.services.queries import build_candidate_query
+from apps.gmail_assistant.services.proposal_builder import build_proposals
+from apps.gmail_assistant.services.queries import build_candidate_query
+from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
 
 logger = logging.getLogger(__name__)
 

@@ -6,10 +6,10 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.gmail_stats.models import GmailAssistantSettings
+from apps.gmail_assistant.models import GmailAssistantSettings
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
-from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 
 
 class Command(BaseCommand):

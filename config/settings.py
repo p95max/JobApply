@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.interviews",
     "apps.reports",
     "apps.gmail_stats",
+    "apps.gmail_assistant.apps.GmailAssistantConfig",
 ]
 
 MIDDLEWARE = [

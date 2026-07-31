@@ -4,16 +4,24 @@ import pytest
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.gmail_stats.models import (
+from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
     GmailAnalysis,
     GmailAssistantSettings,
     GmailEventType,
-    GmailMessage,
-    GmailProcessingStatus,
     ProposalStatus,
     ProposalType,
 )
+from apps.gmail_stats.models import GmailMessage, GmailProcessingStatus
+
+
+def test_assistant_models_are_owned_by_the_dedicated_app_without_table_recreation():
+    assert GmailAnalysis._meta.app_label == "gmail_assistant"
+    assert ApplicationUpdateProposal._meta.app_label == "gmail_assistant"
+    assert GmailAssistantSettings._meta.app_label == "gmail_assistant"
+    assert GmailAnalysis._meta.db_table == "gmail_stats_gmailanalysis"
+    assert ApplicationUpdateProposal._meta.db_table == "gmail_stats_applicationupdateproposal"
+    assert GmailAssistantSettings._meta.db_table == "gmail_stats_gmailassistantsettings"
 
 
 @pytest.fixture

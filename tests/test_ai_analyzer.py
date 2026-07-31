@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from apps.gmail_stats.services.ai_analyzer import (
+from apps.gmail_assistant.services.ai_analyzer import (
     AIAnalysisContext,
     AIAnalyzerConfig,
     AIAnalyzerError,

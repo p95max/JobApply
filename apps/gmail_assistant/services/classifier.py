@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from apps.gmail_stats.models import GmailEventType
+from apps.gmail_assistant.models import GmailEventType
 
 
 @dataclass(frozen=True)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.gmail_stats.services.reset import reset_gmail_assistant_data
+from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 
 
 class Command(BaseCommand):
