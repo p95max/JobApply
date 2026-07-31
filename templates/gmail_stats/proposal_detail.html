@@ -24,9 +24,18 @@
   <div class="card mb-3"><div class="card-body">
     <h2 class="h6">{% trans "Proposed changes" %}</h2>
     {% if proposal.changes.application %}
-      {% for field, change in proposal.changes.application.items %}
-        <div><strong>{{ field }}:</strong> {{ change.old|default:"—" }} → {{ change.new|default:"—" }}</div>
-      {% endfor %}
+      {% if proposal.proposal_type == "create_application" %}
+        <div><strong>{% trans "Title" %}:</strong> {{ proposal.changes.application.title }}</div>
+        <div><strong>{% trans "Company" %}:</strong> {{ proposal.changes.application.company }}</div>
+        <div><strong>{% trans "Location" %}:</strong> {{ proposal.changes.application.location|default:"—" }}</div>
+        <div><strong>{% trans "Source" %}:</strong> {{ proposal.changes.application.source }}</div>
+        <div><strong>{% trans "Status" %}:</strong> {{ proposal.changes.application.status }}</div>
+        <div><strong>{% trans "Applied at" %}:</strong> {{ proposal.changes.application.applied_at }}</div>
+      {% else %}
+        {% for field, change in proposal.changes.application.items %}
+          <div><strong>{{ field }}:</strong> {{ change.old|default:"—" }} → {{ change.new|default:"—" }}</div>
+        {% endfor %}
+      {% endif %}
     {% endif %}
     {% if proposal.changes.interview %}
       <div class="mt-2"><strong>{% trans "Interview" %}:</strong> {{ proposal.changes.interview.operation }}
@@ -41,24 +50,34 @@
   <form method="post" action="{% url 'gmail_stats:reject_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-danger">{% trans "Reject" %}</button></form>
   <form method="post" action="{% url 'gmail_stats:ignore_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary">{% trans "Ignore" %}</button></form>
 
-  <form method="post" action="{% url 'gmail_stats:assign_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
-    {% csrf_token %}
-    <label class="form-label" for="applicationId">{% trans "Choose another application" %}</label>
-    <select class="form-select mb-2" name="application_id" id="applicationId">
-      {% for application in candidates %}<option value="{{ application.pk }}" {% if proposal.application_id == application.pk %}selected{% endif %}>{{ application.company }} — {{ application.title }}</option>{% endfor %}
-    </select>
-    <button class="btn btn-outline-primary align-self-start">{% trans "Assign" %}</button>
-  </form>
+  {% if candidates and proposal.proposal_type != "create_application" %}
+    <form method="post" action="{% url 'gmail_stats:assign_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
+      {% csrf_token %}
+      <label class="form-label" for="applicationId">{% trans "Choose another application" %}</label>
+      <select class="form-select mb-2" name="application_id" id="applicationId">
+        {% for application in candidates %}<option value="{{ application.pk }}" {% if proposal.application_id == application.pk %}selected{% endif %}>{{ application.company }} — {{ application.title }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-outline-primary align-self-start">{% trans "Assign" %}</button>
+    </form>
+  {% endif %}
 
   <form method="post" action="{% url 'gmail_stats:edit_accept_gmail_proposal' proposal.pk %}" class="card card-body mt-3">
     {% csrf_token %}
     <h2 class="h6">{% trans "Edit and accept" %}</h2>
     <div class="row g-2">
-      <div class="col-md-6"><input class="form-control" name="title" placeholder="{% trans 'Job title' %}"></div>
-      <div class="col-md-6"><input class="form-control" name="company" placeholder="{% trans 'Company' %}"></div>
-      <div class="col-md-6"><input class="form-control" name="location" placeholder="{% trans 'Location' %}"></div>
-      <div class="col-md-6"><input class="form-control" name="starts_at" placeholder="2026-08-06T09:00:00+02:00"></div>
-      <div class="col-12"><textarea class="form-control" name="notes" placeholder="{% trans 'Interview notes' %}"></textarea></div>
+      {% if proposal.proposal_type == "create_application" %}
+        <div class="col-md-6"><input class="form-control" name="title" value="{{ proposal.changes.application.title }}" placeholder="{% trans 'Job title' %}"></div>
+        <div class="col-md-6"><input class="form-control" name="company" value="{{ proposal.changes.application.company }}" placeholder="{% trans 'Company' %}"></div>
+        <div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.application.location }}" placeholder="{% trans 'Location' %}"></div>
+      {% elif proposal.changes.interview %}
+        <div class="col-md-6"><input class="form-control" name="starts_at" value="{{ proposal.changes.interview.starts_at }}" placeholder="2026-08-06T09:00:00+02:00"></div>
+        <div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.interview.location }}" placeholder="{% trans 'Location' %}"></div>
+        <div class="col-12"><textarea class="form-control" name="notes" placeholder="{% trans 'Interview notes' %}">{{ proposal.changes.interview.notes }}</textarea></div>
+      {% else %}
+        <div class="col-md-6"><input class="form-control" name="title" placeholder="{% trans 'Job title' %}"></div>
+        <div class="col-md-6"><input class="form-control" name="company" placeholder="{% trans 'Company' %}"></div>
+        <div class="col-md-6"><input class="form-control" name="location" placeholder="{% trans 'Location' %}"></div>
+      {% endif %}
     </div>
     <button class="btn btn-primary align-self-start mt-3">{% trans "Edit and accept" %}</button>
   </form>

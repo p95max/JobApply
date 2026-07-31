@@ -163,3 +163,45 @@ def test_application_detail_shows_only_its_gmail_metadata(client, proposal):
     assert response.status_code == 200
     assert b"Gmail activity" in response.content
     assert proposal.message.subject.encode() in response.content
+
+
+@pytest.mark.django_db
+def test_create_application_proposal_displays_extracted_values(client, proposal):
+    message = GmailMessage.objects.create(
+        user=proposal.user,
+        message_id="message-create",
+        thread_id="thread-create",
+        received_at=timezone.now(),
+        subject="Application received",
+    )
+    analysis = GmailAnalysis.objects.create(
+        user=proposal.user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        is_job_related=True,
+    )
+    created = ApplicationUpdateProposal.objects.create(
+        user=proposal.user,
+        message=message,
+        analysis=analysis,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        changes={
+            "application": {
+                "operation": "create",
+                "title": "Python Software Engineer",
+                "company": "Smart Systems Hub GmbH",
+                "location": "",
+                "source": "other",
+                "status": "applied",
+                "applied_at": "2026-07-30T13:18:00+02:00",
+            }
+        },
+    )
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_proposal_detail", args=[created.pk]))
+
+    assert response.status_code == 200
+    assert b"Python Software Engineer" in response.content
+    assert b"Smart Systems Hub GmbH" in response.content
+    assert b"Choose another application" not in response.content
