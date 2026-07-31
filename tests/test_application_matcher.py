@@ -100,7 +100,11 @@ def test_fuzzy_company_and_title_make_an_ambiguous_candidate():
     result = match_applications(
         user_id=10,
         applications=[candidate],
-        email=email(company="Example Technologies", position_title="Python Backend Engineer"),
+        email=email(
+            company="Example Technologies",
+            position_title="Python Backend Engineer",
+            sender_email="jobs@ats-provider.org",
+        ),
     )
 
     assert result.suggested is None
