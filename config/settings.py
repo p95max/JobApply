@@ -177,5 +177,9 @@ TURNSTILE_SECRET_KEY = getenv("TURNSTILE_SECRET_KEY", "")
 TURNSTILE_ENABLED = getenv("TURNSTILE_ENABLED", "1") == "1"
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
+GMAIL_ASSISTANT_AI_ENABLED = getenv("GMAIL_ASSISTANT_AI_ENABLED", "0") == "1"
+OPENAI_API_KEY = getenv("OPENAI_API_KEY", "")
+OPENAI_EMAIL_MODEL = getenv("OPENAI_EMAIL_MODEL", "gpt-4.1-mini")
+
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
