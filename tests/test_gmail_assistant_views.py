@@ -275,13 +275,17 @@ def test_user_cannot_see_another_users_proposal_in_assistant_or_application_deta
 def test_accept_endpoint_applies_a_pending_proposal(client, proposal):
     client.force_login(proposal.user)
 
-    response = client.post(reverse("gmail_assistant:accept_gmail_proposal", args=[proposal.pk]))
+    response = client.post(
+        reverse("gmail_assistant:accept_gmail_proposal", args=[proposal.pk]),
+        {"review_note": "Status confirmed after recruiter call."},
+    )
 
     assert response.status_code == 302
     assert response.url == reverse("gmail_assistant:gmail_assistant")
     proposal.refresh_from_db()
     proposal.application.refresh_from_db()
     assert proposal.status == ProposalStatus.ACCEPTED
+    assert proposal.review_note == "Status confirmed after recruiter call."
     assert proposal.application.status == "replied"
 
 

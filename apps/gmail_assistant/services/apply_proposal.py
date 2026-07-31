@@ -35,9 +35,11 @@ def apply_proposal(
     proposal: ApplicationUpdateProposal,
     user: Any,
     overrides: dict[str, Any] | None = None,
+    review_note: str = "",
 ) -> ApplyProposalResult:
     """Atomically apply a pending proposal owned by the current user."""
     overrides = overrides or {}
+    review_note = _review_note(review_note)
     with transaction.atomic():
         locked = (
             ApplicationUpdateProposal.objects.select_for_update()
@@ -61,14 +63,22 @@ def apply_proposal(
             locked.message.save(update_fields=["application", "updated_at"])
         locked.status = ProposalStatus.ACCEPTED
         locked.reviewed_at = timezone.now()
-        locked.save(update_fields=["status", "reviewed_at", "updated_at"])
+        locked.review_note = review_note
+        locked.save(update_fields=["status", "review_note", "reviewed_at", "updated_at"])
         return ApplyProposalResult(locked, application, interview, False)
 
 
-def review_proposal(*, proposal: ApplicationUpdateProposal, user: Any, status: str) -> ApplicationUpdateProposal:
+def review_proposal(
+    *,
+    proposal: ApplicationUpdateProposal,
+    user: Any,
+    status: str,
+    review_note: str = "",
+) -> ApplicationUpdateProposal:
     """Mark a pending proposal rejected or ignored after an ownership check."""
     if status not in {ProposalStatus.REJECTED, ProposalStatus.IGNORED}:
         raise ValueError("review status must be rejected or ignored")
+    review_note = _review_note(review_note)
     with transaction.atomic():
         locked = ApplicationUpdateProposal.objects.select_for_update().filter(pk=proposal.pk, user=user).first()
         if locked is None:
@@ -76,9 +86,16 @@ def review_proposal(*, proposal: ApplicationUpdateProposal, user: Any, status: s
         if locked.status != ProposalStatus.PENDING:
             raise ProposalApplyError("proposal is no longer pending")
         locked.status = status
+        locked.review_note = review_note
         locked.reviewed_at = timezone.now()
-        locked.save(update_fields=["status", "reviewed_at", "updated_at"])
+        locked.save(update_fields=["status", "review_note", "reviewed_at", "updated_at"])
         return locked
+
+
+def _review_note(value: str) -> str:
+    if not isinstance(value, str):
+        raise ProposalApplyError("review note is invalid")
+    return value.strip()
 
 
 def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides: dict[str, Any]) -> JobApplication | None:

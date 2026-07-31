@@ -70,19 +70,25 @@
   </div>
 
   {% for proposal in proposals %}
-    <div class="card mb-3 {% if proposal.analysis.event_type == 'rejection' %}border-danger{% endif %}">
+    <a
+      class="card mb-3 text-reset text-decoration-none {% if proposal.analysis.event_type == 'rejection' %}border-danger{% elif proposal.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif proposal.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif proposal.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
+      href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}"
+    >
       <div class="card-body">
         <div class="d-flex justify-content-between gap-3">
           <div>
             <div class="fw-semibold">{{ proposal.message.subject|default:"—" }}</div>
             <div class="small text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
           </div>
-          <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% else %}bg-secondary{% endif %}">{{ proposal.analysis.event_type }}</span>
+          <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% elif proposal.analysis.event_type in technical_event_types %}bg-primary{% elif proposal.analysis.event_type in interview_event_types %}bg-success{% elif proposal.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{% if proposal.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ proposal.analysis.event_type }}</span>
         </div>
-        <div class="small mt-2">{% trans "Match" %}: {{ proposal.match_method|default:"unmatched" }} ({{ proposal.match_score }})</div>
-        <a class="btn btn-outline-primary btn-sm mt-3" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{% trans "Review" %}</a>
+        <div class="small mt-2">
+          {% trans "Match" %}:
+          {% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
+          ({{ proposal.match_score }})
+        </div>
       </div>
-    </div>
+    </a>
   {% empty %}
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}

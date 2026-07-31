@@ -13,7 +13,12 @@ from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 
 from apps.applications.models import JobApplication
-from apps.gmail_assistant.models import ApplicationUpdateProposal, GmailAssistantSettings, ProposalStatus
+from apps.gmail_assistant.models import (
+    ApplicationUpdateProposal,
+    GmailAssistantSettings,
+    GmailEventType,
+    ProposalStatus,
+)
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
@@ -21,6 +26,22 @@ from apps.gmail_stats.services.credentials import get_google_credentials_for_use
 from apps.gmail_stats.services.gmail_client import GmailClient
 
 logger = logging.getLogger(__name__)
+
+
+def _event_tone(event_type: str) -> str:
+    if event_type == GmailEventType.REJECTION:
+        return "danger"
+    if event_type in {GmailEventType.INTERVIEW_INVITATION, GmailEventType.INTERVIEW_RESCHEDULED}:
+        return "success"
+    if event_type == GmailEventType.OFFER:
+        return "warning"
+    if event_type in {
+        GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+        GmailEventType.APPLICATION_SENT,
+        GmailEventType.APPLICATION_RECEIVED,
+    }:
+        return "primary"
+    return "secondary"
 
 
 @login_required
@@ -52,6 +73,15 @@ def gmail_assistant(request):
             ],
             "settings": settings,
             "pending_count": proposal_counts[ProposalStatus.PENDING],
+            "technical_event_types": {
+                GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+                GmailEventType.APPLICATION_SENT,
+                GmailEventType.APPLICATION_RECEIVED,
+            },
+            "interview_event_types": {
+                GmailEventType.INTERVIEW_INVITATION,
+                GmailEventType.INTERVIEW_RESCHEDULED,
+            },
             "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
             "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
         },
@@ -66,7 +96,11 @@ def gmail_proposal_detail(request, pk: int):
         user=request.user,
     )
     candidates = JobApplication.objects.filter(user=request.user).exclude(status__in=["archived", "rejected"])
-    return render(request, "gmail_assistant/proposal_detail.html", {"proposal": proposal, "candidates": candidates})
+    return render(
+        request,
+        "gmail_assistant/proposal_detail.html",
+        {"proposal": proposal, "candidates": candidates, "event_tone": _event_tone(proposal.analysis.event_type)},
+    )
 
 
 @login_required
@@ -74,7 +108,11 @@ def gmail_proposal_detail(request, pk: int):
 def accept_gmail_proposal(request, pk: int):
     proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
     try:
-        result = apply_proposal(proposal=proposal, user=request.user)
+        result = apply_proposal(
+            proposal=proposal,
+            user=request.user,
+            review_note=request.POST.get("review_note", ""),
+        )
     except ProposalApplyError as error:
         logger.info("Gmail Assistant proposal apply rejected user_id=%s error=%s", request.user.id, type(error).__name__)
         messages.error(request, _("The proposal could not be applied."))
@@ -93,7 +131,7 @@ def edit_and_accept_gmail_proposal(request, pk: int):
     overrides = {
         "application": {
             field: request.POST[field]
-            for field in ("title", "company", "location")
+            for field in ("title", "company", "location", "source")
             if request.POST.get(field)
         },
         "interview": {
@@ -103,7 +141,12 @@ def edit_and_accept_gmail_proposal(request, pk: int):
         },
     }
     try:
-        apply_proposal(proposal=proposal, user=request.user, overrides=overrides)
+        apply_proposal(
+            proposal=proposal,
+            user=request.user,
+            overrides=overrides,
+            review_note=request.POST.get("review_note", ""),
+        )
     except ProposalApplyError as error:
         logger.info("Gmail Assistant proposal edit rejected user_id=%s error=%s", request.user.id, type(error).__name__)
         messages.error(request, _("The proposal could not be applied."))
@@ -129,7 +172,12 @@ def assign_gmail_proposal(request, pk: int):
 def reject_gmail_proposal(request, pk: int):
     proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
     try:
-        review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.REJECTED)
+        review_proposal(
+            proposal=proposal,
+            user=request.user,
+            status=ProposalStatus.REJECTED,
+            review_note=request.POST.get("review_note", ""),
+        )
     except ProposalApplyError as error:
         logger.info("Gmail Assistant proposal rejection failed user_id=%s error=%s", request.user.id, type(error).__name__)
         messages.error(request, _("The proposal could not be reviewed."))
@@ -143,7 +191,12 @@ def reject_gmail_proposal(request, pk: int):
 def ignore_gmail_proposal(request, pk: int):
     proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
     try:
-        review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.IGNORED)
+        review_proposal(
+            proposal=proposal,
+            user=request.user,
+            status=ProposalStatus.IGNORED,
+            review_note=request.POST.get("review_note", ""),
+        )
     except ProposalApplyError as error:
         logger.info("Gmail Assistant proposal ignore failed user_id=%s error=%s", request.user.id, type(error).__name__)
         messages.error(request, _("The proposal could not be reviewed."))
