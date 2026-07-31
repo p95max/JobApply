@@ -25,7 +25,8 @@ def parse_sender(value: str) -> tuple[str, str]:
 def parse_recipients(values: list[str]) -> list[str]:
     """Return unique recipient addresses from a collection of headers."""
     addresses: list[str] = []
-    for _, address in getaddresses(values):
+    non_empty_values = [value for value in values if value and value.strip()]
+    for _, address in getaddresses(non_empty_values):
         normalized = _clean_email(address)
         if normalized and normalized not in addresses:
             addresses.append(normalized[:254])
