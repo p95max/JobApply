@@ -183,8 +183,13 @@ def sync_gmail_messages_for_user(
     days: int = 180,
     max_results_each: int = 500,
     ai_analyzer: OpenAIEmailAnalyzer | None = None,
+    reanalyze_existing: bool = False,
 ) -> dict[str, int]:
-    """Run the bounded, per-message Gmail assistant pipeline for one user."""
+    """Run the bounded, per-message Gmail assistant pipeline for one user.
+
+    ``reanalyze_existing`` is used once when a user newly opts in to AI so
+    historical messages saved by the statistics-only sync are not skipped.
+    """
     if not 1 <= days <= 365:
         raise ValueError("days must be between 1 and 365")
 
@@ -206,7 +211,7 @@ def sync_gmail_messages_for_user(
         "fetched_candidates": len(ids),
         "candidates": len(ids),
         "created": 0,
-        "skipped_existing": len(existing),
+        "skipped_existing": 0 if reanalyze_existing else len(existing),
         "failed": 0,
         "ignored_noise": 0,
         "outbound_ignored": 0,
@@ -217,7 +222,8 @@ def sync_gmail_messages_for_user(
         "unmatched": 0,
     }
 
-    for message_id in ids - existing:
+    message_ids = ids if reanalyze_existing else ids - existing
+    for message_id in message_ids:
         try:
             raw = gmail_client.get_message_full(message_id)
             parsed = parse_gmail_message(raw)

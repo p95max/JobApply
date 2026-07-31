@@ -171,6 +171,7 @@ def gmail_assistant_settings(request):
                     gmail_client=GmailClient(credentials),
                     days=180,
                     max_results_each=500,
+                    reanalyze_existing=True,
                 )
             except (RuntimeError, ValueError) as error:
                 messages.warning(request, f"AI analysis enabled, but Gmail sync failed: {error}")

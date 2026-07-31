@@ -158,6 +158,35 @@ def test_ai_pipeline_uses_fake_analyzer_and_creates_pending_proposals(django_use
 
 
 @pytest.mark.django_db
+def test_first_ai_opt_in_reanalyzes_previously_synced_messages(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    client = FakeGmailClient(
+        {
+            "message-1": message(
+                sender="recruiter@example.org",
+                subject="Interview invitation",
+                text="We would like to invite you to an interview for your application.",
+            )
+        }
+    )
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=MissingKeyAnalyzer())
+    analyzer = FakeAnalyzer()
+    result = sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=client,
+        ai_analyzer=analyzer,
+        reanalyze_existing=True,
+    )
+
+    analysis = GmailAnalysis.objects.get(user=user, message__message_id="message-1")
+    assert result["skipped_existing"] == 0
+    assert len(analyzer.calls) == 1
+    assert analysis.classifier == AnalysisClassifier.RULE_AI
+
+
+@pytest.mark.django_db
 def test_outbound_and_high_confidence_noise_do_not_call_ai(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     GmailAssistantSettings.objects.create(user=user, ai_enabled=True)

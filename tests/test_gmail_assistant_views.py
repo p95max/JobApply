@@ -135,6 +135,7 @@ def test_enabling_ai_analysis_starts_gmail_sync(client, proposal, monkeypatch):
             "gmail_client": ("gmail", credentials),
             "days": 180,
             "max_results_each": 500,
+            "reanalyze_existing": True,
         }
     ]
 
