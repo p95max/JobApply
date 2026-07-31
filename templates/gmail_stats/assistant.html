@@ -38,7 +38,7 @@
         <div>
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
-          <small class="d-block text-muted">{% trans "When enabled, new Gmail messages are checked automatically about every 15 minutes." %}</small>
+          <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
         </div>
         <div class="form-check form-switch ms-auto">
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
@@ -49,8 +49,10 @@
   </div>
 
   <div class="nav nav-pills gap-2 mb-3">
-    {% for value, label in proposal_statuses.choices %}
-      <a class="btn btn-sm {% if selected_status == value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ value }}">{{ label }}</a>
+    {% for filter in proposal_status_filters %}
+      <a class="btn btn-sm {% if selected_status == filter.value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ filter.value }}">
+        {{ filter.label }} <span class="badge rounded-pill text-bg-light ms-1">{{ filter.count }}</span>
+      </a>
     {% endfor %}
   </div>
 

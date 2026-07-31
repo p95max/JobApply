@@ -89,6 +89,19 @@ def test_assistant_lists_newest_email_first(client, proposal):
 
 
 @pytest.mark.django_db
+def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
+    proposal.status = ProposalStatus.ACCEPTED
+    proposal.save(update_fields=["status"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"Pending <span class=\"badge rounded-pill text-bg-light ms-1\">0</span>" in response.content
+    assert b"Accepted <span class=\"badge rounded-pill text-bg-light ms-1\">1</span>" in response.content
+
+
+@pytest.mark.django_db
 def test_assistant_highlights_rejection_proposals(client, proposal):
     proposal.analysis.event_type = GmailEventType.REJECTION
     proposal.analysis.save(update_fields=["event_type"])

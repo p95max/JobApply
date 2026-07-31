@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import time
 
 from django.conf import settings
@@ -13,18 +12,11 @@ from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
 
 
-def _interval_seconds() -> int:
-    try:
-        return max(60, int(os.getenv("GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", "900")))
-    except ValueError:
-        return 900
-
-
 class Command(BaseCommand):
     help = "Periodically sync Gmail Assistant messages for users who enabled AI analysis."
 
     def handle(self, *args, **options):
-        interval = _interval_seconds()
+        interval = settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS
         self.stdout.write(self.style.SUCCESS(f"Gmail Assistant worker started (interval={interval}s)."))
         while True:
             try:

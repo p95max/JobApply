@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Count
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -40,6 +41,13 @@ def gmail_assistant(request):
     status = request.GET.get("status", ProposalStatus.PENDING)
     if status in ProposalStatus.values:
         proposals = proposals.filter(status=status)
+    proposal_counts = {proposal_status: 0 for proposal_status in ProposalStatus.values}
+    proposal_counts.update(
+        {
+            item["status"]: item["count"]
+            for item in proposal_queryset.values("status").annotate(count=Count("id"))
+        }
+    )
     settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
     return render(
         request,
@@ -47,9 +55,15 @@ def gmail_assistant(request):
         {
             "proposals": proposals[:50],
             "selected_status": status,
-            "proposal_statuses": ProposalStatus,
+            "proposal_status_filters": [
+                {"value": value, "label": label, "count": proposal_counts[value]}
+                for value, label in ProposalStatus.choices
+            ],
             "settings": settings,
-            "pending_count": proposal_queryset.filter(status=ProposalStatus.PENDING).count(),
+            "pending_count": proposal_counts[ProposalStatus.PENDING],
+            "auto_sync_interval_minutes": (
+                django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60
+            ),
             "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
         },
     )
