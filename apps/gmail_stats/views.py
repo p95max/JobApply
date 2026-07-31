@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from django.conf import settings as django_settings
 from django.contrib.auth.decorators import login_required
@@ -22,6 +23,8 @@ from apps.gmail_stats.models import (
     GmailSyncState,
     ProposalStatus,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -172,7 +175,15 @@ def gmail_assistant_settings(request):
     settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
 
     if enabled and not was_enabled:
-        credentials = get_google_credentials_for_user(request.user)
+        try:
+            credentials = get_google_credentials_for_user(request.user)
+        except (RuntimeError, ValueError) as error:
+            logger.warning(
+                "Gmail Assistant credential lookup failed user_id=%s error=%s",
+                request.user.id,
+                type(error).__name__,
+            )
+            credentials = None
         if not credentials:
             messages.warning(
                 request,
@@ -188,7 +199,12 @@ def gmail_assistant_settings(request):
                     reanalyze_existing=True,
                 )
             except (RuntimeError, ValueError) as error:
-                messages.warning(request, f"AI analysis enabled, but Gmail sync failed: {error}")
+                logger.warning(
+                    "Initial Gmail Assistant sync failed user_id=%s error=%s",
+                    request.user.id,
+                    type(error).__name__,
+                )
+                messages.warning(request, "AI analysis is enabled, but Gmail sync failed. Try again later.")
             else:
                 messages.success(
                     request,
@@ -255,7 +271,18 @@ def gmail_sync_api(request):
     if not 1 <= days <= 365:
         return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
 
-    creds = get_google_credentials_for_user(request.user)
+    try:
+        creds = get_google_credentials_for_user(request.user)
+    except (RuntimeError, ValueError) as error:
+        logger.warning(
+            "Gmail credential lookup failed user_id=%s error=%s",
+            request.user.id,
+            type(error).__name__,
+        )
+        return JsonResponse(
+            {"error": "Google Gmail connection needs attention. Reconnect Google and try again."},
+            status=403,
+        )
     if not creds:
         return JsonResponse(
             {"error": "Google Gmail not connected. Reconnect Google with gmail.readonly scope."},
@@ -266,8 +293,8 @@ def gmail_sync_api(request):
 
     try:
         gmail.list_message_ids(query=f"newer_than:{min(days, 7)}d", max_results=1)
-    except RuntimeError as e:
-        msg = str(e)
+    except RuntimeError as error:
+        msg = str(error)
         if "accessNotConfigured" in msg or "Gmail API has not been used" in msg:
             return JsonResponse(
                 {"error": "Gmail API is disabled for your Google Cloud project. Enable Gmail API in Google Cloud Console and retry."},
@@ -278,15 +305,33 @@ def gmail_sync_api(request):
                 {"error": "Missing permission (gmail.readonly). Reconnect Google and grant Gmail access."},
                 status=403,
             )
-        return JsonResponse({"error": f"Gmail access failed: {msg}"}, status=403)
-    except Exception as e:
-        return JsonResponse({"error": f"Gmail access failed: {e}"}, status=403)
+        logger.warning(
+            "Gmail preflight failed user_id=%s error=%s",
+            request.user.id,
+            type(error).__name__,
+        )
+        return JsonResponse({"error": "Gmail access failed. Reconnect Google and try again."}, status=403)
+    except (AttributeError, TypeError, ValueError) as error:
+        logger.warning(
+            "Gmail preflight failed user_id=%s error=%s",
+            request.user.id,
+            type(error).__name__,
+        )
+        return JsonResponse({"error": "Gmail access failed. Reconnect Google and try again."}, status=403)
 
-    res = sync_gmail_messages_for_user(
-        user=request.user,
-        gmail_client=gmail,
-        days=days,
-        max_results_each=500,
-    )
+    try:
+        res = sync_gmail_messages_for_user(
+            user=request.user,
+            gmail_client=gmail,
+            days=days,
+            max_results_each=500,
+        )
+    except (RuntimeError, ValueError) as error:
+        logger.warning(
+            "Gmail sync failed user_id=%s error=%s",
+            request.user.id,
+            type(error).__name__,
+        )
+        return JsonResponse({"error": "Gmail sync failed. Try again later."}, status=502)
     return JsonResponse({"ok": True, "result": res})
 

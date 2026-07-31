@@ -283,3 +283,27 @@ def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_
 
     assert response.status_code == 403
     assert "gmail.readonly" in response.json()["error"]
+
+
+@pytest.mark.django_db
+def test_sync_api_hides_unexpected_gmail_error_details(client, django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+    secret = "access-token-should-not-reach-the-browser"
+
+    class FailingGmailClient:
+        def __init__(self, credentials):
+            self.credentials = credentials
+
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            raise RuntimeError(secret)
+
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: object())
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", FailingGmailClient)
+    client.force_login(user)
+
+    response = client.post(reverse("gmail_stats:gmail_sync_api"))
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "Gmail access failed. Reconnect Google and try again."
+    assert secret not in response.json()["error"]

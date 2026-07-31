@@ -100,7 +100,7 @@ def _refresh_google_access_token(*, client_id: str, client_secret: str, refresh_
         timeout=20,
     )
     if resp.status_code != 200:
-        raise RuntimeError(f"Failed to refresh Google token: {resp.status_code} {resp.text}")
+        raise RuntimeError(f"Google token refresh failed (HTTP {resp.status_code})")
 
     data = resp.json()
     access_token = data["access_token"]
