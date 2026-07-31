@@ -239,6 +239,20 @@ def test_application_detail_shows_only_its_gmail_metadata(client, proposal):
 
 
 @pytest.mark.django_db
+def test_application_detail_highlights_a_rejection(client, proposal):
+    proposal.analysis.event_type = GmailEventType.REJECTION
+    proposal.analysis.save(update_fields=["event_type"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("applications:detail", args=[proposal.application.pk]))
+
+    assert response.status_code == 200
+    assert b"border-danger" in response.content
+    assert b"text-danger" in response.content
+    assert b"Rejection" in response.content
+
+
+@pytest.mark.django_db
 def test_create_application_proposal_displays_extracted_values(client, proposal):
     message = GmailMessage.objects.create(
         user=proposal.user,

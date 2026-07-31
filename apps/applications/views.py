@@ -254,10 +254,15 @@ def application_detail(request, pk: int):
             .distinct()
             .order_by("-received_at")
         )
+        rejection_message = gmail_messages.filter(analysis__event_type="rejection").first()
         return render(
             request,
             "applications/detail.html",
-            {"app": app, "gmail_messages": gmail_messages},
+            {
+                "app": app,
+                "gmail_messages": gmail_messages,
+                "rejection_at": rejection_message.received_at if rejection_message else None,
+            },
         )
     except Exception:
         logger.exception("application_detail failed user=%s pk=%s", request.user.id, pk)

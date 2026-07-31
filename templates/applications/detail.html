@@ -40,6 +40,13 @@
         {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
       </dd>
 
+      {% if rejection_at %}
+        <dt class="col-sm-4 text-danger">{% trans "Rejection" %}</dt>
+        <dd class="col-sm-8 text-danger fw-semibold">
+          {{ rejection_at|date:"H:i - d.m.Y" }}
+        </dd>
+      {% endif %}
+
       <dt class="col-sm-4 text-body-secondary">{% trans "Last update" %}</dt>
       <dd class="col-sm-8">
         {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
@@ -74,12 +81,12 @@
     {% if gmail_messages %}
       <ul class="list-group list-group-flush">
         {% for message in gmail_messages %}
-          <li class="list-group-item px-0">
+          <li class="list-group-item px-0 {% if message.analysis.event_type == 'rejection' %}border-start border-3 border-danger ps-2{% endif %}">
             <div class="d-flex justify-content-between gap-2">
               <span>{{ message.subject|default:"—" }}</span>
               <small class="text-muted">{{ message.received_at|date:"d.m.Y H:i" }}</small>
             </div>
-            <small class="text-muted">
+            <small class="{% if message.analysis.event_type == 'rejection' %}text-danger fw-semibold{% else %}text-muted{% endif %}">
               {{ message.analysis.event_type|default:"unknown" }}
               {% for proposal in message.proposals.all %}
                 · {{ proposal.status }}

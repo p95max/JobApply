@@ -206,6 +206,23 @@ def test_actionable_events_create_the_expected_proposal_type(proposal_context, e
 
 
 @pytest.mark.django_db
+def test_historical_rejection_after_application_date_proposes_rejected_status(proposal_context):
+    user, application, message = proposal_context
+    application.applied_at = timezone.now() - timedelta(days=2)
+    application.save()
+    message.received_at = application.applied_at + timedelta(hours=1)
+    message.save(update_fields=["received_at"])
+
+    proposal = build_proposals(
+        message=message,
+        analysis=analysis(user=user, message=message, event_type=GmailEventType.REJECTION),
+        match=matched(application),
+    )[0]
+
+    assert proposal.changes["application"]["status"] == {"old": "applied", "new": "rejected"}
+
+
+@pytest.mark.django_db
 def test_builder_deduplicates_active_proposals(proposal_context):
     user, application, message = proposal_context
     record = analysis(
