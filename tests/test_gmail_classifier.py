@@ -9,6 +9,7 @@ from apps.applications.models import ApplicationStatus
 from apps.gmail_assistant.models import GmailEventType
 from apps.gmail_assistant.services.classifier import classify, classify_event
 from apps.gmail_assistant.services.status_policy import proposed_status, should_set_recruiter_reply_at
+from apps.gmail_stats.services.direction import determine_direction
 from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
 
 
@@ -64,6 +65,36 @@ def test_fixture_corpus_includes_an_outbound_duplicate_and_prompt_injection():
     assert any(fixture.direction == "outbound" for fixture in GMAIL_ASSISTANT_FIXTURES)
     assert sum(fixture.duplicate_group == "ats-receipt" for fixture in GMAIL_ASSISTANT_FIXTURES) == 2
     assert any(fixture.name == "prompt_injection" for fixture in GMAIL_ASSISTANT_FIXTURES)
+
+
+def test_fixture_corpus_evaluation_has_no_false_positive_rejection_or_outbound_reply():
+    actual_events = {
+        fixture.name: classify_event(fixture.subject, fixture.text).event_type
+        for fixture in GMAIL_ASSISTANT_FIXTURES
+    }
+    false_positive_rejections = [
+        name
+        for name, actual_event in actual_events.items()
+        if actual_event == GmailEventType.REJECTION
+        and next(fixture for fixture in GMAIL_ASSISTANT_FIXTURES if fixture.name == name).event_type
+        != GmailEventType.REJECTION
+    ]
+    outbound = next(fixture for fixture in GMAIL_ASSISTANT_FIXTURES if fixture.direction == "outbound")
+
+    assert false_positive_rejections == []
+    assert (
+        determine_direction(
+            from_email=outbound.sender_email,
+            recipient_emails=[outbound.recipient_email],
+            profile_email="candidate@example.test",
+        )
+        == "outbound"
+    )
+
+
+def test_fixture_corpus_uses_only_sanitized_example_addresses():
+    assert all(fixture.sender_email.endswith("@example.test") for fixture in GMAIL_ASSISTANT_FIXTURES)
+    assert all(fixture.recipient_email.endswith("@example.test") for fixture in GMAIL_ASSISTANT_FIXTURES)
 
 
 @pytest.mark.parametrize(

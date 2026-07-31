@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib import import_module
+
 import pytest
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -22,6 +24,14 @@ def test_assistant_models_are_owned_by_the_dedicated_app_without_table_recreatio
     assert GmailAnalysis._meta.db_table == "gmail_stats_gmailanalysis"
     assert ApplicationUpdateProposal._meta.db_table == "gmail_stats_applicationupdateproposal"
     assert GmailAssistantSettings._meta.db_table == "gmail_stats_gmailassistantsettings"
+
+
+def test_assistant_adoption_migrations_are_state_only():
+    adoption = import_module("apps.gmail_assistant.migrations.0001_adopt_legacy_models").Migration
+    removal = import_module("apps.gmail_stats.migrations.0004_move_assistant_models_to_gmail_assistant").Migration
+
+    assert adoption.operations[0].database_operations == []
+    assert removal.operations[0].database_operations == []
 
 
 @pytest.fixture

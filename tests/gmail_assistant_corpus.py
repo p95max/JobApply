@@ -20,6 +20,8 @@ class GmailAssistantFixture:
     event_type: str
     direction: str = "inbound"
     duplicate_group: str | None = None
+    sender_email: str = "recruiter@example.test"
+    recipient_email: str = "candidate@example.test"
 
 
 GMAIL_ASSISTANT_FIXTURES = (
@@ -35,6 +37,8 @@ GMAIL_ASSISTANT_FIXTURES = (
         "Your application for Backend Developer has been submitted.",
         GmailEventType.APPLICATION_SENT,
         direction="outbound",
+        sender_email="candidate@example.test",
+        recipient_email="recruiter@example.test",
     ),
     GmailAssistantFixture(
         "ats_application_received",

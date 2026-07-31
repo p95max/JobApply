@@ -9,6 +9,7 @@ from apps.gmail_assistant.services.application_matcher import (
     normalize_company,
     normalize_position,
 )
+from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
 
 
 @dataclass(frozen=True)
@@ -155,6 +156,24 @@ def test_platform_and_ats_messages_match_the_same_application():
 
     assert platform.suggested and platform.suggested.application.pk == candidate.pk
     assert ats.suggested and ats.suggested.application.pk == candidate.pk
+
+
+def test_fixture_corpus_platform_and_ats_pair_cannot_create_duplicate_match_targets():
+    candidate = application()
+    duplicate_pair = [
+        fixture for fixture in GMAIL_ASSISTANT_FIXTURES if fixture.duplicate_group == "ats-receipt"
+    ]
+
+    matched_application_ids = {
+        match_applications(
+            user_id=10,
+            applications=[candidate],
+            email=email(thread_id=fixture.name, sender_email=fixture.sender_email),
+        ).suggested.application.pk
+        for fixture in duplicate_pair
+    }
+
+    assert matched_application_ids == {candidate.pk}
 
 
 def test_same_company_with_a_different_title_does_not_match():
