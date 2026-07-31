@@ -109,6 +109,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
 
     assert response.status_code == 200
     assert b"can take about 30 seconds" in response.content
+    assert b'aiAnalysisSpinner' in response.content
     assert b'aiAnalysisSync' in response.content
     assert b'aiAnalysisSave' not in response.content
     assert b"toggle.disabled" not in response.content

@@ -29,8 +29,9 @@
 
   <div class="card mb-4">
     <div class="card-body">
-      <div id="aiAnalysisProgress" class="alert alert-info d-none" role="status">
-        {% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}
+      <div id="aiAnalysisProgress" class="alert alert-info d-none d-flex align-items-center gap-2" role="status">
+        <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span id="aiAnalysisProgressText">{% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}</span>
       </div>
       <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_stats:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
@@ -77,19 +78,23 @@
   const settingsForm = document.getElementById("aiAnalysisSettings");
   const toggle = document.getElementById("aiEnabled");
   const progress = document.getElementById("aiAnalysisProgress");
+  const progressSpinner = document.getElementById("aiAnalysisSpinner");
+  const progressText = document.getElementById("aiAnalysisProgressText");
   const syncButton = document.getElementById("aiAnalysisSync");
   const wasEnabled = {{ settings.ai_enabled|yesno:"true,false" }};
 
   settingsForm.addEventListener("submit", () => {
     const enabled = toggle.checked;
     if (enabled && !wasEnabled) {
+      progressSpinner.classList.remove("d-none");
       progress.classList.remove("d-none");
     }
   });
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
   syncButton.addEventListener("click", async () => {
-    progress.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progressSpinner.classList.remove("d-none");
     progress.classList.remove("alert-danger");
     progress.classList.add("alert-info");
     progress.classList.remove("d-none");
@@ -102,7 +107,8 @@
       if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
       window.location.reload();
     } catch (error) {
-      progress.textContent = error.message;
+      progressText.textContent = error.message;
+      progressSpinner.classList.add("d-none");
       progress.classList.remove("alert-info");
       progress.classList.add("alert-danger");
       syncButton.disabled = false;
