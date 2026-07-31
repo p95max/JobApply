@@ -8,7 +8,7 @@
 
 - **Google OAuth** is the only authentication method (no passwords).
 - **Google Drive backups** provide automated, rotation-based cloud backups.
-- **Gmail Statistics (read-only)** enables automated sync and classification of job-related email responses.
+- **Gmail Assistant (read-only)** turns relevant Gmail messages into reviewable application and interview suggestions.
 - **Google Calendar integration**  #TODO .
 
 The project is designed for **dev-friendly, one-command startup via Docker Compose**.
@@ -26,8 +26,7 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 
 - **Google-only sign-in** (django-allauth)
 - **Printable & PDF-Ready Applications Dashboard with Filters and Sorting**
-- **The application integrates with Gmail to automatically sync, classify,
-    and calculate job-related responses such as rejections, interview invitations, and acknowledgements for analytics.**
+- **Gmail Assistant** syncs, classifies and matches job-related emails, then creates suggestions that a user reviews before anything changes.
 - **Optional Google Drive connection**
   - Create `JobApply/` folder (and optional `backups/` subfolder)
   - Upload backups (CSV/XLSX)
@@ -58,7 +57,7 @@ JobApply uses Google as the identity provider and (optionally) Google Drive as t
 - Google integrations:
   - **django-allauth** for OAuth authentication
   - **Google Drive API** via `google-api-python-client`
-  - **Gmail API** via `google-api-python-client` (read-only analytics & sync)
+  - **Gmail API** via `google-api-python-client` (read-only statistics and Assistant sync)
   - **Cloudflare Turnstile** for pre-authentication bot protection
   - 
 ---
@@ -97,6 +96,15 @@ DJANGO_SITE_NAME=JobApply
 TURNSTILE_ENABLED=1
 TURNSTILE_SITE_KEY=...
 TURNSTILE_SECRET_KEY=...
+
+# Gmail Assistant
+# Global AI capability; the user still has to opt in in the UI.
+GMAIL_ASSISTANT_AI_ENABLED=0
+OPENAI_API_KEY=...
+OPENAI_EMAIL_MODEL=gpt-4.1-mini
+# Background check for users who enabled AI analysis (15 minutes).
+GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1
+GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS=900
 
 # Hide admin behind a custom URL (optional)
 ADMIN_URL=admin
@@ -220,7 +228,7 @@ This is the minimal scope required for app-managed uploads in the user’s Drive
 
 JobApply can run **automatic backups to Google Drive** on a schedule.
 
-- **Runs every 15 minutes** (background worker)
+- **Runs every 5 minutes** (background worker)
 - Stores backups in your Drive under `JobApply/backups/`
 - **Retention policy:** keeps only **3 files**:
   - `latest.xlsx` (most recent)
@@ -238,24 +246,32 @@ JobApply can run **automatic backups to Google Drive** on a schedule.
 
 ---
 
-### Gmail Statistics (Read-Only Sync)
+### Gmail Statistics and Gmail Assistant (Read-Only)
 
-JobApply can automatically analyze your Gmail inbox to calculate job-related responses.
+JobApply has two Gmail services under **Services**:
 
-- **Manual or on-demand sync** via UI or management command
-- Fetches emails using the **Gmail API (read-only)**
-- Stores message metadata locally for fast analytics
-- Automatically classifies emails into:
-  - `Rejection`
-  - `Interview invitation`
-  - `Auto-acknowledgement`
-  - `General response`
-  - `Noise`
-- Provides aggregated statistics by selected time period
-- **Per-user isolation:** each user syncs and analyzes only their own mailbox
-- Requires Google connection with **gmail.readonly scope** and the **Gmail API enabled** in Google Cloud Console
+- **Gmail stats** provides aggregate counts for replies, rejections, interview invites and auto-acknowledgements.
+- **Gmail Assistant** turns relevant messages into reviewable suggestions for applications and interviews.
 
-> The feature does not send, modify, or delete emails — all operations are strictly read-only.
+#### Gmail Assistant workflow
+
+1. Connect the Google account whose mailbox you want to use. The consent request must include `gmail.readonly`; Gmail API must be enabled in Google Cloud Console.
+2. Open **Services → Gmail Assistant** and use **Sync Gmail** to import candidate messages.
+3. Optionally enable **AI analysis**. This is disabled by default and records a per-user consent timestamp. With the default settings, the first opt-in also starts a sync.
+4. Review each pending proposal. You can accept it, edit and accept, choose another application, reject it or ignore it.
+
+The Assistant can suggest creating an application, updating an application status, recording a recruiter reply, creating/updating/cancelling an interview, or an action that needs manual completion. **It never applies a proposal automatically.**
+
+When `GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1`, the `gmail-assistant-worker` checks opted-in users at `GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS` (900 seconds by default). Automatic checks only create pending proposals; they never change applications or interviews by themselves.
+
+#### Privacy and failure behavior
+
+- Gmail access is strictly read-only: the app never sends, deletes, archives, labels, or follows links in email.
+- Attachments are not sent to OpenAI and full email bodies are not stored in `GmailMessage`.
+- AI receives only sanitized subject, sender metadata and bounded text, and only after explicit opt-in plus `GMAIL_ASSISTANT_AI_ENABLED=1` and a configured `OPENAI_API_KEY`.
+- Without an OpenAI key, the Assistant continues in rule-only mode.
+- Gmail/OpenAI errors are isolated to the relevant sync/message and do not apply changes or expose OAuth/API details in the UI.
+- Classifications and matching are suggestions, not guarantees; review every proposal before accepting it.
 
 
 ---
@@ -289,6 +305,11 @@ docker compose exec web bash
 docker compose exec web poetry run python manage.py <command>
 ```
 
+### Check the Gmail Assistant worker
+```bash
+docker compose logs -f gmail-assistant-worker
+```
+
 ### Reset everything (⚠️ deletes DB volume)
 ```bash
 docker compose down --remove-orphans -v
@@ -312,9 +333,12 @@ docker compose exec web python manage.py assign_fixtures_owner --email you-googl
 ---
 ## Testing (pytest)
 
-- Run all pytest-tests
+- Run the full quality gate
 ```bash
 docker compose exec web poetry run pytest -ra -vv
+docker compose exec web poetry run ruff check .
+docker compose exec web poetry run python manage.py check
+docker compose exec web poetry run python manage.py makemigrations --check --dry-run
 ```
 
 ---
