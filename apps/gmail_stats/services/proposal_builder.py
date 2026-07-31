@@ -129,8 +129,6 @@ def _interview_changes(*, event_type: str, application: Any, extracted: dict[str
     interview = extracted.get("interview") if isinstance(extracted.get("interview"), dict) else {}
     starts_at = _string_or_none(interview.get("starts_at"))
     if event_type == GmailEventType.INTERVIEW_INVITATION:
-        if not starts_at:
-            return {}, ProposalType.CREATE_INTERVIEW
         return (
             {
                 "operation": "create",

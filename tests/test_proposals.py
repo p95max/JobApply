@@ -103,14 +103,18 @@ def test_noise_and_unknown_create_no_proposals(proposal_context, event_type):
 
 
 @pytest.mark.django_db
-def test_unmatched_application_received_can_propose_new_application(proposal_context):
+@pytest.mark.parametrize(
+    "event_type",
+    [GmailEventType.APPLICATION_SENT, GmailEventType.APPLICATION_RECEIVED],
+)
+def test_unmatched_application_event_can_propose_new_application(proposal_context, event_type):
     user, _, message = proposal_context
     result = build_proposals(
         message=message,
         analysis=analysis(
             user=user,
             message=message,
-            event_type=GmailEventType.APPLICATION_RECEIVED,
+            event_type=event_type,
             extracted_data={"company": "New GmbH", "position_title": "Backend Engineer"},
         ),
         match=ApplicationMatch(suggested=None, ambiguous=()),
@@ -138,6 +142,31 @@ def test_action_required_proposal_does_not_change_status(proposal_context):
 
     assert result[0].proposal_type == ProposalType.ACTION_REQUIRED
     assert result[0].changes["action"]["required"] is True
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("event_type", "expected_type"),
+    [
+        (GmailEventType.APPLICATION_CONFIRMATION_REQUIRED, ProposalType.ACTION_REQUIRED),
+        (GmailEventType.DOCUMENTS_REQUESTED, ProposalType.ACTION_REQUIRED),
+        (GmailEventType.GENERAL_UPDATE, ProposalType.UPDATE_APPLICATION),
+        (GmailEventType.SCREENING, ProposalType.UPDATE_APPLICATION),
+        (GmailEventType.OFFER, ProposalType.UPDATE_APPLICATION),
+        (GmailEventType.REJECTION, ProposalType.UPDATE_APPLICATION),
+        (GmailEventType.WITHDRAWAL_CONFIRMATION, ProposalType.UPDATE_APPLICATION),
+    ],
+)
+def test_actionable_events_create_the_expected_proposal_type(proposal_context, event_type, expected_type):
+    user, application, message = proposal_context
+
+    proposals = build_proposals(
+        message=message,
+        analysis=analysis(user=user, message=message, event_type=event_type),
+        match=matched(application),
+    )
+
+    assert expected_type in {proposal.proposal_type for proposal in proposals}
 
 
 @pytest.mark.django_db
@@ -244,6 +273,30 @@ def test_interview_accept_creates_one_event_and_reschedule_updates_it(proposal_c
     event.refresh_from_db()
     assert InterviewEvent.objects.filter(application=application).count() == 1
     assert event.starts_at.isoformat().startswith("2026-08-05T12:30:00")
+
+
+@pytest.mark.django_db
+def test_invitation_without_datetime_can_be_completed_with_a_manual_override(proposal_context):
+    user, application, message = proposal_context
+    proposals = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.INTERVIEW_INVITATION,
+            extracted_data={"interview": {"starts_at": None, "location": "Office"}},
+        ),
+        match=matched(application),
+    )
+    proposal = next(proposal for proposal in proposals if proposal.proposal_type == ProposalType.CREATE_INTERVIEW)
+
+    result = apply_proposal(
+        proposal=proposal,
+        user=user,
+        overrides={"interview": {"starts_at": "2026-08-06T09:00:00+02:00"}},
+    )
+
+    assert result.interview and result.interview.starts_at.isoformat().startswith("2026-08-06T07:00:00")
 
 
 @pytest.mark.django_db

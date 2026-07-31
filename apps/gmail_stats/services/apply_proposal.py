@@ -51,6 +51,8 @@ def apply_proposal(
             return ApplyProposalResult(locked, locked.application, None, True)
         if locked.status != ProposalStatus.PENDING:
             raise ProposalApplyError("proposal is no longer pending")
+        if locked.message.user_id != user.pk or locked.analysis.user_id != user.pk:
+            raise ProposalApplyError("proposal relations do not belong to the current user")
 
         application = _apply_application(locked, user, overrides)
         interview = _apply_interview(locked, user, application, overrides)
