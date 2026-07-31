@@ -16,9 +16,8 @@ apt-get install -y \
     libpq-dev \
     postgresql \
     postgresql-client \
-    python3.13 \
-    python3.13-dev \
-    python3.13-venv \
+    python3 \
+    python3-venv \
     rclone \
     build-essential
 
@@ -29,8 +28,14 @@ fi
 install -d -o jobapply -g jobapply -m 0750 /opt/jobapply
 install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply
 
+if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+fi
+
+sudo -u jobapply -H uv python install 3.13
+
 if ! command -v poetry >/dev/null 2>&1; then
-    curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3.13 -
+    curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3 -
     ln -sf /opt/poetry/bin/poetry /usr/local/bin/poetry
 fi
 
@@ -44,4 +49,4 @@ fi
 
 systemctl enable --now postgresql caddy
 
-echo "Base packages installed. Continue with deploy/vps/README.md."
+echo "Base packages and managed Python 3.13 installed. Continue with deploy/vps/README.md."
