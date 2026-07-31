@@ -215,6 +215,18 @@ def test_saving_enabled_ai_analysis_does_not_start_another_sync(client, proposal
 
 
 @pytest.mark.django_db
+def test_disabling_ai_analysis_uses_absent_checkbox_value(client, proposal):
+    GmailAssistantSettings.objects.create(user=proposal.user, ai_enabled=True)
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_stats:gmail_assistant_settings"), {})
+
+    settings = GmailAssistantSettings.objects.get(user=proposal.user)
+    assert response.status_code == 302
+    assert settings.ai_enabled is False
+
+
+@pytest.mark.django_db
 def test_application_detail_shows_only_its_gmail_metadata(client, proposal):
     client.force_login(proposal.user)
 

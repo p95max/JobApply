@@ -150,7 +150,7 @@ def ignore_gmail_proposal(request, pk: int):
 @require_POST
 def gmail_assistant_settings(request):
     settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
-    enabled = request.POST.get("ai_enabled") == "1"
+    enabled = "ai_enabled" in request.POST
     was_enabled = settings.ai_enabled
     settings.ai_enabled = enabled
     if enabled and settings.ai_consent_at is None:

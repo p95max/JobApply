@@ -28,7 +28,6 @@
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
         </div>
-        <input type="hidden" name="ai_enabled" value="0">
         <div class="form-check form-switch ms-auto">
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
           <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
