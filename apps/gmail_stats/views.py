@@ -2,19 +2,161 @@ from __future__ import annotations
 
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
+from apps.applications.models import JobApplication
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
+from apps.gmail_stats.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_stats.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.models import GmailMessage, GmailSyncState
+from apps.gmail_stats.models import (
+    ApplicationUpdateProposal,
+    GmailAssistantSettings,
+    GmailMessage,
+    GmailSyncState,
+    ProposalStatus,
+)
 
 
 @login_required
 def gmail_dashboard(request):
     return render(request, "gmail_stats/dashboard.html")
+
+
+@login_required
+def gmail_assistant(request):
+    proposal_queryset = (
+        ApplicationUpdateProposal.objects.filter(user=request.user)
+        .select_related("message", "analysis", "application")
+        .order_by("-created_at")
+    )
+    proposals = proposal_queryset
+    status = request.GET.get("status", ProposalStatus.PENDING)
+    if status in ProposalStatus.values:
+        proposals = proposals.filter(status=status)
+    settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "gmail_stats/assistant.html",
+        {
+            "proposals": proposals[:50],
+            "selected_status": status,
+            "proposal_statuses": ProposalStatus,
+            "settings": settings,
+            "pending_count": proposal_queryset.filter(status=ProposalStatus.PENDING).count(),
+        },
+    )
+
+
+@login_required
+def gmail_proposal_detail(request, pk: int):
+    proposal = get_object_or_404(
+        ApplicationUpdateProposal.objects.select_related("message", "analysis", "application"),
+        pk=pk,
+        user=request.user,
+    )
+    candidates = JobApplication.objects.filter(user=request.user).exclude(status__in=["archived", "rejected"])
+    return render(
+        request,
+        "gmail_stats/proposal_detail.html",
+        {"proposal": proposal, "candidates": candidates},
+    )
+
+
+@login_required
+@require_POST
+def accept_gmail_proposal(request, pk: int):
+    proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
+    try:
+        result = apply_proposal(proposal=proposal, user=request.user)
+    except ProposalApplyError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(
+            request,
+            "Proposal was already accepted." if result.already_accepted else "Proposal accepted.",
+        )
+    return redirect("gmail_stats:gmail_proposal_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def edit_and_accept_gmail_proposal(request, pk: int):
+    proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
+    overrides = {
+        "application": {
+            field: request.POST[field]
+            for field in ("title", "company", "location")
+            if request.POST.get(field)
+        },
+        "interview": {
+            field: request.POST[field]
+            for field in ("starts_at", "location", "notes")
+            if request.POST.get(field)
+        },
+    }
+    try:
+        apply_proposal(proposal=proposal, user=request.user, overrides=overrides)
+    except ProposalApplyError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, "Proposal accepted with your edits.")
+    return redirect("gmail_stats:gmail_proposal_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def assign_gmail_proposal(request, pk: int):
+    proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
+    application = get_object_or_404(JobApplication, pk=request.POST.get("application_id"), user=request.user)
+    proposal.application = application
+    proposal.match_method = "manual"
+    proposal.save(update_fields=["application", "match_method", "updated_at"])
+    messages.success(request, "Application assigned for review.")
+    return redirect("gmail_stats:gmail_proposal_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def reject_gmail_proposal(request, pk: int):
+    proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
+    try:
+        review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.REJECTED)
+    except ProposalApplyError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, "Proposal rejected.")
+    return redirect("gmail_stats:gmail_assistant")
+
+
+@login_required
+@require_POST
+def ignore_gmail_proposal(request, pk: int):
+    proposal = get_object_or_404(ApplicationUpdateProposal, pk=pk, user=request.user)
+    try:
+        review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.IGNORED)
+    except ProposalApplyError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, "Proposal ignored.")
+    return redirect("gmail_stats:gmail_assistant")
+
+
+@login_required
+@require_POST
+def gmail_assistant_settings(request):
+    settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    enabled = request.POST.get("ai_enabled") == "1"
+    settings.ai_enabled = enabled
+    if enabled and settings.ai_consent_at is None:
+        settings.ai_consent_at = timezone.now()
+    settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
+    messages.success(request, "AI analysis setting updated.")
+    return redirect("gmail_stats:gmail_assistant")
 
 
 @login_required

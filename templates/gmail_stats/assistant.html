@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Gmail Assistant" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  {% include "reports/_nav.html" %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">{% trans "Gmail Assistant" %}</h1>
+      <p class="text-muted mb-0">{% trans "Review suggestions before any application or interview is changed." %}</p>
+    </div>
+    <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="post" action="{% url 'gmail_stats:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
+        {% csrf_token %}
+        <div>
+          <div class="fw-semibold">{% trans "AI analysis" %}</div>
+          <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
+        </div>
+        <input type="hidden" name="ai_enabled" value="0">
+        <div class="form-check form-switch ms-auto">
+          <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
+        </div>
+        <button class="btn btn-outline-primary btn-sm">{% trans "Save" %}</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="nav nav-pills gap-2 mb-3">
+    {% for value, label in proposal_statuses.choices %}
+      <a class="btn btn-sm {% if selected_status == value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% for proposal in proposals %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between gap-3">
+          <div>
+            <div class="fw-semibold">{{ proposal.message.subject|default:"—" }}</div>
+            <div class="small text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
+          </div>
+          <span class="badge bg-secondary">{{ proposal.analysis.event_type }}</span>
+        </div>
+        <div class="small mt-2">{% trans "Match" %}: {{ proposal.match_method|default:"unmatched" }} ({{ proposal.match_score }})</div>
+        <a class="btn btn-outline-primary btn-sm mt-3" href="{% url 'gmail_stats:gmail_proposal_detail' proposal.pk %}">{% trans "Review" %}</a>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">{% trans "No proposals in this state." %}</p>
+  {% endfor %}
+</div>
+{% endblock %}

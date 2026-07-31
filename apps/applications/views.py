@@ -245,7 +245,12 @@ def update_status(request, pk: int):
 def application_detail(request, pk: int):
     try:
         app = get_object_or_404(JobApplication, pk=pk, user=request.user)
-        return render(request, "applications/detail.html", {"app": app})
+        gmail_messages = app.gmail_messages.select_related("analysis").prefetch_related("proposals").order_by("-received_at")
+        return render(
+            request,
+            "applications/detail.html",
+            {"app": app, "gmail_messages": gmail_messages},
+        )
     except Exception:
         logger.exception("application_detail failed user=%s pk=%s", request.user.id, pk)
         messages.error(request, "Could not load application. Try again later.")
