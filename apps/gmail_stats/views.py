@@ -37,10 +37,11 @@ def gmail_assistant(request):
         .select_related("message", "analysis", "application")
         .order_by("-message__received_at", "-created_at")
     )
-    proposals = proposal_queryset
-    status = request.GET.get("status", ProposalStatus.PENDING)
-    if status in ProposalStatus.values:
-        proposals = proposals.filter(status=status)
+    try:
+        selected_status = ProposalStatus(request.GET.get("status", ProposalStatus.PENDING))
+    except ValueError:
+        selected_status = ProposalStatus.PENDING
+    proposals = proposal_queryset.filter(status=selected_status)
     proposal_counts = {proposal_status: 0 for proposal_status in ProposalStatus.values}
     proposal_counts.update(
         {
@@ -54,7 +55,7 @@ def gmail_assistant(request):
         "gmail_stats/assistant.html",
         {
             "proposals": proposals[:50],
-            "selected_status": status,
+            "selected_status": selected_status,
             "proposal_status_filters": [
                 {"value": value, "label": label, "count": proposal_counts[value]}
                 for value, label in ProposalStatus.choices

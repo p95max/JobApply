@@ -102,6 +102,39 @@ def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
 
 
 @pytest.mark.django_db
+def test_assistant_filters_cards_by_selected_status(client, proposal):
+    proposal.status = ProposalStatus.ACCEPTED
+    proposal.save(update_fields=["status"])
+    pending_message = GmailMessage.objects.create(
+        user=proposal.user,
+        message_id="pending-message",
+        thread_id="pending-thread",
+        received_at=proposal.message.received_at + timedelta(hours=1),
+        subject="Pending Gmail update",
+    )
+    pending_analysis = GmailAnalysis.objects.create(
+        user=proposal.user,
+        message=pending_message,
+        event_type=GmailEventType.GENERAL_UPDATE,
+        is_job_related=True,
+    )
+    ApplicationUpdateProposal.objects.create(
+        user=proposal.user,
+        message=pending_message,
+        analysis=pending_analysis,
+        application=proposal.application,
+        proposal_type=ProposalType.UPDATE_APPLICATION,
+    )
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_stats:gmail_assistant"), {"status": ProposalStatus.ACCEPTED})
+
+    assert response.status_code == 200
+    assert proposal.message.subject.encode() in response.content
+    assert b"Pending Gmail update" not in response.content
+
+
+@pytest.mark.django_db
 def test_assistant_highlights_rejection_proposals(client, proposal):
     proposal.analysis.event_type = GmailEventType.REJECTION
     proposal.analysis.save(update_fields=["event_type"])
