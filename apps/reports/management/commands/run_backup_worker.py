@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def _ts() -> str:
     return timezone.localtime().strftime("[%H:%M:%S %d-%m-%Y]")
 
-INTERVAL_SECONDS = 30
+INTERVAL_SECONDS = 300
 BACKUP_EVERY = timedelta(minutes=5)
 
 

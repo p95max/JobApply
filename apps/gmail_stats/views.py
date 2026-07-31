@@ -41,7 +41,7 @@ def gmail_assistant(request):
         selected_status = ProposalStatus(request.GET.get("status", ProposalStatus.PENDING))
     except ValueError:
         selected_status = ProposalStatus.PENDING
-    proposals = proposal_queryset.filter(status=selected_status)
+    proposals = proposal_queryset.filter(status=selected_status.value)
     proposal_counts = {proposal_status: 0 for proposal_status in ProposalStatus.values}
     proposal_counts.update(
         {
@@ -55,7 +55,7 @@ def gmail_assistant(request):
         "gmail_stats/assistant.html",
         {
             "proposals": proposals[:50],
-            "selected_status": selected_status,
+            "selected_status": selected_status.value,
             "proposal_status_filters": [
                 {"value": value, "label": label, "count": proposal_counts[value]}
                 for value, label in ProposalStatus.choices
