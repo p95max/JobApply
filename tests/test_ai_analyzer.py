@@ -22,6 +22,7 @@ def payload(**overrides):
         "event_type": "interview_invitation",
         "company": "Example GmbH",
         "position_title": "Python Developer",
+        "location": "Berlin",
         "external_application_id": None,
         "proposed_status": "interview",
         "recruiter_name": "Anna Example",
@@ -90,6 +91,7 @@ def test_validate_extraction_accepts_complete_strict_payload():
     result = validate_extraction(payload())
 
     assert result.event_type == "interview_invitation"
+    assert result.location == "Berlin"
     assert result.interview and result.interview.starts_at.endswith("+02:00")
 
 

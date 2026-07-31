@@ -102,6 +102,8 @@ def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides
 
     application = proposal.application
     if application is None:
+        if proposal.proposal_type == ProposalType.UPDATE_APPLICATION:
+            raise ProposalApplyError("assign an application before accepting this proposal")
         return None
     if application.user_id != user.pk:
         raise ProposalApplyError("application does not belong to the proposal user")

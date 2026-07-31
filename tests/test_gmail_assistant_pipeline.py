@@ -74,6 +74,7 @@ class FakeAnalyzer:
             event_type="interview_invitation",
             company="Example GmbH",
             position_title="Python Developer",
+            location="Leipzig",
             external_application_id=None,
             proposed_status="interview",
             recruiter_name="Recruiter",

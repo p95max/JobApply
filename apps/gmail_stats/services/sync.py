@@ -142,6 +142,7 @@ def _ai_data(result: Any) -> dict[str, Any]:
     return {
         "company": result.company,
         "position_title": result.position_title,
+        "location": result.location,
         "external_application_id": result.external_application_id,
         "recruiter_name": result.recruiter_name,
         "recruiter_email": result.recruiter_email,

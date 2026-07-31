@@ -133,6 +133,7 @@ class AIExtraction:
     event_type: str
     company: str | None
     position_title: str | None
+    location: str | None
     external_application_id: str | None
     proposed_status: str | None
     recruiter_name: str | None
@@ -170,6 +171,7 @@ def extraction_schema() -> dict[str, Any]:
             "event_type",
             "company",
             "position_title",
+            "location",
             "external_application_id",
             "proposed_status",
             "recruiter_name",
@@ -187,6 +189,7 @@ def extraction_schema() -> dict[str, Any]:
             "event_type": {"type": "string", "enum": sorted(_EVENT_TYPES)},
             "company": nullable_string,
             "position_title": nullable_string,
+            "location": nullable_string,
             "external_application_id": nullable_string,
             "proposed_status": {"type": ["string", "null"], "enum": [*sorted(_APPLICATION_STATUSES), None]},
             "recruiter_name": nullable_string,
@@ -244,6 +247,7 @@ def validate_extraction(payload: Any) -> AIExtraction:
         event_type=event_type,
         company=_nullable_string(payload, "company", 200),
         position_title=_nullable_string(payload, "position_title", 200),
+        location=_nullable_string(payload, "location", 200),
         external_application_id=_nullable_string(payload, "external_application_id", 200),
         proposed_status=proposed_status,
         recruiter_name=_nullable_string(payload, "recruiter_name", 200),

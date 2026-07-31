@@ -46,7 +46,11 @@
     {% endif %}
   </div></div>
 
-  <form method="post" action="{% url 'gmail_stats:accept_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-primary">{% trans "Accept" %}</button></form>
+  {% if proposal.application_id or proposal.proposal_type == "create_application" %}
+    <form method="post" action="{% url 'gmail_stats:accept_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-primary">{% trans "Accept" %}</button></form>
+  {% else %}
+    <span class="text-muted me-2">{% trans "Assign this proposal to an application before accepting it." %}</span>
+  {% endif %}
   <form method="post" action="{% url 'gmail_stats:reject_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-danger">{% trans "Reject" %}</button></form>
   <form method="post" action="{% url 'gmail_stats:ignore_gmail_proposal' proposal.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary">{% trans "Ignore" %}</button></form>
 

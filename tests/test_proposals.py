@@ -115,7 +115,7 @@ def test_unmatched_application_event_can_propose_new_application(proposal_contex
             user=user,
             message=message,
             event_type=event_type,
-            extracted_data={"company": "New GmbH", "position_title": "Backend Engineer"},
+            extracted_data={"company": "New GmbH", "position_title": "Backend Engineer", "location": "Berlin"},
         ),
         match=ApplicationMatch(suggested=None, ambiguous=()),
     )
@@ -124,6 +124,42 @@ def test_unmatched_application_event_can_propose_new_application(proposal_contex
     assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
     assert proposal.application is None
     assert proposal.changes["application"]["operation"] == "create"
+    assert proposal.changes["application"]["location"] == "Berlin"
+
+
+@pytest.mark.django_db
+def test_rebuilding_pending_create_proposal_refreshes_extracted_location(proposal_context):
+    user, _, message = proposal_context
+    record = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "New GmbH", "position_title": "Backend Engineer"},
+    )
+    unmatched = ApplicationMatch(suggested=None, ambiguous=())
+    proposal = build_proposals(message=message, analysis=record, match=unmatched)[0]
+
+    record.extracted_data["location"] = "Leipzig"
+    record.save(update_fields=["extracted_data"])
+    refreshed = build_proposals(message=message, analysis=record, match=unmatched)[0]
+
+    assert refreshed.pk == proposal.pk
+    assert refreshed.changes["application"]["location"] == "Leipzig"
+
+
+@pytest.mark.django_db
+def test_unmatched_rejection_requires_manual_application_assignment(proposal_context):
+    user, _, message = proposal_context
+    result = build_proposals(
+        message=message,
+        analysis=analysis(user=user, message=message, event_type=GmailEventType.REJECTION),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+
+    proposal = result[0]
+    assert proposal.proposal_type == ProposalType.UPDATE_APPLICATION
+    assert proposal.application is None
+    assert proposal.changes["application"]["status"] == {"old": None, "new": "rejected"}
 
 
 @pytest.mark.django_db

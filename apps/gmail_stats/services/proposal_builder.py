@@ -23,6 +23,7 @@ _INTERVIEW_EVENTS = {
     GmailEventType.INTERVIEW_RESCHEDULED,
     GmailEventType.INTERVIEW_CANCELLED,
 }
+_MANUAL_ASSIGNMENT_EVENTS = {GmailEventType.REJECTION}
 
 
 def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[ApplicationUpdateProposal]:
@@ -52,6 +53,23 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
         return proposals
 
     if application is None:
+        if analysis.event_type in _MANUAL_ASSIGNMENT_EVENTS:
+            proposals.append(
+                _create_pending(
+                    message=message,
+                    analysis=analysis,
+                    application=None,
+                    proposal_type=ProposalType.UPDATE_APPLICATION,
+                    match_score=0,
+                    match_method="unmatched",
+                    changes={
+                        "application": {
+                            "status": {"old": None, "new": "rejected"},
+                            "recruiter_reply_at": {"old": None, "new": message.received_at.isoformat()},
+                        }
+                    },
+                )
+            )
         return proposals
 
     application_changes = _application_changes(message=message, analysis=analysis, application=application)
@@ -154,7 +172,7 @@ def _interview_changes(*, event_type: str, application: Any, extracted: dict[str
 
 
 def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
-    proposal, _ = ApplicationUpdateProposal.objects.get_or_create(
+    proposal, created = ApplicationUpdateProposal.objects.get_or_create(
         user=kwargs["message"].user,
         message=kwargs["message"],
         analysis=kwargs["analysis"],
@@ -167,6 +185,11 @@ def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
             "changes": kwargs["changes"],
         },
     )
+    if not created:
+        proposal.changes = kwargs["changes"]
+        proposal.match_score = kwargs["match_score"]
+        proposal.match_method = kwargs["match_method"]
+        proposal.save(update_fields=["changes", "match_score", "match_method", "updated_at"])
     return proposal
 
 
@@ -179,7 +202,7 @@ def _create_application_changes(message: Any, extracted: dict[str, Any]) -> dict
         "operation": "create",
         "title": extracted["position_title"][:200],
         "company": extracted["company"][:200],
-        "location": "",
+        "location": _string_or_none(extracted.get("location")) or "",
         "source": "other",
         "status": "applied",
         "applied_at": message.received_at.isoformat(),
