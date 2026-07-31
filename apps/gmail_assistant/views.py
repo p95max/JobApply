@@ -8,6 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 
 from apps.applications.models import JobApplication
@@ -74,9 +76,13 @@ def accept_gmail_proposal(request, pk: int):
     try:
         result = apply_proposal(proposal=proposal, user=request.user)
     except ProposalApplyError as error:
-        messages.error(request, str(error))
+        logger.info("Gmail Assistant proposal apply rejected user_id=%s error=%s", request.user.id, type(error).__name__)
+        messages.error(request, _("The proposal could not be applied."))
     else:
-        messages.success(request, "Proposal was already accepted." if result.already_accepted else "Proposal accepted.")
+        messages.success(
+            request,
+            _("Proposal was already accepted.") if result.already_accepted else _("Proposal accepted."),
+        )
     return redirect("gmail_assistant:gmail_assistant")
 
 
@@ -99,9 +105,10 @@ def edit_and_accept_gmail_proposal(request, pk: int):
     try:
         apply_proposal(proposal=proposal, user=request.user, overrides=overrides)
     except ProposalApplyError as error:
-        messages.error(request, str(error))
+        logger.info("Gmail Assistant proposal edit rejected user_id=%s error=%s", request.user.id, type(error).__name__)
+        messages.error(request, _("The proposal could not be applied."))
     else:
-        messages.success(request, "Proposal accepted with your edits.")
+        messages.success(request, _("Proposal accepted with your edits."))
     return redirect("gmail_assistant:gmail_assistant")
 
 
@@ -113,7 +120,7 @@ def assign_gmail_proposal(request, pk: int):
     proposal.application = application
     proposal.match_method = "manual"
     proposal.save(update_fields=["application", "match_method", "updated_at"])
-    messages.success(request, "Application assigned for review.")
+    messages.success(request, _("Application assigned for review."))
     return redirect("gmail_assistant:gmail_proposal_detail", pk=pk)
 
 
@@ -124,9 +131,10 @@ def reject_gmail_proposal(request, pk: int):
     try:
         review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.REJECTED)
     except ProposalApplyError as error:
-        messages.error(request, str(error))
+        logger.info("Gmail Assistant proposal rejection failed user_id=%s error=%s", request.user.id, type(error).__name__)
+        messages.error(request, _("The proposal could not be reviewed."))
     else:
-        messages.success(request, "Proposal rejected.")
+        messages.success(request, _("Proposal rejected."))
     return redirect("gmail_assistant:gmail_assistant")
 
 
@@ -137,9 +145,10 @@ def ignore_gmail_proposal(request, pk: int):
     try:
         review_proposal(proposal=proposal, user=request.user, status=ProposalStatus.IGNORED)
     except ProposalApplyError as error:
-        messages.error(request, str(error))
+        logger.info("Gmail Assistant proposal ignore failed user_id=%s error=%s", request.user.id, type(error).__name__)
+        messages.error(request, _("The proposal could not be reviewed."))
     else:
-        messages.success(request, "Proposal ignored.")
+        messages.success(request, _("Proposal ignored."))
     return redirect("gmail_assistant:gmail_assistant")
 
 
@@ -161,7 +170,10 @@ def gmail_assistant_settings(request):
             logger.warning("Gmail Assistant credential lookup failed user_id=%s error=%s", request.user.id, type(error).__name__)
             credentials = None
         if not credentials:
-            messages.warning(request, "AI analysis enabled, but Gmail is not connected. Reconnect Google and then sync Gmail.")
+            messages.warning(
+                request,
+                _("AI analysis enabled, but Gmail is not connected. Reconnect Google and then sync Gmail."),
+            )
         else:
             try:
                 result = sync_gmail_messages_for_user(
@@ -173,11 +185,19 @@ def gmail_assistant_settings(request):
                 )
             except (RuntimeError, ValueError) as error:
                 logger.warning("Initial Gmail Assistant sync failed user_id=%s error=%s", request.user.id, type(error).__name__)
-                messages.warning(request, "AI analysis is enabled, but Gmail sync failed. Try again later.")
+                messages.warning(request, _("AI analysis is enabled, but Gmail sync failed. Try again later."))
             else:
-                messages.success(request, f"AI analysis enabled. Gmail synced; {result['proposals_created']} suggestion(s) created.")
+                messages.success(
+                    request,
+                    ngettext(
+                        "AI analysis enabled. Gmail synced; %(count)d suggestion created.",
+                        "AI analysis enabled. Gmail synced; %(count)d suggestions created.",
+                        result["proposals_created"],
+                    )
+                    % {"count": result["proposals_created"]},
+                )
     else:
-        messages.success(request, "AI analysis setting updated.")
+        messages.success(request, _("AI analysis setting updated."))
     return redirect("gmail_assistant:gmail_assistant")
 
 
@@ -187,5 +207,8 @@ def reset_gmail_assistant(request):
     if not django_settings.GMAIL_ASSISTANT_DEV_TOOLS:
         raise Http404
     result = reset_gmail_assistant_data(user=request.user)
-    messages.success(request, f"Dev reset completed: {result['messages']} Gmail message(s) and {result['applications']} application(s) removed.")
+    messages.success(
+        request,
+        _("Dev reset completed: %(messages)d Gmail messages and %(applications)d applications removed.") % result,
+    )
     return redirect("gmail_assistant:gmail_assistant")

@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl \
+    build-essential curl gettext \
   && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir poetry==2.0.1

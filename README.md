@@ -341,6 +341,18 @@ docker compose exec web poetry run python manage.py check
 docker compose exec web poetry run python manage.py makemigrations --check --dry-run
 ```
 
+### Update German translations
+
+The web image includes GNU gettext for the project translation catalog. After
+adding or changing user-facing text, rebuild the web image and regenerate the
+German catalog before committing the resulting `.po` and `.mo` files:
+
+```bash
+docker compose up -d --build web
+docker compose exec -T web poetry run python manage.py makemessages -l de
+docker compose exec -T web poetry run python manage.py compilemessages
+```
+
 ### Migration verification
 
 Verify the current development database without changing its application data:
