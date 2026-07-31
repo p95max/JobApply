@@ -4,7 +4,9 @@ import base64
 from datetime import datetime, timezone
 
 import pytest
+from django.urls import reverse
 
+from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
 from apps.gmail_stats.models import (
     AnalysisClassifier,
@@ -229,3 +231,25 @@ def test_missing_api_key_keeps_the_pipeline_in_rule_only_mode(django_user_model)
 
     assert result["analyzed_by_ai"] == 0
     assert result["analyzed_by_rules"] == 1
+
+
+@pytest.mark.django_db
+def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+
+    class PermissionDeniedGmailClient:
+        def __init__(self, credentials):
+            self.credentials = credentials
+
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            raise RuntimeError("insufficientPermissions")
+
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: object())
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", PermissionDeniedGmailClient)
+
+    client.force_login(user)
+    response = client.post(reverse("gmail_stats:gmail_sync_api"))
+
+    assert response.status_code == 403
+    assert "gmail.readonly" in response.json()["error"]
