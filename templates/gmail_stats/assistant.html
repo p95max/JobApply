@@ -70,6 +70,28 @@
   {% empty %}
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}
+
+  <section class="card mt-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">{% trans "FAQ" %}</h2>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "How do I start AI analysis?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis and save the setting. The first Gmail sync can take about 30 seconds." %}</p>
+      </details>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "It searches for new relevant Gmail messages and creates reviewable suggestions. It never changes an application by itself." %}</p>
+      </details>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "The email could not be matched to one application with enough confidence. Assign an application manually before accepting a status update." %}</p>
+      </details>
+      <details>
+        <summary class="fw-semibold">{% trans "What is sent to AI?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "Only sanitized email subject and text are sent to the configured provider. Attachments are never sent." %}</p>
+      </details>
+    </div>
+  </section>
 </div>
 {% endblock %}
 

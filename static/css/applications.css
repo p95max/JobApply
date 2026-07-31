@@ -69,3 +69,74 @@
   color: var(--st-color) !important;
 }
 
+.gmail-timeline {
+  --gmail-timeline-line: rgba(173, 181, 189, 0.45);
+  position: relative;
+  margin: 0 0 0 0.35rem;
+  padding-left: 1.35rem;
+}
+
+.gmail-timeline::before {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.8rem;
+  left: 0.32rem;
+  width: 2px;
+  background: var(--gmail-timeline-line);
+  content: "";
+}
+
+.gmail-timeline-item {
+  position: relative;
+  padding: 0 0 1.15rem;
+  border: 0;
+  background: transparent;
+}
+
+.gmail-timeline-item::before {
+  position: absolute;
+  top: 0.32rem;
+  left: -1.34rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid var(--bs-primary);
+  border-radius: 50%;
+  background: var(--bs-body-bg);
+  content: "";
+}
+
+.gmail-timeline-item.is-rejection::before {
+  border-color: var(--bs-danger);
+  background: var(--bs-danger);
+}
+
+.gmail-timeline-item .d-flex > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gmail-timeline-time {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+  font-size: 0.875em;
+  line-height: 1.5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gmail-timeline-meta {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 575.98px) {
+  .gmail-timeline-item > .d-flex {
+    flex-direction: column;
+    gap: 0.1rem !important;
+  }
+
+  .gmail-timeline-time {
+    text-align: left;
+  }
+}
+

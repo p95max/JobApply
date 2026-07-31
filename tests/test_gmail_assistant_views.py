@@ -109,6 +109,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
 
     assert response.status_code == 200
     assert b"can take about 30 seconds" in response.content
+    assert b"FAQ" in response.content
     assert b'aiAnalysisSpinner' in response.content
     assert b'aiAnalysisSync' in response.content
     assert b'aiAnalysisSave' not in response.content
@@ -264,6 +265,7 @@ def test_application_detail_shows_only_its_gmail_metadata(client, proposal):
 
     assert response.status_code == 200
     assert b"Gmail activity" in response.content
+    assert b"gmail-timeline" in response.content
     assert proposal.message.subject.encode() in response.content
 
 
