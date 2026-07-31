@@ -1,0 +1,19 @@
+[Unit]
+Description=JobApply Gmail Assistant worker
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+Environment="PATH=/opt/jobapply/.venv/bin"
+EnvironmentFile=/opt/jobapply/.env
+ExecStart=/opt/jobapply/.venv/bin/python manage.py run_gmail_assistant_worker
+Restart=always
+RestartSec=10
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
