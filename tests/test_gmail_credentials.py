@@ -23,3 +23,22 @@ def test_token_refresh_error_does_not_include_provider_response_body(monkeypatch
 
     assert "HTTP 400" in str(error.value)
     assert secret not in str(error.value)
+
+
+def test_token_refresh_network_error_does_not_include_request_details(monkeypatch):
+    secret = "refresh-token-should-not-appear-in-errors"
+
+    def fail_request(*args, **kwargs):
+        raise credentials.requests.RequestException(secret)
+
+    monkeypatch.setattr(credentials.requests, "post", fail_request)
+
+    with pytest.raises(RuntimeError) as error:
+        credentials._refresh_google_access_token(
+            client_id="client-id",
+            client_secret="client-secret",
+            refresh_token="refresh-token",
+        )
+
+    assert str(error.value) == "Google token refresh request failed"
+    assert secret not in str(error.value)

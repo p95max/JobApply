@@ -168,6 +168,19 @@ def test_adapter_retries_a_transient_error_once():
     assert len(client.responses.requests) == 2
 
 
+def test_adapter_hides_exhausted_rate_limit_error_details():
+    secret = "request-id-and-provider-details-must-not-leak"
+    rate_limit = type("RateLimitError", (Exception,), {})(secret)
+    client = FakeClient([rate_limit, rate_limit])
+
+    with pytest.raises(AIAnalyzerError) as error:
+        analyzer(client).analyze(email(), AIAnalysisContext("interview_invitation", 92))
+
+    assert str(error.value) == "RateLimitError"
+    assert secret not in str(error.value)
+    assert len(client.responses.requests) == 2
+
+
 def test_adapter_rejects_invalid_json_without_retrying():
     client = FakeClient([{"event_type": "unknown"}])
 
