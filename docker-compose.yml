@@ -49,6 +49,20 @@ services:
     volumes:
       - .:/app
 
+  gmail-assistant-worker:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    entrypoint: []
+    command: bash -lc "poetry run python manage.py run_gmail_assistant_worker"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - .:/app
+
 
 
 

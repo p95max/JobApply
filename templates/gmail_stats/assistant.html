@@ -38,6 +38,7 @@
         <div>
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
+          <small class="d-block text-muted">{% trans "When enabled, new Gmail messages are checked automatically about every 15 minutes." %}</small>
         </div>
         <div class="form-check form-switch ms-auto">
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
