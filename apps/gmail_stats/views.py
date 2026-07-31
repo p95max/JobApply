@@ -151,11 +151,36 @@ def ignore_gmail_proposal(request, pk: int):
 def gmail_assistant_settings(request):
     settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
     enabled = request.POST.get("ai_enabled") == "1"
+    was_enabled = settings.ai_enabled
     settings.ai_enabled = enabled
     if enabled and settings.ai_consent_at is None:
         settings.ai_consent_at = timezone.now()
     settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
-    messages.success(request, "AI analysis setting updated.")
+
+    if enabled and not was_enabled:
+        credentials = get_google_credentials_for_user(request.user)
+        if not credentials:
+            messages.warning(
+                request,
+                "AI analysis enabled, but Gmail is not connected. Reconnect Google and then sync Gmail.",
+            )
+        else:
+            try:
+                result = sync_gmail_messages_for_user(
+                    user=request.user,
+                    gmail_client=GmailClient(credentials),
+                    days=180,
+                    max_results_each=500,
+                )
+            except (RuntimeError, ValueError) as error:
+                messages.warning(request, f"AI analysis enabled, but Gmail sync failed: {error}")
+            else:
+                messages.success(
+                    request,
+                    f"AI analysis enabled. Gmail synced; {result['proposals_created']} suggestion(s) created.",
+                )
+    else:
+        messages.success(request, "AI analysis setting updated.")
     return redirect("gmail_stats:gmail_assistant")
 
 

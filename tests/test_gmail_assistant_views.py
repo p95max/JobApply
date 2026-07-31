@@ -112,8 +112,16 @@ def test_assign_endpoint_accepts_only_current_users_application(client, proposal
 
 
 @pytest.mark.django_db
-def test_settings_endpoint_records_ai_consent(client, proposal):
+def test_enabling_ai_analysis_starts_gmail_sync(client, proposal, monkeypatch):
     client.force_login(proposal.user)
+    credentials = object()
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: credentials)
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", lambda value: ("gmail", value))
+    synced = []
+    monkeypatch.setattr(
+        "apps.gmail_stats.views.sync_gmail_messages_for_user",
+        lambda **kwargs: synced.append(kwargs) or {"proposals_created": 2},
+    )
 
     response = client.post(reverse("gmail_stats:gmail_assistant_settings"), {"ai_enabled": "1"})
 
@@ -121,6 +129,28 @@ def test_settings_endpoint_records_ai_consent(client, proposal):
     assert response.status_code == 302
     assert settings.ai_enabled is True
     assert settings.ai_consent_at is not None
+    assert synced == [
+        {
+            "user": proposal.user,
+            "gmail_client": ("gmail", credentials),
+            "days": 180,
+            "max_results_each": 500,
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_saving_enabled_ai_analysis_does_not_start_another_sync(client, proposal, monkeypatch):
+    GmailAssistantSettings.objects.create(user=proposal.user, ai_enabled=True)
+    client.force_login(proposal.user)
+    monkeypatch.setattr(
+        "apps.gmail_stats.views.sync_gmail_messages_for_user",
+        lambda **kwargs: pytest.fail("sync must only run when AI is first enabled"),
+    )
+
+    response = client.post(reverse("gmail_stats:gmail_assistant_settings"), {"ai_enabled": "1"})
+
+    assert response.status_code == 302
 
 
 @pytest.mark.django_db
