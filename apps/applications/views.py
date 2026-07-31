@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
@@ -264,6 +264,8 @@ def application_detail(request, pk: int):
                 "rejection_at": rejection_message.received_at if rejection_message else None,
             },
         )
+    except Http404:
+        raise
     except Exception:
         logger.exception("application_detail failed user=%s pk=%s", request.user.id, pk)
         messages.error(request, "Could not load application. Try again later.")

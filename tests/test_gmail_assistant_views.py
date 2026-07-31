@@ -233,16 +233,43 @@ def test_dev_reset_endpoint_is_hidden_without_dev_tools(client, proposal):
 
 
 @pytest.mark.django_db
-def test_user_cannot_review_another_users_proposal(client, proposal, django_user_model):
+@pytest.mark.parametrize(
+    ("url_name", "method", "data"),
+    [
+        ("gmail_proposal_detail", "get", None),
+        ("accept_gmail_proposal", "post", None),
+        ("edit_accept_gmail_proposal", "post", {"title": "Changed"}),
+        ("assign_gmail_proposal", "post", {"application_id": 1}),
+        ("reject_gmail_proposal", "post", None),
+        ("ignore_gmail_proposal", "post", None),
+    ],
+)
+def test_user_cannot_access_another_users_proposal(client, proposal, django_user_model, url_name, method, data):
     other = django_user_model.objects.create_user("other", email="other@example.com")
     UserProfile.objects.create(user=other, google_data_access_consent=True)
     client.force_login(other)
 
-    response = client.post(reverse("gmail_stats:accept_gmail_proposal", args=[proposal.pk]))
+    response = getattr(client, method)(reverse(f"gmail_stats:{url_name}", args=[proposal.pk]), data=data)
 
     assert response.status_code == 404
     proposal.refresh_from_db()
     assert proposal.status == ProposalStatus.PENDING
+
+
+@pytest.mark.django_db
+def test_user_cannot_see_another_users_proposal_in_assistant_or_application_detail(
+    client, proposal, django_user_model
+):
+    other = django_user_model.objects.create_user("other", email="other@example.com")
+    UserProfile.objects.create(user=other, google_data_access_consent=True)
+    client.force_login(other)
+
+    assistant = client.get(reverse("gmail_stats:gmail_assistant"))
+    application = client.get(reverse("applications:detail", args=[proposal.application_id]))
+
+    assert assistant.status_code == 200
+    assert proposal.message.subject.encode() not in assistant.content
+    assert application.status_code == 404
 
 
 @pytest.mark.django_db
