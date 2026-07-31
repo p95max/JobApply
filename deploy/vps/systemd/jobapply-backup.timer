@@ -1,0 +1,11 @@
+[Unit]
+Description=Run JobApply database backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=jobapply-backup.service
+
+[Install]
+WantedBy=timers.target
