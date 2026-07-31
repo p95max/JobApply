@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/applications.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4" style="max-width: 920px;">
 
@@ -40,6 +44,13 @@
         {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
       </dd>
 
+      {% if rejection_at %}
+        <dt class="col-sm-4 text-danger">{% trans "Rejection" %}</dt>
+        <dd class="col-sm-8 text-danger fw-semibold">
+          {{ rejection_at|date:"H:i - d.m.Y" }}
+        </dd>
+      {% endif %}
+
       <dt class="col-sm-4 text-body-secondary">{% trans "Last update" %}</dt>
       <dd class="col-sm-8">
         {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
@@ -67,6 +78,29 @@
       <div class="text-body-secondary">
         {{ app.notes|linebreaksbr }}
       </div>
+    {% endif %}
+
+    <hr>
+    <h2 class="h6 mb-2">{% trans "Gmail activity" %}</h2>
+    {% if gmail_messages %}
+      <ul class="list-group list-group-flush gmail-timeline">
+        {% for message in gmail_messages %}
+          <li class="list-group-item gmail-timeline-item {% if message.analysis.event_type == 'rejection' %}is-rejection{% endif %}">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <span>{{ message.subject|default:"—" }}</span>
+              <time class="gmail-timeline-time">{{ message.received_at|date:"d.m.Y H:i" }}</time>
+            </div>
+            <small class="gmail-timeline-meta {% if message.analysis.event_type == 'rejection' %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+              {{ message.analysis.event_type|default:"unknown" }}
+              {% for proposal in message.proposals.all %}
+                · {{ proposal.status }}
+              {% endfor %}
+            </small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted mb-0">{% trans "No Gmail activity yet." %}</p>
     {% endif %}
 
   </div>

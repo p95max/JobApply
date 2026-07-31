@@ -21,9 +21,15 @@ media/
 .coverage
 htmlcov/
 .pytest_cache/
+.ruff_cache/
 .mypy_cache/
+.tox/
+.nox/
+*.egg-info/
+coverage.xml
 dist/
 build/
 .DS_Store
+.codex-tmp-*
 .txt
 TODO.md

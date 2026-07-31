@@ -1,6 +1,18 @@
 from __future__ import annotations
 
 
+def build_candidate_query(days: int) -> str:
+    """Build the single bounded inbound Gmail query for the assistant pipeline."""
+    return (
+        f"newer_than:{days}d "
+        "("
+        "bewerbung OR application OR interview OR gespräch OR recruiter OR recruiting "
+        'OR absage OR einladung OR "ihre unterlagen" OR "your application"'
+        ") "
+        "-category:promotions -category:social -from:me"
+    )
+
+
 def build_responses_query(days: int) -> str:
     return (
         f"newer_than:{days}d "

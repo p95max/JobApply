@@ -13,7 +13,18 @@
       {% if user.is_authenticated %}
         <a class="btn btn-outline-light btn-sm nav-anim" href="/applications/">{% trans "Applications" %}</a>
         <a class="btn btn-outline-light btn-sm nav-anim" href="/interviews/">{% trans "Interviews" %}</a>
-        <a class="btn btn-outline-light btn-sm nav-anim" href="/reports/statistics/">{% trans "Services" %}</a>
+        <details class="dropdown services-dropdown">
+          <summary class="btn btn-outline-light btn-sm nav-anim dropdown-toggle">
+            {% trans "Services" %}
+          </summary>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{% url 'reports:statistics' %}">📊 {% trans "Stats" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'gmail_stats:gmail_dashboard' %}">📬 {% trans "Gmail stats" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'gmail_assistant:gmail_assistant' %}">🤖 {% trans "Gmail Assistant" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'reports:import' %}">⬆️ {% trans "Import/Export" %}</a></li>
+            <li><a class="dropdown-item" href="{% url 'reports:drive_backups' %}">☁️ {% trans "Cloud backups" %}</a></li>
+          </ul>
+        </details>
 
 
         <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">
@@ -28,7 +39,6 @@
             title="{% if LANGUAGE_CODE == 'de' %}{% trans 'English' %}{% else %}{% trans 'Deutsch' %}{% endif %}"
           >
             <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-            <span class="ms-1">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
           </button>
         </form>
 
@@ -50,7 +60,6 @@
             title="{% if LANGUAGE_CODE == 'de' %}{% trans 'English' %}{% else %}{% trans 'Deutsch' %}{% endif %}"
           >
             <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-            <span class="ms-1">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
           </button>
         </form>
 

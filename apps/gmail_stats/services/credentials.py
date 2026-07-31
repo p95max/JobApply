@@ -89,22 +89,28 @@ def _is_expired(expires_at) -> bool:
 
 
 def _refresh_google_access_token(*, client_id: str, client_secret: str, refresh_token: str) -> tuple[str, timezone.datetime]:
-    resp = requests.post(
-        GOOGLE_TOKEN_URL,
-        data={
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-        },
-        timeout=20,
-    )
+    try:
+        resp = requests.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            },
+            timeout=20,
+        )
+    except requests.RequestException as error:
+        raise RuntimeError("Google token refresh request failed") from error
     if resp.status_code != 200:
-        raise RuntimeError(f"Failed to refresh Google token: {resp.status_code} {resp.text}")
+        raise RuntimeError(f"Google token refresh failed (HTTP {resp.status_code})")
 
-    data = resp.json()
-    access_token = data["access_token"]
-    expires_in = int(data.get("expires_in", 3600))
+    try:
+        data = resp.json()
+        access_token = data["access_token"]
+        expires_in = int(data.get("expires_in", 3600))
+    except (KeyError, TypeError, ValueError) as error:
+        raise RuntimeError("Google token refresh returned an invalid response") from error
     expires_at = timezone.now() + timedelta(seconds=expires_in)
 
     return access_token, expires_at

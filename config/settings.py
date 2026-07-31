@@ -14,6 +14,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+# A public development environment such as GitHub Codespaces terminates HTTPS at
+# its proxy.  Trust those headers only when explicitly enabled by deployment
+# configuration; otherwise a client could spoof the host/scheme used in URLs.
+USE_X_FORWARDED_HOST = getenv("DJANGO_USE_X_FORWARDED_HOST", "0") == "1"
+if getenv("DJANGO_SECURE_PROXY_SSL_HEADER", "0") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -38,6 +50,7 @@ INSTALLED_APPS = [
     "apps.interviews",
     "apps.reports",
     "apps.gmail_stats",
+    "apps.gmail_assistant.apps.GmailAssistantConfig",
 ]
 
 MIDDLEWARE = [
@@ -176,6 +189,18 @@ TURNSTILE_SITE_KEY = getenv("TURNSTILE_SITE_KEY", "")
 TURNSTILE_SECRET_KEY = getenv("TURNSTILE_SECRET_KEY", "")
 TURNSTILE_ENABLED = getenv("TURNSTILE_ENABLED", "1") == "1"
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+GMAIL_ASSISTANT_AI_ENABLED = getenv("GMAIL_ASSISTANT_AI_ENABLED", "0") == "1"
+GMAIL_ASSISTANT_AUTO_SYNC_ENABLED = getenv("GMAIL_ASSISTANT_AUTO_SYNC_ENABLED", "1") == "1"
+try:
+    GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS = max(
+        60, int(getenv("GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", "900"))
+    )
+except ValueError:
+    GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS = 900
+GMAIL_ASSISTANT_DEV_TOOLS = getenv("GMAIL_ASSISTANT_DEV_TOOLS", "0") == "1"
+OPENAI_API_KEY = getenv("OPENAI_API_KEY", "")
+OPENAI_EMAIL_MODEL = getenv("OPENAI_EMAIL_MODEL", "gpt-4.1-mini")
 
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")

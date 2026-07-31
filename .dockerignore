@@ -1,0 +1,35 @@
+# Version control and editor state
+.git/
+.github/
+.idea/
+.vscode/
+
+# Local configuration and secrets
+.env
+.env.*
+
+# Python artifacts and test output
+__pycache__/
+*.py[cod]
+.venv/
+.pyenv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+*.egg-info/
+.coverage
+htmlcov/
+coverage.xml
+build/
+dist/
+
+# Runtime-generated Django files
+staticfiles/
+media/
+*.sqlite3
+
+# Local tooling files
+.codex-tmp-*
+.DS_Store

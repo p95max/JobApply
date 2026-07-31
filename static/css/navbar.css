@@ -31,3 +31,16 @@ transform: translateY(0) scale(0.99);
 .nav-anim.shake {
 animation: nav-shake 180ms ease-in-out;
 }
+
+.services-dropdown > summary {
+list-style: none;
+cursor: pointer;
+}
+
+.services-dropdown > summary::-webkit-details-marker {
+display: none;
+}
+
+.services-dropdown[open] .dropdown-menu {
+display: block;
+}

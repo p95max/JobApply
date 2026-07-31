@@ -1,0 +1,67 @@
+.proposal-review-header {
+  border-left: 4px solid var(--bs-secondary);
+  background: color-mix(in srgb, var(--bs-secondary) 10%, var(--bs-body-bg));
+}
+
+.proposal-review-header.tone-danger { border-left-color: var(--bs-danger); background: color-mix(in srgb, var(--bs-danger) 12%, var(--bs-body-bg)); }
+.proposal-review-header.tone-success { border-left-color: var(--bs-success); background: color-mix(in srgb, var(--bs-success) 12%, var(--bs-body-bg)); }
+.proposal-review-header.tone-warning { border-left-color: var(--bs-warning); background: color-mix(in srgb, var(--bs-warning) 12%, var(--bs-body-bg)); }
+.proposal-review-header.tone-primary { border-left-color: var(--bs-primary); background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-body-bg)); }
+
+.proposal-section {
+  border-left: 4px solid var(--bs-secondary);
+}
+
+.proposal-section--analysis { border-left-color: var(--bs-info); }
+.proposal-section--changes { border-left-color: var(--bs-primary); }
+.proposal-section--decision { border-left-color: var(--bs-success); }
+.proposal-section--assignment { border-left-color: var(--bs-warning); }
+.proposal-section--edit { border-left-color: var(--bs-info); }
+
+.proposal-section__title {
+  color: var(--bs-emphasis-color);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.proposal-metadata {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.proposal-metadata__item {
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.4rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.proposal-metadata__label {
+  color: var(--bs-secondary-color);
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
+.proposal-summary {
+  border-left: 2px solid var(--bs-info);
+  color: var(--bs-emphasis-color);
+  margin: 1.25rem 0 0;
+  padding-left: 0.85rem;
+}
+
+.proposal-evidence {
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.4rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.proposal-change-row + .proposal-change-row {
+  border-top: 1px solid var(--bs-border-color);
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+}

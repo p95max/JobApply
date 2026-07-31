@@ -1,31 +1,25 @@
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime
 
 from django.contrib import messages
-from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-import json
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
-
-from .forms import JobApplicationForm
-from .models import JobApplication
-
-logger = logging.getLogger(__name__)
-
-
-from datetime import datetime
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import render
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
+
+from .forms import JobApplicationForm
+from .models import JobApplication
+from apps.gmail_stats.models import GmailMessage
+
+logger = logging.getLogger(__name__)
+
 
 @login_required
 def list_applications(request):
@@ -252,7 +246,26 @@ def update_status(request, pk: int):
 def application_detail(request, pk: int):
     try:
         app = get_object_or_404(JobApplication, pk=pk, user=request.user)
-        return render(request, "applications/detail.html", {"app": app})
+        gmail_messages = (
+            GmailMessage.objects.filter(user=request.user)
+            .filter(Q(application=app) | Q(proposals__application=app))
+            .select_related("analysis")
+            .prefetch_related("proposals")
+            .distinct()
+            .order_by("-received_at")
+        )
+        rejection_message = gmail_messages.filter(analysis__event_type="rejection").first()
+        return render(
+            request,
+            "applications/detail.html",
+            {
+                "app": app,
+                "gmail_messages": gmail_messages,
+                "rejection_at": rejection_message.received_at if rejection_message else None,
+            },
+        )
+    except Http404:
+        raise
     except Exception:
         logger.exception("application_detail failed user=%s pk=%s", request.user.id, pk)
         messages.error(request, "Could not load application. Try again later.")

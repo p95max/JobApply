@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Gmail Assistant" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  {% include "reports/_nav.html" %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">{% trans "Gmail Assistant" %}</h1>
+      <p class="text-muted mb-0">{% trans "Review suggestions before any application or interview is changed." %}</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
+      <button id="aiAnalysisSync" type="button" class="btn btn-primary btn-sm">{% trans "Sync Gmail" %}</button>
+    </div>
+  </div>
+
+  {% if dev_tools_enabled %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
+      <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
+      <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div id="aiAnalysisProgress" class="alert alert-info d-none d-flex align-items-center gap-2" role="status">
+        <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span id="aiAnalysisProgressText">{% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}</span>
+      </div>
+      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
+        {% csrf_token %}
+        <div>
+          <div class="fw-semibold">{% trans "AI analysis" %}</div>
+          <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
+          <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
+        </div>
+        <div class="form-check form-switch ms-auto">
+          <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
+        </div>
+      </form>
+      <div class="small text-muted mt-3">
+        {% trans "Last successful Gmail sync" %}:
+        {% if settings.last_successful_run_at %}
+          {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
+        {% else %}
+          {% trans "Never" %}
+        {% endif %}
+      </div>
+      {% if settings.last_error_message %}
+        <div class="alert alert-warning small mb-0 mt-2" role="alert">
+          {% trans "The latest Gmail sync needs attention. Try syncing again or reconnect Google if the problem continues." %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="nav nav-pills gap-2 mb-3">
+    {% for filter in proposal_status_filters %}
+      <a class="btn btn-sm {% if selected_status == filter.value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ filter.value }}">
+        {{ filter.label }} <span class="badge rounded-pill text-bg-light ms-1">{{ filter.count }}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  {% for proposal in proposals %}
+    <a
+      class="card mb-3 text-reset text-decoration-none {% if proposal.analysis.event_type == 'rejection' %}border-danger{% elif proposal.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif proposal.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif proposal.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
+      href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}"
+    >
+      <div class="card-body">
+        <div class="d-flex justify-content-between gap-3">
+          <div>
+            <div class="fw-semibold">{{ proposal.message.subject|default:"—" }}</div>
+            <div class="small text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
+          </div>
+          <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% elif proposal.analysis.event_type in technical_event_types %}bg-primary{% elif proposal.analysis.event_type in interview_event_types %}bg-success{% elif proposal.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{% if proposal.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ proposal.analysis.event_type }}</span>
+        </div>
+        <div class="small mt-2">
+          {% trans "Match" %}:
+          {% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
+          ({{ proposal.match_score }})
+        </div>
+      </div>
+    </a>
+  {% empty %}
+    <p class="text-muted">{% trans "No proposals in this state." %}</p>
+  {% endfor %}
+
+  <section class="card mt-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">{% trans "FAQ" %}</h2>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "How do I start AI analysis?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis and save the setting. The first Gmail sync can take about 30 seconds." %}</p>
+      </details>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "It searches for new relevant Gmail messages and creates reviewable suggestions. It never changes an application by itself." %}</p>
+      </details>
+      <details class="mb-2">
+        <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "The email could not be matched to one application with enough confidence. Assign an application manually before accepting a status update." %}</p>
+      </details>
+      <details>
+        <summary class="fw-semibold">{% trans "What is sent to AI?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "Only sanitized email subject and text are sent to the configured provider. Attachments are never sent." %}</p>
+      </details>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  const settingsForm = document.getElementById("aiAnalysisSettings");
+  const toggle = document.getElementById("aiEnabled");
+  const progress = document.getElementById("aiAnalysisProgress");
+  const progressSpinner = document.getElementById("aiAnalysisSpinner");
+  const progressText = document.getElementById("aiAnalysisProgressText");
+  const syncButton = document.getElementById("aiAnalysisSync");
+  const wasEnabled = {{ settings.ai_enabled|yesno:"true,false" }};
+
+  settingsForm.addEventListener("submit", () => {
+    const enabled = toggle.checked;
+    if (enabled && !wasEnabled) {
+      progressSpinner.classList.remove("d-none");
+      progress.classList.remove("d-none");
+    }
+  });
+  toggle.addEventListener("change", () => settingsForm.requestSubmit());
+
+  syncButton.addEventListener("click", async () => {
+    progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progressSpinner.classList.remove("d-none");
+    progress.classList.remove("alert-danger");
+    progress.classList.add("alert-info");
+    progress.classList.remove("d-none");
+    syncButton.disabled = true;
+    try {
+      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}", {
+        method: "POST",
+        headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
+      window.location.reload();
+    } catch (error) {
+      progressText.textContent = error.message;
+      progressSpinner.classList.add("d-none");
+      progress.classList.remove("alert-info");
+      progress.classList.add("alert-danger");
+      syncButton.disabled = false;
+    }
+  });
+</script>
+{% endblock %}
