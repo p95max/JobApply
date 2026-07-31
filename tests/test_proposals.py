@@ -226,7 +226,7 @@ def test_interview_accept_creates_one_event_and_reschedule_updates_it(proposal_c
         thread_id="thread-1",
         received_at=message.received_at + timedelta(days=1),
     )
-    reschedule = build_proposals(
+    reschedule_proposals = build_proposals(
         message=reschedule_message,
         analysis=analysis(
             user=user,
@@ -235,7 +235,10 @@ def test_interview_accept_creates_one_event_and_reschedule_updates_it(proposal_c
             extracted_data=interview_data("2026-08-05T14:30:00+02:00"),
         ),
         match=matched(application),
-    )[0]
+    )
+    reschedule = next(
+        proposal for proposal in reschedule_proposals if proposal.proposal_type == ProposalType.UPDATE_INTERVIEW
+    )
     apply_proposal(proposal=reschedule, user=user)
 
     event.refresh_from_db()
@@ -253,11 +256,12 @@ def test_cancellation_cancels_interview_without_downgrading_application(proposal
         application=application,
         starts_at=message.received_at + timedelta(days=2),
     )
-    proposal = build_proposals(
+    proposals = build_proposals(
         message=message,
         analysis=analysis(user=user, message=message, event_type=GmailEventType.INTERVIEW_CANCELLED),
         match=matched(application),
-    )[0]
+    )
+    proposal = next(proposal for proposal in proposals if proposal.proposal_type == ProposalType.UPDATE_INTERVIEW)
 
     apply_proposal(proposal=proposal, user=user)
 
