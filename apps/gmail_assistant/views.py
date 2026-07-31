@@ -60,7 +60,7 @@ def gmail_assistant(request):
         proposal_status: proposal_queryset.filter(status=proposal_status).count()
         for proposal_status in ProposalStatus.values
     }
-    settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
     return render(
         request,
         "gmail_assistant/assistant.html",
@@ -71,7 +71,7 @@ def gmail_assistant(request):
                 {"value": value, "label": label, "count": proposal_counts[value]}
                 for value, label in ProposalStatus.choices
             ],
-            "settings": settings,
+            "settings": assistant_settings,
             "pending_count": proposal_counts[ProposalStatus.PENDING],
             "technical_event_types": {
                 GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
@@ -208,13 +208,13 @@ def ignore_gmail_proposal(request, pk: int):
 @login_required
 @require_POST
 def gmail_assistant_settings(request):
-    settings, _ = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
     enabled = "ai_enabled" in request.POST
-    was_enabled = settings.ai_enabled
-    settings.ai_enabled = enabled
-    if enabled and settings.ai_consent_at is None:
-        settings.ai_consent_at = timezone.now()
-    settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
+    was_enabled = assistant_settings.ai_enabled
+    assistant_settings.ai_enabled = enabled
+    if enabled and assistant_settings.ai_consent_at is None:
+        assistant_settings.ai_consent_at = timezone.now()
+    assistant_settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
 
     if enabled and not was_enabled:
         try:
