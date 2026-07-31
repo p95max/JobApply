@@ -15,6 +15,13 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+# A public development environment such as GitHub Codespaces terminates HTTPS at
+# its proxy.  Trust those headers only when explicitly enabled by deployment
+# configuration; otherwise a client could spoof the host/scheme used in URLs.
+USE_X_FORWARDED_HOST = getenv("DJANGO_USE_X_FORWARDED_HOST", "0") == "1"
+if getenv("DJANGO_SECURE_PROXY_SSL_HEADER", "0") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Application definition
 
