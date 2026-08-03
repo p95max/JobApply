@@ -13,7 +13,12 @@ _USAGE_LINE = re.compile(
 
 
 class PostgreSQLTokenUsageHandler(logging.Handler):
-    """Persist successful Gmail Assistant OpenAI usage without relying on journald."""
+    """Persist successful Gmail Assistant OpenAI usage without relying on journald.
+
+    Usage accounting is telemetry and must never turn a successful model response
+    into a failed Gmail analysis. This also keeps the isolated analyzer unit tests
+    independent from Django database access.
+    """
 
     def emit(self, record: logging.LogRecord) -> None:
         match = _USAGE_LINE.search(record.getMessage())
@@ -35,5 +40,7 @@ class PostgreSQLTokenUsageHandler(logging.Handler):
                     input_tokens=int(match.group("input")),
                     output_tokens=int(match.group("output")),
                 )
-        except (DatabaseError, LookupError, ValueError):
+        except (DatabaseError, LookupError, RuntimeError, ValueError):
+            # Django raises RuntimeError when a unit test intentionally forbids
+            # database access. Usage persistence must stay best-effort.
             self.handleError(record)
