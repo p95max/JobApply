@@ -3,20 +3,18 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <div>
     <h1 class="h4 mb-1">{% trans "Your Applications" %}</h1>
-        {% if all_apps_total %}
-        <small class="text-body-secondary">
-          {% trans "Total" %}: {{ all_apps_total }}
-        </small>
-        {% endif %}
+    {% if all_apps_total %}
+      <small class="text-body-secondary">
+        {% trans "Total" %}: {{ all_apps_total }}
+      </small>
+    {% endif %}
   </div>
 
   <div class="d-flex gap-2">
-
-  <button type="button" class="btn btn-outline-secondary js-print"
-          data-print-url="?{{ base_qs }}&print=1">
-    🖨️ Print
-  </button>
-
+    <button type="button" class="btn btn-outline-secondary js-print"
+            data-print-url="?{{ base_qs }}&print=1">
+      🖨️ {% trans "Print" %}
+    </button>
 
     <a class="btn btn-primary" href="{% url 'applications:create' %}">
       ✚ {% trans "Add application" %}
@@ -24,10 +22,25 @@
   </div>
 </div>
 
-<div class="card border-0 shadow-sm glass-card mb-3 no-print">
-  <div class="card-body p-3">
-    <form class="row g-2 align-items-end" method="get">
+<details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or month or sort != '-applied_at' %} open{% endif %}>
+  <summary class="applications-filters__summary">
+    <span class="applications-filters__title">
+      <span aria-hidden="true">🔎</span>
+      <span>{% trans "Filters" %}</span>
+    </span>
 
+    <span class="applications-filters__meta">
+      {% if q or status or month or sort != '-applied_at' %}
+        <span class="applications-filters__active">{% trans "Active" %}</span>
+      {% else %}
+        <span class="text-body-secondary">{% trans "Search, status, month and sort" %}</span>
+      {% endif %}
+      <span class="applications-filters__chevron" aria-hidden="true">⌄</span>
+    </span>
+  </summary>
+
+  <div class="applications-filters__body">
+    <form class="row g-2 align-items-end" method="get">
       <div class="col-12 col-lg-4">
         <label class="form-label small text-body-secondary mb-1">
           {% trans "Search" %}
@@ -41,7 +54,7 @@
         />
       </div>
 
-      <div class="col-12 col-lg-2">
+      <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small text-body-secondary mb-1">
           {% trans "Status" %}
         </label>
@@ -55,14 +68,14 @@
         </select>
       </div>
 
-      <div class="col-12 col-lg-2">
+      <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small text-body-secondary mb-1">
           {% trans "Month" %}
         </label>
         <input type="month" name="month" value="{{ month|default:'' }}" class="form-control" />
       </div>
 
-      <div class="col-12 col-lg-2">
+      <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small text-body-secondary mb-1">
           {% trans "Sort" %}
         </label>
@@ -82,15 +95,14 @@
         </select>
       </div>
 
-      <div class="col-12 col-lg-2 d-grid d-lg-flex gap-2">
-        <button class="btn btn-outline-primary w-100" type="submit">
+      <div class="col-12 col-sm-6 col-lg-2 d-grid d-sm-flex gap-2">
+        <button class="btn btn-primary flex-fill" type="submit">
           {% trans "Apply" %}
         </button>
-        <a class="btn btn-outline-secondary w-100" href="{% url 'applications:list' %}">
+        <a class="btn btn-outline-secondary flex-fill" href="{% url 'applications:list' %}">
           {% trans "Reset" %}
         </a>
       </div>
-
     </form>
   </div>
-</div>
+</details>
