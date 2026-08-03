@@ -8,8 +8,9 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.gmail_assistant.models import GmailAnalysis, GmailEventType
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.models import GmailMessage, GmailSyncState
+from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 
@@ -29,16 +30,33 @@ def gmail_stats_api(request):
         return JsonResponse({"error": "days must be an integer"}, status=400)
     if not 1 <= days <= 365:
         return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
+
     since = timezone.now() - timedelta(days=days)
-    messages = GmailMessage.objects.filter(user=request.user, received_at__gte=since).exclude(direction="outbound")
+    analyses = GmailAnalysis.objects.filter(
+        user=request.user,
+        message__received_at__gte=since,
+        is_job_related=True,
+    )
     state = GmailSyncState.objects.filter(user=request.user).first()
+
+    invitation_types = {
+        GmailEventType.INTERVIEW_INVITATION,
+        GmailEventType.INTERVIEW_RESCHEDULED,
+        GmailEventType.SCREENING,
+    }
+    acknowledgement_types = {
+        GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+        GmailEventType.APPLICATION_SENT,
+        GmailEventType.APPLICATION_RECEIVED,
+    }
+
     return JsonResponse(
         {
             "days": days,
-            "responses": messages.exclude(detected_type__in=["unknown", "noise"]).count(),
-            "rejections": messages.filter(detected_type="rejection").count(),
-            "invites": messages.filter(detected_type="invite").count(),
-            "auto_ack": messages.filter(detected_type="auto_ack").count(),
+            "job_related_emails": analyses.count(),
+            "rejections": analyses.filter(event_type=GmailEventType.REJECTION).count(),
+            "invites": analyses.filter(event_type__in=invitation_types).count(),
+            "auto_ack": analyses.filter(event_type__in=acknowledgement_types).count(),
             "last_synced_at": state.last_synced_at.isoformat() if state and state.last_synced_at else None,
         }
     )
