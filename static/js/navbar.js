@@ -1,31 +1,47 @@
-(function () {
-  function onEnter(e) {
-    const el = e.currentTarget;
-    if (el.dataset.disabled === "1") return;
-    el.style.transform = "translateY(-1px) scale(1.03)";
-    clearTimeout(el.__navT);
-    el.__navT = setTimeout(() => {
-      el.style.transform = "";
-    }, 140);
-  }
+(() => {
+  const header = document.querySelector("[data-app-header]");
+  const toggle = document.querySelector("[data-menu-toggle]");
+  const panel = document.querySelector("[data-menu-panel]");
 
-  function onClick(e) {
-    const el = e.currentTarget;
-    // Не трогаем дропдауны
-    if (el.getAttribute("data-bs-toggle") === "dropdown") return;
+  if (!header || !toggle || !panel) return;
 
-    if (el.dataset.disabled === "1") {
-      e.preventDefault();
-      el.classList.remove("shake");
-      void el.offsetWidth;
-      el.classList.add("shake");
+  const closeMenu = () => {
+    header.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+  };
+
+  toggle.addEventListener("click", () => {
+    const open = toggle.getAttribute("aria-expanded") !== "true";
+    header.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+  });
+
+  panel.addEventListener("click", (event) => {
+    if (event.target.closest("a") && window.matchMedia("(max-width: 899.98px)").matches) {
+      closeMenu();
     }
-  }
+  });
 
-  document.querySelectorAll(".nav-anim").forEach((el) => {
-    el.addEventListener("mouseenter", onEnter);
-    if (el.getAttribute("data-bs-toggle") !== "dropdown") {
-      el.addEventListener("click", onClick);
+  document.addEventListener("click", (event) => {
+    if (!header.contains(event.target)) {
+      closeMenu();
+      document.querySelectorAll("[data-services-menu][open]").forEach((menu) => {
+        menu.removeAttribute("open");
+      });
     }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeMenu();
+      document.querySelectorAll("[data-services-menu][open]").forEach((menu) => {
+        menu.removeAttribute("open");
+      });
+      toggle.focus();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 900) closeMenu();
   });
 })();
