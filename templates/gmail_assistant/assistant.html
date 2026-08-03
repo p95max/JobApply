@@ -19,6 +19,11 @@
     </div>
   </div>
 
+  <div class="nav nav-pills gap-2 mb-4">
+    <a class="btn btn-sm btn-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">📨 {% trans "Suggestions" %}</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage" %}</a>
+  </div>
+
   {% if dev_tools_enabled %}
     <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
       <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
