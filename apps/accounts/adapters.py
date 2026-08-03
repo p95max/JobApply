@@ -5,7 +5,7 @@ from os import getenv
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
-from django.http import HttpResponseForbidden
+from django.shortcuts import render
 
 
 def _allowed_account_emails() -> set[str]:
@@ -46,7 +46,12 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
         if not self._is_allowed(sociallogin):
             raise ImmediateHttpResponse(
-                HttpResponseForbidden("This Google account is not allowed to access JobApply.")
+                render(
+                    request,
+                    "account/access_denied.html",
+                    {"attempted_email": _social_email(sociallogin)},
+                    status=403,
+                )
             )
         return super().pre_social_login(request, sociallogin)
 
