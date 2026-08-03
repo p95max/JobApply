@@ -47,9 +47,15 @@
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}
             <input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-icon-action" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'English' %}{% else %}{% trans 'Deutsch' %}{% endif %}">
-              <span aria-hidden="true">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-              <span class="app-icon-action__label">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
+            <button
+              type="submit"
+              name="language"
+              value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
+              class="app-language-switch"
+              title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
+              aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
+            >
+              <span class="app-language-switch__flag" aria-hidden="true">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
             </button>
           </form>
           <a class="app-account-action" href="/accounts/logout/">
@@ -66,9 +72,15 @@
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}
             <input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-icon-action">
-              <span aria-hidden="true">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-              <span class="app-icon-action__label">{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
+            <button
+              type="submit"
+              name="language"
+              value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
+              class="app-language-switch"
+              title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
+              aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
+            >
+              <span class="app-language-switch__flag" aria-hidden="true">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
             </button>
           </form>
           <a class="app-signin-action" href="/accounts/google/login/">{% trans "Sign in with Google" %}</a>
