@@ -27,6 +27,75 @@
   min-width: 150px;
 }
 
+.applications-filters {
+  overflow: hidden;
+}
+
+.applications-filters__summary {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.applications-filters__summary::-webkit-details-marker {
+  display: none;
+}
+
+.applications-filters__summary:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.applications-filters__title,
+.applications-filters__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.applications-filters__title {
+  font-weight: 650;
+}
+
+.applications-filters__meta {
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.applications-filters__active {
+  padding: 4px 9px;
+  border: 1px solid rgba(124, 140, 255, 0.28);
+  border-radius: 999px;
+  color: #aeb7ff;
+  background: rgba(124, 140, 255, 0.12);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.applications-filters__chevron {
+  display: inline-block;
+  font-size: 1.15rem;
+  transition: transform 160ms ease;
+}
+
+.applications-filters[open] .applications-filters__chevron {
+  transform: rotate(180deg);
+}
+
+.applications-filters__body {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.applications-filters__body form {
+  padding-top: 14px;
+}
+
 .app-row-actions {
   display: inline-flex;
   align-items: center;
@@ -171,6 +240,30 @@
 }
 
 @media (max-width: 575.98px) {
+  .applications-filters__summary {
+    min-height: 52px;
+    padding: 11px 13px;
+  }
+
+  .applications-filters__meta > .text-body-secondary {
+    display: none;
+  }
+
+  .applications-filters__body {
+    padding: 0 13px 13px;
+  }
+
+  .applications-filters__body .form-control,
+  .applications-filters__body .form-select,
+  .applications-filters__body .btn {
+    min-height: 44px;
+  }
+
+  .applications-filters__body .d-sm-flex {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+
   .app-row-action {
     width: 40px;
     height: 40px;
@@ -187,7 +280,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-row-action {
+  .app-row-action,
+  .applications-filters__chevron {
     transition: none;
   }
 }
