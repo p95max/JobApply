@@ -19,7 +19,7 @@ def token_usage(request):
         request,
         "gmail_assistant/token_usage.html",
         {
-            "usage": load_token_usage(days),
+            "usage": load_token_usage(user=request.user, days=days),
             "days": days,
         },
     )
