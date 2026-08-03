@@ -49,11 +49,4 @@ class Migration(migrations.Migration):
                 "ordering": ("-created_at",),
             },
         ),
-        migrations.AddConstraint(
-            model_name="openaitokenusage",
-            constraint=models.UniqueConstraint(
-                fields=("message", "model_name"),
-                name="unique_openai_usage_per_message_model",
-            ),
-        ),
     ]
