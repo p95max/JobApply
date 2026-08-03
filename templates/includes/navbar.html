@@ -8,13 +8,7 @@
       <span class="app-brand__text">JobApply</span>
     </a>
 
-    <button
-      class="app-menu-toggle"
-      type="button"
-      aria-expanded="false"
-      aria-controls="app-navigation"
-      data-menu-toggle
-    >
+    <button class="app-menu-toggle" type="button" aria-expanded="false" aria-controls="app-navigation" data-menu-toggle>
       <span class="app-menu-toggle__icon" aria-hidden="true"><span></span><span></span><span></span></span>
       <span class="visually-hidden">{% trans "Open navigation" %}</span>
     </button>
@@ -36,7 +30,10 @@
             <div class="app-services__menu">
               <a href="{% url 'reports:statistics' %}"><span>📊</span><span>{% trans "Stats" %}</span></a>
               <a href="{% url 'gmail_stats:gmail_dashboard' %}"><span>📬</span><span>{% trans "Gmail stats" %}</span></a>
-              <a href="{% url 'gmail_assistant:gmail_assistant' %}"><span>🤖</span><span>{% trans "Gmail Assistant" %}</span></a>
+              <a href="{% url 'gmail_assistant:gmail_assistant' %}">
+                <span>🤖</span><span>{% trans "Gmail Assistant" %}</span>
+                {% if gmail_assistant_pending_count %}<span class="app-services__count">{{ gmail_assistant_pending_count }}</span>{% endif %}
+              </a>
               <a href="{% url 'reports:import' %}"><span>↕️</span><span>{% trans "Import/Export" %}</span></a>
               <a href="{% url 'reports:drive_backups' %}"><span>☁️</span><span>{% trans "Cloud backups" %}</span></a>
             </div>
@@ -44,17 +41,18 @@
         </div>
 
         <div class="app-navigation__actions">
+          <a class="app-notification-action {% if gmail_assistant_pending_count %}has-notifications{% endif %}" href="{% url 'gmail_assistant:gmail_assistant' %}" title="{% trans 'Gmail Assistant suggestions' %}" aria-label="{% blocktrans count counter=gmail_assistant_pending_count %}{{ counter }} pending Gmail Assistant suggestion{% plural %}{{ counter }} pending Gmail Assistant suggestions{% endblocktrans %}">
+            <span class="app-notification-action__icon" aria-hidden="true">🔔</span>
+            {% if gmail_assistant_pending_count %}
+              <span class="app-notification-action__badge">{% if gmail_assistant_pending_count > 99 %}99+{% else %}{{ gmail_assistant_pending_count }}{% endif %}</span>
+            {% endif %}
+            <span class="app-notification-action__mobile-label">{% trans "Suggestions" %}</span>
+          </a>
+
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}
             <input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button
-              type="submit"
-              name="language"
-              value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
-              class="app-language-switch"
-              title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
-              aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
-            >
+            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}" aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
               {% if LANGUAGE_CODE == 'de' %}
                 <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="" aria-hidden="true">
               {% else %}
@@ -62,9 +60,7 @@
               {% endif %}
             </button>
           </form>
-          <a class="app-account-action" href="/accounts/logout/">
-            <span aria-hidden="true">↗</span><span>{% trans "Logout" %}</span>
-          </a>
+          <a class="app-account-action" href="/accounts/logout/"><span aria-hidden="true">↗</span><span>{% trans "Logout" %}</span></a>
         </div>
       {% else %}
         <div class="app-navigation__primary app-navigation__primary--guest">
@@ -76,14 +72,7 @@
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}
             <input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button
-              type="submit"
-              name="language"
-              value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
-              class="app-language-switch"
-              title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
-              aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}"
-            >
+            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}" aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
               {% if LANGUAGE_CODE == 'de' %}
                 <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="" aria-hidden="true">
               {% else %}
