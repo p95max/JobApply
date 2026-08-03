@@ -28,14 +28,12 @@ class PostgreSQLTokenUsageHandler(logging.Handler):
                 message_id=match.group("message_id")
             ).select_related("user")
             for message in messages:
-                OpenAITokenUsage.objects.update_or_create(
+                OpenAITokenUsage.objects.create(
+                    user=message.user,
                     message=message,
                     model_name=match.group("model"),
-                    defaults={
-                        "user": message.user,
-                        "input_tokens": int(match.group("input")),
-                        "output_tokens": int(match.group("output")),
-                    },
+                    input_tokens=int(match.group("input")),
+                    output_tokens=int(match.group("output")),
                 )
         except (DatabaseError, LookupError, ValueError):
             self.handleError(record)
