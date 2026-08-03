@@ -1,10 +1,12 @@
-{% load i18n %}
+{% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 
 <header class="app-header" data-app-header>
   <div class="app-header__inner">
     <a class="app-brand" href="/" aria-label="{% trans 'JobApply home' %}">
-      <span class="app-brand__mark" aria-hidden="true">J</span>
+      <span class="app-brand__mark" aria-hidden="true">
+        <img src="{% static 'img/jobapply-mark.svg' %}" alt="">
+      </span>
       <span class="app-brand__text">JobApply</span>
     </a>
 
