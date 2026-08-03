@@ -2,99 +2,80 @@
 {% load static i18n %}
 
 {% block page_scripts %}
-<script src="{% static 'js/gmail_stats.js' %}"></script>
+<script src="{% static 'js/gmail_stats.js' %}?v=2"></script>
 {% endblock %}
 
 {% block title %}{% trans "Gmail stats" %}{% endblock %}
 
 {% block content %}
-
-<div id="gmailStatsConfig"
-     data-stats-url="/gmail_stats/gmail/api/stats/"
-     data-sync-url="/gmail_stats/gmail/api/sync/">
-</div>
+<div id="gmailStatsConfig" data-stats-url="/gmail_stats/gmail/api/stats/"></div>
 
 <div class="container py-4">
   {% include "reports/_nav.html" %}
 
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <div>
       <h1 class="h4 mb-1">{% trans "Gmail statistics" %}</h1>
-
       <div class="text-muted small">
-        {% blocktrans %}
-        Automated estimation of responses and rejections from your Gmail.
-        The numbers are approximate and may not be fully accurate.
-        {% endblocktrans %}
+        {% trans "AI-classified job-related emails. Email counts are not application counts: one application may have several related emails." %}
       </div>
     </div>
 
-    <div class="d-flex gap-2 align-items-center">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
       <label for="daysSelect" class="form-label mb-0 text-muted small">{% trans "Period" %}</label>
-
       <select id="daysSelect" class="form-select form-select-sm" style="width: 120px;">
         <option value="30">{% trans "30 days" %}</option>
         <option value="90">{% trans "90 days" %}</option>
         <option value="180" selected>{% trans "180 days" %}</option>
       </select>
-
-      <button id="btnRefresh" class="btn btn-outline-secondary btn-sm">
-        {% trans "Refresh" %}
+      <button id="btnRefresh" class="btn btn-outline-secondary btn-sm" type="button">
+        ↻ {% trans "Refresh" %}
       </button>
-
-      <button id="btnSync" class="btn btn-primary btn-sm">
-        {% trans "Sync Gmail" %}
-      </button>
-
-      <a class="btn btn-outline-primary btn-sm" href="{% url 'gmail_assistant:gmail_assistant' %}">
-        {% trans "Gmail Assistant" %}
-      </a>
     </div>
   </div>
 
   <div id="alertBox" class="alert d-none" role="alert"></div>
 
   <div class="row g-3 mb-4">
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small">{% trans "Responses" %}</div>
-          <div class="display-6" id="metricResponses">—</div>
-          <div class="text-muted small">{% trans "All detected replies" %}</div>
+          <div class="text-muted small">{% trans "Job-related emails" %}</div>
+          <div class="display-6 fw-semibold" id="metricEmails">—</div>
+          <div class="text-muted small">{% trans "AI-classified messages" %}</div>
         </div>
       </div>
     </div>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small">{% trans "Rejections (by keywords)" %}</div>
-          <div class="display-6" id="metricRejections">—</div>
-          <div class="text-muted small">{% trans "Absage / unfortunately" %}</div>
+          <div class="text-muted small">{% trans "Rejection emails" %}</div>
+          <div class="display-6 fw-semibold" id="metricRejections">—</div>
+          <div class="text-muted small">{% trans "Detected rejection events" %}</div>
         </div>
       </div>
     </div>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small">{% trans "Invites" %}</div>
-          <div class="display-6" id="metricInvites">—</div>
-          <div class="text-muted small">{% trans "Interview / meeting" %}</div>
+          <div class="text-muted small">{% trans "Interview and screening emails" %}</div>
+          <div class="display-6 fw-semibold" id="metricInvites">—</div>
+          <div class="text-muted small">{% trans "Invitations or screening events" %}</div>
         </div>
       </div>
     </div>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <div class="text-muted small">{% trans "Auto-ack" %}</div>
-          <div class="display-6" id="metricAutoAck">—</div>
-          <div class="text-muted small">{% trans "We received your application" %}</div>
+          <div class="text-muted small">{% trans "Application acknowledgements" %}</div>
+          <div class="display-6 fw-semibold" id="metricAutoAck">—</div>
+          <div class="text-muted small">{% trans "Received or confirmation emails" %}</div>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 {% endblock %}
