@@ -14,25 +14,27 @@ _ALLOWED_TIMERS = {
 }
 
 
-@register.simple_tag
-def systemd_timer(unit_name: str) -> dict[str, str]:
-    """Return the next run for one allow-listed systemd timer.
+def _parse_systemd_datetime(raw: str) -> datetime | None:
+    raw = raw.strip()
+    if not raw or raw == "n/a":
+        return None
 
-    Fails closed and returns an empty payload when systemd is unavailable, such
-    as during local development or tests.
-    """
-    if unit_name not in _ALLOWED_TIMERS:
-        return {}
+    try:
+        date_part = " ".join(raw.split()[1:-1])
+        parsed = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
+    except (ValueError, IndexError):
+        return None
+    return timezone.make_aware(parsed, timezone.get_current_timezone())
+
+
+def _systemctl_show(unit_name: str, properties: tuple[str, ...]) -> dict[str, str]:
+    command = ["systemctl", "show", unit_name]
+    for property_name in properties:
+        command.extend((f"--property={property_name}",))
 
     try:
         result = subprocess.run(
-            [
-                "systemctl",
-                "show",
-                unit_name,
-                "--property=NextElapseUSecRealtime",
-                "--value",
-            ],
+            command,
             check=True,
             capture_output=True,
             text=True,
@@ -41,19 +43,50 @@ def systemd_timer(unit_name: str) -> dict[str, str]:
     except (OSError, subprocess.SubprocessError):
         return {}
 
-    raw = result.stdout.strip()
-    if not raw or raw == "n/a":
+    values: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        key, separator, value = line.partition("=")
+        if separator:
+            values[key] = value.strip()
+    return values
+
+
+@register.simple_tag
+def systemd_timer(unit_name: str) -> dict[str, object]:
+    """Return last and next execution metadata for one allow-listed timer."""
+    if unit_name not in _ALLOWED_TIMERS:
         return {}
 
-    try:
-        # Example: Tue 2026-08-04 03:12:20 CEST
-        date_part = " ".join(raw.split()[1:-1])
-        next_run = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
-        next_run = timezone.make_aware(next_run, timezone.get_current_timezone())
-    except (ValueError, IndexError):
-        return {}
+    timer_values = _systemctl_show(
+        unit_name,
+        ("LastTriggerUSec", "NextElapseUSecRealtime"),
+    )
+    service_values = _systemctl_show(
+        unit_name.removesuffix(".timer") + ".service",
+        ("Result", "ExecMainStatus"),
+    )
 
-    return {
-        "iso": next_run.isoformat(),
-        "display": timezone.localtime(next_run).strftime("%d.%m.%Y %H:%M"),
-    }
+    last_run = _parse_systemd_datetime(timer_values.get("LastTriggerUSec", ""))
+    next_run = _parse_systemd_datetime(timer_values.get("NextElapseUSecRealtime", ""))
+    last_successful = bool(
+        last_run
+        and service_values.get("Result") == "success"
+        and service_values.get("ExecMainStatus", "0") == "0"
+    )
+
+    payload: dict[str, object] = {"last_successful": last_successful}
+    if last_run:
+        payload.update(
+            {
+                "last_iso": last_run.isoformat(),
+                "last_display": timezone.localtime(last_run).strftime("%d.%m.%Y %H:%M"),
+            }
+        )
+    if next_run:
+        payload.update(
+            {
+                "iso": next_run.isoformat(),
+                "display": timezone.localtime(next_run).strftime("%d.%m.%Y %H:%M"),
+            }
+        )
+    return payload
