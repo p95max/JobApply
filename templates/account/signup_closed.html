@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card border-secondary shadow-sm">
+        <div class="card-body p-4 p-md-5 text-center">
+          <h1 class="h3 mb-3">{% trans "Create your account" %}</h1>
+          <p class="text-body-secondary mb-4">
+            {% trans "JobApply uses Google sign-in. A new account is created automatically the first time you continue with Google." %}
+          </p>
+
+          <a class="btn btn-primary" href="/accounts/google/login/">
+            {% trans "Continue with Google" %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
