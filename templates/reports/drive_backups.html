@@ -132,35 +132,52 @@
           <div class="d-flex align-items-start gap-3">
             <div class="fs-4" aria-hidden="true">🛡️</div>
             <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2 mb-2">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <div class="fw-semibold">{% trans "Server backup schedule" %}</div>
                 <span class="badge rounded-pill text-bg-success">
                   <span class="me-1">●</span>{% trans "Managed by systemd" %}
                 </span>
               </div>
 
-              <div class="border rounded p-2 mb-2 small">
-                <div class="d-flex justify-content-between gap-3 mb-2">
-                  <span>{% trans "PostgreSQL backup and Google Drive upload" %}</span>
-                  {% if backup_timer.iso %}
-                    <span class="text-end">
-                      <span class="d-block fw-semibold">{{ backup_timer.display }}</span>
-                      <span class="text-muted js-timer-countdown" data-next-run="{{ backup_timer.iso }}"></span>
-                    </span>
-                  {% else %}
-                    <span class="text-muted">{% trans "Once daily at night" %}</span>
-                  {% endif %}
+              <div class="border rounded p-3 mb-2 small">
+                <div class="fw-semibold mb-2">{% trans "PostgreSQL backup and Google Drive upload" %}</div>
+                <div class="d-grid gap-1 text-muted">
+                  <div>
+                    {% if backup_timer.last_successful %}✅{% else %}⚠️{% endif %}
+                    {% trans "Last successful backup" %}:
+                    {% if backup_timer.last_successful %}{{ backup_timer.last_display }}{% else %}{% trans "Not available" %}{% endif %}
+                  </div>
+                  <div>
+                    {% if backup_timer.iso %}✅{% else %}⚪{% endif %}
+                    {% trans "Next scheduled backup" %}:
+                    {% if backup_timer.iso %}
+                      {{ backup_timer.display }}
+                      <span class="js-timer-countdown" data-next-run="{{ backup_timer.iso }}"></span>
+                    {% else %}
+                      {% trans "Once daily at night" %}
+                    {% endif %}
+                  </div>
                 </div>
-                <div class="d-flex justify-content-between gap-3">
-                  <span>{% trans "Neon recovery database synchronization" %}</span>
-                  {% if neon_timer.iso %}
-                    <span class="text-end">
-                      <span class="d-block fw-semibold">{{ neon_timer.display }}</span>
-                      <span class="text-muted js-timer-countdown" data-next-run="{{ neon_timer.iso }}"></span>
-                    </span>
-                  {% else %}
-                    <span class="text-muted">{% trans "Once weekly on Sunday" %}</span>
-                  {% endif %}
+              </div>
+
+              <div class="border rounded p-3 mb-2 small">
+                <div class="fw-semibold mb-2">{% trans "Neon recovery database synchronization" %}</div>
+                <div class="d-grid gap-1 text-muted">
+                  <div>
+                    {% if neon_timer.last_successful %}✅{% else %}⚠️{% endif %}
+                    {% trans "Last successful Neon synchronization" %}:
+                    {% if neon_timer.last_successful %}{{ neon_timer.last_display }}{% else %}{% trans "Not available" %}{% endif %}
+                  </div>
+                  <div>
+                    {% if neon_timer.iso %}✅{% else %}⚪{% endif %}
+                    {% trans "Next scheduled Neon synchronization" %}:
+                    {% if neon_timer.iso %}
+                      {{ neon_timer.display }}
+                      <span class="js-timer-countdown" data-next-run="{{ neon_timer.iso }}"></span>
+                    {% else %}
+                      {% trans "Once weekly on Sunday" %}
+                    {% endif %}
+                  </div>
                 </div>
               </div>
 
@@ -190,7 +207,7 @@
       if (days) parts.push(`${days}d`);
       if (hours || days) parts.push(`${hours}h`);
       parts.push(`${minutes}m`);
-      return `{% trans 'in' %} ${parts.join(" ")}`;
+      return `({% trans 'in' %} ${parts.join(" ")})`;
     };
 
     const updateCountdowns = () => {
