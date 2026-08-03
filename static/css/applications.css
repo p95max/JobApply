@@ -20,13 +20,55 @@
 .apps-table .col-num { width: 52px; }
 .apps-table .col-applied { width: 140px; }
 .apps-table .col-status { width: 160px; }
-.apps-table .col-actions { width: 190px; }
+.apps-table .col-actions { width: 112px; }
 
 .apps-table .col-notes {
   width: auto !important;
   min-width: 150px;
 }
 
+.app-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.app-row-action {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.035);
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.app-row-action:hover {
+  transform: translateY(-1px);
+}
+
+.app-row-action:focus-visible {
+  outline: 2px solid rgba(124, 140, 255, .72);
+  outline-offset: 3px;
+}
+
+.app-row-action--edit:hover {
+  border-color: rgba(13, 110, 253, .58);
+  background: rgba(13, 110, 253, .13);
+  box-shadow: 0 8px 20px rgba(13, 110, 253, .12);
+}
+
+.app-row-action--delete:hover {
+  border-color: rgba(220, 53, 69, .62);
+  background: rgba(220, 53, 69, .13);
+  box-shadow: 0 8px 20px rgba(220, 53, 69, .12);
+}
 
 .status-select {
   --st-color: #6c757d;
@@ -47,7 +89,6 @@
 .status-app-interview { --st-color: #fd7e14; --st-bg: rgba(253, 126, 20, 0.12); }
 .status-app-offer     { --st-color: #198754; --st-bg: rgba(25, 135, 84, 0.10); }
 .status-app-rejected  { --st-color: #dc3545; --st-bg: rgba(220, 53, 69, 0.10); }
-
 
 .sort-link {
   color: inherit;
@@ -130,6 +171,11 @@
 }
 
 @media (max-width: 575.98px) {
+  .app-row-action {
+    width: 40px;
+    height: 40px;
+  }
+
   .gmail-timeline-item > .d-flex {
     flex-direction: column;
     gap: 0.1rem !important;
@@ -140,3 +186,8 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .app-row-action {
+    transition: none;
+  }
+}
