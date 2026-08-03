@@ -1,11 +1,12 @@
 from django.urls import path
 
-from apps.gmail_assistant import views
+from apps.gmail_assistant import usage_views, views
 
 app_name = "gmail_assistant"
 
 urlpatterns = [
     path("gmail/assistant/", views.gmail_assistant, name="gmail_assistant"),
+    path("gmail/assistant/token-usage/", usage_views.token_usage, name="token_usage"),
     path("gmail/assistant/proposals/", views.gmail_assistant, name="gmail_proposals"),
     path("gmail/assistant/proposals/<int:pk>/", views.gmail_proposal_detail, name="gmail_proposal_detail"),
     path("gmail/assistant/proposals/<int:pk>/accept/", views.accept_gmail_proposal, name="accept_gmail_proposal"),
