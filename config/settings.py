@@ -20,15 +20,9 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
-# A public development environment such as GitHub Codespaces terminates HTTPS at
-# its proxy.  Trust those headers only when explicitly enabled by deployment
-# configuration; otherwise a client could spoof the host/scheme used in URLs.
 USE_X_FORWARDED_HOST = getenv("DJANGO_USE_X_FORWARDED_HOST", "0") == "1"
 if getenv("DJANGO_SECURE_PROXY_SSL_HEADER", "0") == "1":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -37,14 +31,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third party
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "widget_tweaks",
     "django.contrib.sites",
-    # Local
     "apps.accounts.apps.AccountsConfig",
     "apps.applications",
     "apps.interviews",
@@ -60,18 +52,14 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-
     "apps.security.middleware.TurnstileAnonymousGateMiddleware",
-
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
     "allauth.account.middleware.AccountMiddleware",
     "apps.accounts.middleware.ConsentRequiredMiddleware",
 ]
 
-
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
@@ -84,6 +72,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.gmail_assistant.context_processors.gmail_assistant_notifications",
             ],
         },
     },
@@ -91,9 +80,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
-
-
-# Databases
 
 DATABASES = {
     "default": {
@@ -106,34 +92,23 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
 ]
-
-# Internationalization
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 USE_TZ = True
 
-LANGUAGES = [
-    ("en", _("English")),
-    ("de", _("Deutsch")),
-]
-
+LANGUAGES = [("en", _("English")), ("de", _("Deutsch"))]
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 SITE_ID = 1
 
 LOGIN_URL = "/accounts/google/login/"
@@ -142,20 +117,14 @@ ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_BY_CODE_ENABLED = False
 ACCOUNT_PASSWORD_REQUIRED = False
-
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = []
 SILENCED_SYSTEM_CHECKS = ["account.W001"]
-
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 ACCOUNT_SESSION_REMEMBER = True
-
 ACCOUNT_ADAPTER = "apps.accounts.adapters.NoSignupAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 
-
-
-# Google-only (UI + flow)
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "SCOPE": [
@@ -164,22 +133,12 @@ SOCIALACCOUNT_PROVIDERS = {
             "https://www.googleapis.com/auth/drive.file",
             "https://www.googleapis.com/auth/gmail.readonly",
         ],
-        "AUTH_PARAMS": {
-            "access_type": "offline",
-            "prompt": "consent",
-        },
+        "AUTH_PARAMS": {"access_type": "offline", "prompt": "consent"},
     }
 }
 
-
-
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
-
-
-
-
-
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
@@ -201,6 +160,5 @@ except ValueError:
 GMAIL_ASSISTANT_DEV_TOOLS = getenv("GMAIL_ASSISTANT_DEV_TOOLS", "0") == "1"
 OPENAI_API_KEY = getenv("OPENAI_API_KEY", "")
 OPENAI_EMAIL_MODEL = getenv("OPENAI_EMAIL_MODEL", "gpt-4.1-mini")
-
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
