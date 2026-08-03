@@ -63,6 +63,22 @@
       </div>
     {% endif %}
 
+    {% if usage.by_day %}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h6 mb-0">📈 {% trans "Token usage by day" %}</h2>
+            <div class="d-flex gap-3 small text-muted">
+              <span><span class="badge bg-primary">&nbsp;</span> {% trans "Input" %}</span>
+              <span><span class="badge bg-info">&nbsp;</span> {% trans "Output" %}</span>
+            </div>
+          </div>
+          <div id="tokenUsageChart" class="d-flex align-items-end gap-1 overflow-hidden" style="height: 220px;" aria-label="{% trans 'Daily token usage chart' %}"></div>
+        </div>
+      </div>
+      {{ usage.by_day|json_script:"token-usage-data" }}
+    {% endif %}
+
     <div class="row g-3">
       <div class="col-12 col-lg-7">
         <div class="card border-0 shadow-sm h-100">
@@ -109,4 +125,49 @@
     </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+{% if usage.available and usage.by_day %}
+<script>
+  (() => {
+    const source = document.getElementById("token-usage-data");
+    const chart = document.getElementById("tokenUsageChart");
+    if (!source || !chart) return;
+
+    const rows = JSON.parse(source.textContent).slice().reverse();
+    const maxTokens = Math.max(...rows.map(row => row.total_tokens), 1);
+    const visibleLabelStep = rows.length > 14 ? 5 : rows.length > 7 ? 2 : 1;
+
+    rows.forEach((row, index) => {
+      const column = document.createElement("div");
+      column.className = "d-flex flex-column justify-content-end align-items-center flex-grow-1 h-100";
+      column.style.minWidth = "8px";
+      column.title = `${row.day}: ${row.input_tokens} input + ${row.output_tokens} output = ${row.total_tokens}`;
+
+      const bars = document.createElement("div");
+      bars.className = "d-flex flex-column-reverse justify-content-start w-100 rounded-top overflow-hidden";
+      bars.style.maxWidth = "28px";
+      bars.style.height = `${Math.max(4, (row.total_tokens / maxTokens) * 180)}px`;
+
+      const input = document.createElement("div");
+      input.className = "bg-primary w-100";
+      input.style.height = `${(row.input_tokens / row.total_tokens) * 100}%`;
+
+      const output = document.createElement("div");
+      output.className = "bg-info w-100";
+      output.style.height = `${(row.output_tokens / row.total_tokens) * 100}%`;
+
+      const label = document.createElement("span");
+      label.className = "small text-muted mt-1 text-nowrap";
+      label.style.fontSize = "0.65rem";
+      label.textContent = index % visibleLabelStep === 0 ? row.day.slice(5) : "";
+
+      bars.append(input, output);
+      column.append(bars, label);
+      chart.append(column);
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}
