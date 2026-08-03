@@ -169,10 +169,10 @@
 
 .app-language-switch__flag {
   display: block;
-  font-size: 1.22rem;
-  line-height: 1;
-  transform: translateY(-1px);
-  filter: saturate(.92) contrast(1.03);
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  filter: saturate(.95) contrast(1.03);
 }
 
 .app-account-action { color: rgba(255, 204, 120, .9); }
@@ -262,7 +262,7 @@
   .app-signin-action { justify-content: center; }
   .app-language-form { width: 48px; }
   .app-language-switch { width: 44px; height: 44px; border-radius: 13px; }
-  .app-language-switch__flag { font-size: 1.3rem; }
+  .app-language-switch__flag { width: 25px; height: 25px; }
 
   .app-services { width: 100%; }
   .app-services > summary { width: 100%; }
