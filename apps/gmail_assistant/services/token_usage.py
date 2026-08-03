@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 import os
-import re
-import subprocess
-from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
-_TOKEN_LINE = re.compile(
-    r"OpenAI Gmail analysis completed .*?model=(?P<model>\S+) .*?"
-    r"input_tokens=(?P<input>\d+) output_tokens=(?P<output>\d+)"
-)
-_TIMESTAMP = re.compile(r"^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))\s+")
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+
+from apps.gmail_assistant.usage_models import OpenAITokenUsage
 
 
 @dataclass(frozen=True)
@@ -24,7 +21,7 @@ class TokenUsageSummary:
     estimated_cost_usd: Decimal | None
     by_day: tuple[dict[str, object], ...]
     by_model: tuple[dict[str, object], ...]
-    available: bool
+    available: bool = True
     error: str = ""
 
 
@@ -47,78 +44,63 @@ def _estimate_cost(input_tokens: int, output_tokens: int) -> Decimal | None:
     return ((Decimal(input_tokens) * input_price) + (Decimal(output_tokens) * output_price)) / million
 
 
-def load_token_usage(days: int = 30) -> TokenUsageSummary:
-    command = [
-        "journalctl",
-        "--no-pager",
-        "-o",
-        "short-iso",
-        "--since",
-        f"{days} days ago",
-        "-u",
-        "jobapply-web.service",
-        "-u",
-        "jobapply-gmail-worker.service",
-    ]
-    try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=5, check=False)
-    except (OSError, subprocess.SubprocessError) as error:
-        return TokenUsageSummary(0, 0, 0, 0, None, (), (), False, type(error).__name__)
+def load_token_usage(*, user, days: int = 30) -> TokenUsageSummary:
+    since = timezone.now() - timedelta(days=days)
+    queryset = OpenAITokenUsage.objects.filter(user=user, created_at__gte=since)
 
-    if result.returncode != 0:
-        return TokenUsageSummary(0, 0, 0, 0, None, (), (), False, result.stderr.strip()[:200])
+    totals = queryset.aggregate(
+        requests=Count("id"),
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+    )
+    requests = totals["requests"] or 0
+    input_total = totals["input_tokens"] or 0
+    output_total = totals["output_tokens"] or 0
 
-    input_total = 0
-    output_total = 0
-    requests = 0
-    by_day: dict[str, dict[str, int]] = defaultdict(lambda: {"requests": 0, "input": 0, "output": 0})
-    by_model: dict[str, dict[str, int]] = defaultdict(lambda: {"requests": 0, "input": 0, "output": 0})
-
-    for line in result.stdout.splitlines():
-        usage_match = _TOKEN_LINE.search(line)
-        if not usage_match:
-            continue
-        input_tokens = int(usage_match.group("input"))
-        output_tokens = int(usage_match.group("output"))
-        model = usage_match.group("model")
-        timestamp_match = _TIMESTAMP.match(line)
-        day = "Unknown"
-        if timestamp_match:
-            try:
-                day = datetime.fromisoformat(timestamp_match.group("timestamp").replace("Z", "+00:00")).date().isoformat()
-            except ValueError:
-                pass
-
-        requests += 1
-        input_total += input_tokens
-        output_total += output_tokens
-        by_day[day]["requests"] += 1
-        by_day[day]["input"] += input_tokens
-        by_day[day]["output"] += output_tokens
-        by_model[model]["requests"] += 1
-        by_model[model]["input"] += input_tokens
-        by_model[model]["output"] += output_tokens
-
+    raw_days = list(
+        queryset.annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(
+            requests=Count("id"),
+            input_tokens=Sum("input_tokens"),
+            output_tokens=Sum("output_tokens"),
+        )
+        .order_by("day")
+    )
+    maximum = max(
+        (int(row["input_tokens"] or 0) + int(row["output_tokens"] or 0) for row in raw_days),
+        default=0,
+    )
     day_rows = tuple(
         {
-            "day": day,
-            "requests": values["requests"],
-            "input_tokens": values["input"],
-            "output_tokens": values["output"],
-            "total_tokens": values["input"] + values["output"],
+            "day": row["day"].isoformat(),
+            "requests": row["requests"],
+            "input_tokens": row["input_tokens"] or 0,
+            "output_tokens": row["output_tokens"] or 0,
+            "total_tokens": (row["input_tokens"] or 0) + (row["output_tokens"] or 0),
+            "input_percent": round(((row["input_tokens"] or 0) / maximum) * 100, 2) if maximum else 0,
+            "output_percent": round(((row["output_tokens"] or 0) / maximum) * 100, 2) if maximum else 0,
         }
-        for day, values in sorted(by_day.items(), reverse=True)
+        for row in raw_days
     )
+
     model_rows = tuple(
         {
-            "model": model,
-            "requests": values["requests"],
-            "input_tokens": values["input"],
-            "output_tokens": values["output"],
-            "total_tokens": values["input"] + values["output"],
+            "model": row["model_name"],
+            "requests": row["requests"],
+            "input_tokens": row["input_tokens"] or 0,
+            "output_tokens": row["output_tokens"] or 0,
+            "total_tokens": (row["input_tokens"] or 0) + (row["output_tokens"] or 0),
         }
-        for model, values in sorted(by_model.items())
+        for row in queryset.values("model_name")
+        .annotate(
+            requests=Count("id"),
+            input_tokens=Sum("input_tokens"),
+            output_tokens=Sum("output_tokens"),
+        )
+        .order_by("model_name")
     )
+
     return TokenUsageSummary(
         requests=requests,
         input_tokens=input_total,
@@ -127,5 +109,4 @@ def load_token_usage(days: int = 30) -> TokenUsageSummary:
         estimated_cost_usd=_estimate_cost(input_total, output_total),
         by_day=day_rows,
         by_model=model_rows,
-        available=True,
     )
