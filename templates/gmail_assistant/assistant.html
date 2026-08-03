@@ -52,14 +52,28 @@
           <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
         </div>
       </form>
-      <div class="small text-muted mt-3">
-        {% trans "Last successful Gmail sync" %}:
-        {% if settings.last_successful_run_at %}
-          {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
-        {% else %}
-          {% trans "Never" %}
-        {% endif %}
+
+      <div class="small mt-3 d-grid gap-1">
+        <div class="{% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
+          {% if settings.last_successful_run_at and not settings.last_error_message %}✅{% endif %}
+          {% trans "Last successful Gmail sync" %}:
+          {% if settings.last_successful_run_at %}
+            {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
+          {% else %}
+            {% trans "Never" %}
+          {% endif %}
+        </div>
+        <div class="{% if next_automatic_check_at %}text-success{% else %}text-muted{% endif %}">
+          {% if next_automatic_check_at %}✅{% endif %}
+          {% trans "Next automatic check" %}:
+          {% if next_automatic_check_at %}
+            {{ next_automatic_check_at|date:"d.m.Y H:i" }}
+          {% else %}
+            {% trans "Not scheduled" %}
+          {% endif %}
+        </div>
       </div>
+
       {% if settings.last_error_message %}
         <div class="alert alert-warning small mb-0 mt-2" role="alert">
           {% trans "The latest Gmail sync needs attention. Try syncing again or reconnect Google if the problem continues." %}
