@@ -67,8 +67,23 @@ cd /opt/jobapply
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py create_google_socialapp_if_not_exists
-sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py create_superuser_if_not_exists
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py check --deploy
+```
+
+Production initialization intentionally does not create a superuser. The first owner account should be created through Google OAuth so the Django user and Google social account are linked from the start.
+
+After the first successful Google sign-in, grant admin rights explicitly:
+
+```bash
+sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+user = User.objects.get(email__iexact='replace-with-owner-email@example.com')
+user.is_staff = True
+user.is_superuser = True
+user.save(update_fields=['is_staff', 'is_superuser'])
+print('Promoted:', user.username)
+"
 ```
 
 ## 5. Install services
@@ -122,7 +137,7 @@ systemctl list-timers --all | grep jobapply
 
 ```bash
 cd /opt/jobapply
-git pull --ff-only
+sudo -u jobapply git pull --ff-only
 sudo -u jobapply poetry install --only main --no-interaction
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput
