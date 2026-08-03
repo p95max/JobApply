@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -61,6 +62,16 @@ def gmail_assistant(request):
         for proposal_status in ProposalStatus.values
     }
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    next_automatic_check_at = None
+    if (
+        django_settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED
+        and assistant_settings.ai_enabled
+        and assistant_settings.last_successful_run_at
+        and not assistant_settings.last_error_message
+    ):
+        next_automatic_check_at = assistant_settings.last_successful_run_at + timedelta(
+            seconds=django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS
+        )
     return render(
         request,
         "gmail_assistant/assistant.html",
@@ -83,6 +94,7 @@ def gmail_assistant(request):
                 GmailEventType.INTERVIEW_RESCHEDULED,
             },
             "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
+            "next_automatic_check_at": next_automatic_check_at,
             "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
         },
     )
