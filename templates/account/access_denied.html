@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Access denied" %} · JobApply{% endblock %}
+
+{% block content %}
+<section class="access-denied-page">
+  <div class="access-denied-orb access-denied-orb-one"></div>
+  <div class="access-denied-orb access-denied-orb-two"></div>
+
+  <div class="container position-relative">
+    <div class="access-denied-card mx-auto">
+      <div class="access-denied-icon" aria-hidden="true">🔐</div>
+      <div class="access-denied-kicker">403 · {% trans "Private workspace" %}</div>
+      <h1>{% trans "This account does not have access" %}</h1>
+      <p class="access-denied-copy">
+        {% trans "JobApply is currently restricted to approved Google accounts." %}
+      </p>
+
+      {% if attempted_email %}
+        <div class="access-denied-account">
+          <span>{% trans "Attempted account" %}</span>
+          <strong>{{ attempted_email }}</strong>
+        </div>
+      {% endif %}
+
+      <div class="access-denied-actions">
+        <a class="access-denied-primary" href="{% url 'account_login' %}">
+          <span aria-hidden="true">↻</span>
+          {% trans "Try another Google account" %}
+        </a>
+        <a class="access-denied-secondary" href="/">
+          {% trans "Back to start" %}
+        </a>
+      </div>
+
+      <p class="access-denied-note mb-0">
+        {% trans "Use the Google account that was added to the JobApply allow list." %}
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_css %}
+<style>
+  .access-denied-page {
+    position: relative;
+    min-height: calc(100vh - 72px);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 4rem 1rem;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(112, 88, 255, .16), transparent 32rem),
+      radial-gradient(circle at 82% 72%, rgba(45, 212, 191, .11), transparent 28rem),
+      linear-gradient(180deg, #0b0d12 0%, #11141b 100%);
+  }
+
+  .access-denied-card {
+    width: min(100%, 640px);
+    padding: clamp(2rem, 6vw, 3.75rem);
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-radius: 28px;
+    text-align: center;
+    background: rgba(18, 21, 29, .78);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, .38);
+    backdrop-filter: blur(22px);
+  }
+
+  .access-denied-icon {
+    width: 74px;
+    height: 74px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 1.4rem;
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 22px;
+    font-size: 2rem;
+    background: linear-gradient(145deg, rgba(124, 92, 255, .24), rgba(45, 212, 191, .12));
+    box-shadow: inset 0 1px rgba(255, 255, 255, .08);
+  }
+
+  .access-denied-kicker {
+    margin-bottom: .75rem;
+    color: #9b8cff;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .access-denied-card h1 {
+    max-width: 520px;
+    margin: 0 auto 1rem;
+    color: #f7f8fb;
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.08;
+    letter-spacing: -.04em;
+  }
+
+  .access-denied-copy {
+    max-width: 490px;
+    margin: 0 auto 1.75rem;
+    color: #a9afbc;
+    font-size: 1.03rem;
+    line-height: 1.7;
+  }
+
+  .access-denied-account {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .5rem 1rem;
+    margin: 0 auto 1.75rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 16px;
+    color: #8f96a5;
+    background: rgba(255, 255, 255, .035);
+    text-align: left;
+  }
+
+  .access-denied-account strong {
+    color: #e7e9ef;
+    overflow-wrap: anywhere;
+  }
+
+  .access-denied-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .access-denied-primary,
+  .access-denied-secondary {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    padding: .8rem 1.15rem;
+    border-radius: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease;
+  }
+
+  .access-denied-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #765cff, #927cff);
+    box-shadow: 0 12px 34px rgba(118, 92, 255, .25);
+  }
+
+  .access-denied-secondary {
+    border: 1px solid rgba(255, 255, 255, .11);
+    color: #d8dbe4;
+    background: rgba(255, 255, 255, .04);
+  }
+
+  .access-denied-primary:hover,
+  .access-denied-secondary:hover {
+    transform: translateY(-2px);
+  }
+
+  .access-denied-primary:hover {
+    color: #fff;
+  }
+
+  .access-denied-secondary:hover {
+    border-color: rgba(255, 255, 255, .22);
+    color: #fff;
+  }
+
+  .access-denied-note {
+    color: #747c8b;
+    font-size: .86rem;
+  }
+
+  .access-denied-orb {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(3px);
+    pointer-events: none;
+  }
+
+  .access-denied-orb-one {
+    top: 12%;
+    left: 7%;
+    width: 180px;
+    height: 180px;
+    background: rgba(118, 92, 255, .08);
+  }
+
+  .access-denied-orb-two {
+    right: 8%;
+    bottom: 10%;
+    width: 220px;
+    height: 220px;
+    background: rgba(45, 212, 191, .055);
+  }
+
+  @media (max-width: 575.98px) {
+    .access-denied-page {
+      min-height: calc(100vh - 62px);
+      padding: 1rem;
+    }
+
+    .access-denied-card {
+      padding: 2rem 1.25rem;
+      border-radius: 22px;
+    }
+
+    .access-denied-actions {
+      flex-direction: column;
+    }
+
+    .access-denied-primary,
+    .access-denied-secondary {
+      width: 100%;
+    }
+
+    .access-denied-account {
+      display: block;
+      text-align: center;
+    }
+
+    .access-denied-account strong {
+      display: block;
+      margin-top: .3rem;
+    }
+  }
+</style>
+{% endblock %}
