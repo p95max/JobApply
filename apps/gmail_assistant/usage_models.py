@@ -25,12 +25,6 @@ class OpenAITokenUsage(models.Model):
     class Meta:
         db_table = "gmail_assistant_openaitokenusage"
         ordering = ("-created_at",)
-        constraints = [
-            models.UniqueConstraint(
-                fields=("message", "model_name"),
-                name="unique_openai_usage_per_message_model",
-            )
-        ]
 
     @property
     def total_tokens(self) -> int:
