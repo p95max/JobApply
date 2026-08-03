@@ -3,53 +3,77 @@
 <div class="application-card-list d-md-none no-print">
   {% for app in items %}
     <article class="application-card js-row-link" data-href="{% url 'applications:detail' app.pk %}">
-      <div class="application-card__header">
-        <input
-          class="form-check-input js-row-check"
-          type="checkbox"
-          value="{{ app.id }}"
-          aria-label="{% trans 'Select application' %}"
-        >
-        <div class="application-card__heading">
-          <h2 class="application-card__title">{{ app.title }}</h2>
-          <div class="application-card__company">{{ app.company }}</div>
-        </div>
+      <div class="application-card__topbar">
+        <label class="application-card__select">
+          <input
+            class="form-check-input js-row-check"
+            type="checkbox"
+            value="{{ app.id }}"
+            aria-label="{% trans 'Select application' %}"
+          >
+        </label>
         <span class="application-card__number">
           {% if page_obj %}#{{ page_obj.start_index|add:forloop.counter0 }}{% else %}#{{ forloop.counter }}{% endif %}
         </span>
       </div>
 
-      <div class="application-card__meta">
-        <div>
-          <span aria-hidden="true">📅</span>
-          <span>{{ app.applied_at|date:"d.m.Y" }}</span>
+      <header class="application-card__header">
+        <h2 class="application-card__title">{{ app.title }}</h2>
+        <div class="application-card__company">{{ app.company }}</div>
+      </header>
+
+      <div class="application-card__details">
+        <div class="application-card__detail">
+          <span class="application-card__detail-icon" aria-hidden="true">📅</span>
+          <span>
+            <span class="application-card__detail-label">{% trans "Applied" %}</span>
+            <strong>{{ app.applied_at|date:"d.m.Y" }}</strong>
+          </span>
         </div>
+
         {% if app.location %}
-          <div>
-            <span aria-hidden="true">📍</span>
-            <span>{{ app.location }}</span>
+          <div class="application-card__detail">
+            <span class="application-card__detail-icon" aria-hidden="true">📍</span>
+            <span>
+              <span class="application-card__detail-label">{% trans "Location" %}</span>
+              <strong>{{ app.location }}</strong>
+            </span>
           </div>
         {% endif %}
-        <div>
-          <span aria-hidden="true">🔗</span>
-          <span>{{ app.get_source_display|default:app.source|default:"—" }}</span>
+
+        <div class="application-card__detail">
+          <span class="application-card__detail-icon" aria-hidden="true">🔗</span>
+          <span>
+            <span class="application-card__detail-label">{% trans "Source" %}</span>
+            <strong>{{ app.get_source_display|default:app.source|default:"—" }}</strong>
+          </span>
         </div>
       </div>
 
-      <div class="application-card__footer">
-        <select
-          class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }} application-card__status"
-          data-id="{{ app.id }}"
-          aria-label="{% trans 'Application status' %}"
-        >
-          <option value="applied" {% if app.status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
-          <option value="screen" {% if app.status == "screen" %}selected{% endif %}>{% trans "HR Screen" %}</option>
-          <option value="interview" {% if app.status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
-          <option value="offer" {% if app.status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
-          <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
-        </select>
+      {% if app.notes %}
+        <div class="application-card__note">
+          <span aria-hidden="true">📝</span>
+          <span>{{ app.notes }}</span>
+        </div>
+      {% endif %}
 
-        <div class="app-row-actions">
+      <footer class="application-card__footer">
+        <div class="application-card__status-wrap">
+          <span class="application-card__detail-label">{% trans "Status" %}</span>
+          <select
+            class="form-select form-select-sm js-status-select status-select status-app-{{ app.status }} application-card__status"
+            data-id="{{ app.id }}"
+            aria-label="{% trans 'Application status' %}"
+          >
+            <option value="applied" {% if app.status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
+            <option value="screen" {% if app.status == "screen" %}selected{% endif %}>{% trans "HR Screen" %}</option>
+            <option value="interview" {% if app.status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
+            <option value="offer" {% if app.status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
+            <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
+          </select>
+        </div>
+
+        <div class="app-row-actions application-card__actions">
           <a
             class="app-row-action app-row-action--edit"
             href="{% url 'applications:edit' app.pk %}"
@@ -63,14 +87,7 @@
             aria-label="{% trans 'Delete application' %}"
           >🗑️</a>
         </div>
-      </div>
-
-      {% if app.notes %}
-        <div class="application-card__note">
-          <span aria-hidden="true">📝</span>
-          <span>{{ app.notes }}</span>
-        </div>
-      {% endif %}
+      </footer>
     </article>
   {% endfor %}
 </div>
