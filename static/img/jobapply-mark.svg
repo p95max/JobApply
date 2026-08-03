@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">JobApply</title>
+  <desc id="desc">A document with a check mark</desc>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8F9CFF"/>
+      <stop offset="1" stop-color="#5867DE"/>
+    </linearGradient>
+  </defs>
+  <rect x="3" y="3" width="58" height="58" rx="18" fill="url(#bg)"/>
+  <path d="M21 16h17l8 8v20a4 4 0 0 1-4 4H21a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4Z" fill="#fff" fill-opacity=".96"/>
+  <path d="M38 16v8h8" fill="none" stroke="#6473E4" stroke-width="3" stroke-linejoin="round"/>
+  <path d="m24 34 5 5 11-12" fill="none" stroke="#5968DF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
