@@ -2,12 +2,12 @@
 {% load static i18n %}
 
 {% block page_css %}
-<link rel="stylesheet" href="{% static 'css/applications.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/applications.css' %}?v=4">
 <link rel="stylesheet" href="{% static 'css/print.css' %}">
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{% static 'js/apps_list.js' %}"></script>
+<script src="{% static 'js/apps_list.js' %}?v=2"></script>
 {% endblock %}
 
 {% block content %}
@@ -28,7 +28,9 @@
       </div>
     </div>
 
-    <div id="print-area">
+    {% include 'includes/apps_list_cards.html' %}
+
+    <div id="print-area" class="d-none d-md-block">
       <div class="card border-0 shadow-sm glass-card">
         <div class="table-responsive">
           {% include 'includes/apps_list_table.html' %}
