@@ -1,7 +1,9 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n systemd_timers %}
 
 {% block content %}
+{% systemd_timer "jobapply-backup.timer" as backup_timer %}
+{% systemd_timer "jobapply-neon-sync.timer" as neon_timer %}
 <div class="container mt-4" style="max-width: 920px;">
   {% include "reports/_nav.html" %}
 
@@ -129,7 +131,7 @@
 
           <div class="d-flex align-items-start gap-3">
             <div class="fs-4" aria-hidden="true">🛡️</div>
-            <div>
+            <div class="flex-grow-1">
               <div class="d-flex align-items-center gap-2 mb-2">
                 <div class="fw-semibold">{% trans "Server backup schedule" %}</div>
                 <span class="badge rounded-pill text-bg-success">
@@ -137,10 +139,30 @@
                 </span>
               </div>
 
-              <ul class="small text-muted mb-2 ps-3">
-                <li>{% trans "PostgreSQL backup and Google Drive upload: once daily at night." %}</li>
-                <li>{% trans "Neon recovery database synchronization: once weekly on Sunday." %}</li>
-              </ul>
+              <div class="border rounded p-2 mb-2 small">
+                <div class="d-flex justify-content-between gap-3 mb-2">
+                  <span>{% trans "PostgreSQL backup and Google Drive upload" %}</span>
+                  {% if backup_timer.iso %}
+                    <span class="text-end">
+                      <span class="d-block fw-semibold">{{ backup_timer.display }}</span>
+                      <span class="text-muted js-timer-countdown" data-next-run="{{ backup_timer.iso }}"></span>
+                    </span>
+                  {% else %}
+                    <span class="text-muted">{% trans "Once daily at night" %}</span>
+                  {% endif %}
+                </div>
+                <div class="d-flex justify-content-between gap-3">
+                  <span>{% trans "Neon recovery database synchronization" %}</span>
+                  {% if neon_timer.iso %}
+                    <span class="text-end">
+                      <span class="d-block fw-semibold">{{ neon_timer.display }}</span>
+                      <span class="text-muted js-timer-countdown" data-next-run="{{ neon_timer.iso }}"></span>
+                    </span>
+                  {% else %}
+                    <span class="text-muted">{% trans "Once weekly on Sunday" %}</span>
+                  {% endif %}
+                </div>
+              </div>
 
               <div class="small text-muted">
                 {% trans "The schedule runs on the VPS even when this page is closed. It is configured by the jobapply-backup.timer and jobapply-neon-sync.timer systemd units." %}
@@ -152,4 +174,35 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+{{ block.super }}
+<script>
+  (() => {
+    const formatRemaining = (milliseconds) => {
+      if (milliseconds <= 0) return "{% trans 'Due now' %}";
+      const totalMinutes = Math.floor(milliseconds / 60000);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const minutes = totalMinutes % 60;
+      const parts = [];
+      if (days) parts.push(`${days}d`);
+      if (hours || days) parts.push(`${hours}h`);
+      parts.push(`${minutes}m`);
+      return `{% trans 'in' %} ${parts.join(" ")}`;
+    };
+
+    const updateCountdowns = () => {
+      document.querySelectorAll(".js-timer-countdown").forEach((element) => {
+        const nextRun = Date.parse(element.dataset.nextRun || "");
+        if (!Number.isFinite(nextRun)) return;
+        element.textContent = formatRemaining(nextRun - Date.now());
+      });
+    };
+
+    updateCountdowns();
+    window.setInterval(updateCountdowns, 60000);
+  })();
+</script>
 {% endblock %}
