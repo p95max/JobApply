@@ -109,12 +109,22 @@
     </td>
 
     <td class="text-end no-print col-actions">
-      <div class="btn-group">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'applications:edit' app.pk %}">
-          ✏️ {% trans "Edit" %}
+      <div class="app-row-actions" role="group" aria-label="{% trans 'Application actions' %}">
+        <a
+          class="app-row-action app-row-action--edit"
+          href="{% url 'applications:edit' app.pk %}"
+          title="{% trans 'Edit' %}"
+          aria-label="{% trans 'Edit' %}"
+        >
+          <span aria-hidden="true">✏️</span>
         </a>
-        <a class="btn btn-sm btn-outline-danger" href="{% url 'applications:delete' app.pk %}">
-          🗑️ {% trans "Delete" %}
+        <a
+          class="app-row-action app-row-action--delete"
+          href="{% url 'applications:delete' app.pk %}"
+          title="{% trans 'Delete' %}"
+          aria-label="{% trans 'Delete' %}"
+        >
+          <span aria-hidden="true">🗑️</span>
         </a>
       </div>
     </td>
