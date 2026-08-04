@@ -16,20 +16,12 @@
     <nav class="app-navigation" id="app-navigation" aria-label="{% trans 'Main navigation' %}" data-menu-panel>
       {% if user.is_authenticated %}
         <div class="app-navigation__primary">
-          <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}">
-            <span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span>
-          </a>
-          <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="/applications/">
-            <span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span>
-          </a>
-          <a class="app-nav-link {% if request.path|slice:':12' == '/interviews/' %}is-active{% endif %}" href="/interviews/">
-            <span aria-hidden="true">🗓️</span><span>{% trans "Interviews" %}</span>
-          </a>
+          <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span></a>
+          <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="/applications/"><span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span></a>
+          <a class="app-nav-link {% if request.path|slice:':12' == '/interviews/' %}is-active{% endif %}" href="/interviews/"><span aria-hidden="true">🗓️</span><span>{% trans "Interviews" %}</span></a>
 
           <details class="app-services" data-services-menu>
-            <summary class="app-nav-link {% if '/reports/statistics/' in request.path or '/gmail_stats/' in request.path and '/gmail/assistant/' not in request.path %}is-active{% endif %}">
-              <span aria-hidden="true">📊</span><span>{% trans "Statistics" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span>
-            </summary>
+            <summary class="app-nav-link {% if '/reports/statistics/' in request.path or '/gmail_stats/' in request.path and '/gmail/assistant/' not in request.path %}is-active{% endif %}"><span aria-hidden="true">📊</span><span>{% trans "Statistics" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span></summary>
             <div class="app-services__menu">
               <a href="{% url 'reports:statistics' %}"><span>📈</span><span>{% trans "Applications" %}</span></a>
               <a href="{% url 'gmail_stats:gmail_dashboard' %}"><span>📬</span><span>{% trans "Gmail" %}</span></a>
@@ -37,22 +29,18 @@
           </details>
 
           <details class="app-services" data-services-menu>
-            <summary class="app-nav-link {% if '/gmail/assistant/' in request.path or '/reports/import/' in request.path or '/reports/drive/' in request.path %}is-active{% endif %}">
-              <span aria-hidden="true">✨</span><span>{% trans "Services" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span>
-            </summary>
+            <summary class="app-nav-link {% if '/gmail/assistant/' in request.path or '/reports/import/' in request.path or '/reports/drive/' in request.path %}is-active{% endif %}"><span aria-hidden="true">✨</span><span>{% trans "Services" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span></summary>
             <div class="app-services__menu">
               <a href="{% url 'gmail_assistant:gmail_assistant' %}">
                 <span>{% if gmail_assistant_enabled %}🟢{% else %}🔴{% endif %}</span><span>{% trans "Gmail Assistant" %}</span>
                 {% if gmail_assistant_pending_count %}<span class="app-services__count">{{ gmail_assistant_pending_count }}</span>{% endif %}
               </a>
-              <a href="{% url 'reports:import' %}"><span>↕️</span><span>{% trans "Import/Export" %}</span></a>
               <a href="{% url 'reports:drive_backups' %}"><span>{% if cloud_backups_enabled %}🟢{% else %}🔴{% endif %}</span><span>{% trans "Cloud backups" %}</span></a>
+              <a href="{% url 'reports:import' %}"><span>↕️</span><span>{% trans "Import/Export" %}</span></a>
             </div>
           </details>
 
-          <a class="app-nav-link {% if '/app/settings/' in request.path %}is-active{% endif %}" href="{% url 'accounts:settings' %}">
-            <span aria-hidden="true">⚙️</span><span>{% trans "Settings" %}</span>
-          </a>
+          <a class="app-nav-link {% if '/app/settings/' in request.path %}is-active{% endif %}" href="{% url 'accounts:settings' %}"><span aria-hidden="true">⚙️</span><span>{% trans "Settings" %}</span></a>
         </div>
 
         <div class="app-navigation__actions">
