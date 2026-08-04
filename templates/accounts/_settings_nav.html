@@ -1,0 +1,24 @@
+{% load i18n %}
+
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab != 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
+      {% if profile.telegram_chat_id %}🟢{% else %}🔴{% endif %} {% trans "Telegram" %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">
+      {% if gmail_connected %}🟢{% else %}🔴{% endif %} Gmail
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'drive_backups' %}active{% endif %}" href="{% url 'reports:drive_backups' %}">
+      {% if cloud_backups_enabled %}🟢{% else %}🔴{% endif %} {% trans "Cloud backups" %}
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'import' %}active{% endif %}" href="{% url 'reports:import' %}">
+      ↕️ {% trans "Import / Export" %}
+    </a>
+  </li>
+</ul>
