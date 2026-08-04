@@ -19,15 +19,15 @@
   <main>
     <section class="landing-hero container">
       <div class="landing-hero__copy">
-        <div class="landing-eyebrow">{% trans "Job search workspace with AI assistance" %}</div>
+        <div class="landing-eyebrow">{% trans "Job search workspace with optional AI assistance" %}</div>
         <h1>{% trans "Keep every application, interview and recruiter email under control." %}</h1>
-        <p class="landing-lead">{% trans "JobApply turns your job search into one clear workflow: track applications, review Gmail updates, manage interviews and keep reliable backups." %}</p>
+        <p class="landing-lead">{% trans "JobApply brings application tracking, passwordless Google sign-in, Gmail updates, Telegram notifications and Google Drive backups into one clear workflow." %}</p>
         <div class="landing-actions">
           <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a>
           <a class="btn btn-outline-light btn-lg" href="#features">{% trans "Explore features" %}</a>
         </div>
         <div class="landing-trust">
-          <span>✓ {% trans "Review before changes" %}</span><span>✓ {% trans "Private account data" %}</span><span>✓ {% trans "Google Drive backups" %}</span>
+          <span>✓ {% trans "No separate password" %}</span><span>✓ {% trans "AI stays optional" %}</span><span>✓ {% trans "Google Drive backups" %}</span>
         </div>
       </div>
 
@@ -49,27 +49,27 @@
       <div class="landing-section__heading"><div class="landing-eyebrow">{% trans "Everything in one place" %}</div><h2>{% trans "Built for a real, ongoing job search" %}</h2><p>{% trans "Less manual tracking, fewer missed updates and a complete history of your applications." %}</p></div>
       <div class="landing-feature-grid">
         <article class="landing-feature-card"><span class="landing-feature-card__icon">📋</span><h3>{% trans "Application tracking" %}</h3><p>{% trans "Track company, vacancy, status, salary, links, documents, notes and the full activity history." %}</p></article>
-        <article class="landing-feature-card"><span class="landing-feature-card__icon">🤖</span><h3>{% trans "AI Gmail Assistant" %}</h3><p>{% trans "Detect confirmations, interviews, requests, offers and rejections. Every proposed change requires your review." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">🔐</span><h3>{% trans "Passwordless Google sign-in" %}</h3><p>{% trans "Create your account and sign in with Google. There is no separate JobApply password to remember or manage." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">🤖</span><h3>{% trans "Optional AI Gmail Assistant" %}</h3><p>{% trans "Enable AI only when you need it, review every proposed change and control token usage with configurable processing limits." %}</p></article>
         <article class="landing-feature-card"><span class="landing-feature-card__icon">🗓️</span><h3>{% trans "Interview management" %}</h3><p>{% trans "Keep interview dates, formats, contacts and preparation notes connected to the correct application." %}</p></article>
-        <article class="landing-feature-card"><span class="landing-feature-card__icon">📊</span><h3>{% trans "Useful statistics" %}</h3><p>{% trans "See application volume, conversion, response patterns and progress without maintaining separate spreadsheets." %}</p></article>
-        <article class="landing-feature-card"><span class="landing-feature-card__icon">📨</span><h3>{% trans "Telegram notifications" %}</h3><p>{% trans "Receive important job-search updates and use quick status commands from your private Telegram chat." %}</p></article>
-        <article class="landing-feature-card"><span class="landing-feature-card__icon">☁️</span><h3>{% trans "Reliable backups" %}</h3><p>{% trans "Export your data and keep automated PostgreSQL backups in Google Drive with visible health status." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">📨</span><h3>{% trans "Telegram bot notifications" %}</h3><p>{% trans "Connect the bot through a complete step-by-step setup on the website, then receive private job-search notifications in Telegram." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">☁️</span><h3>{% trans "Google Drive backup integration" %}</h3><p>{% trans "Connect Google Drive and keep automated PostgreSQL backups with visible status, schedules and recovery controls." %}</p></article>
       </div>
     </section>
 
     <section class="landing-section landing-section--workflow"><div class="container">
-      <div class="landing-section__heading"><div class="landing-eyebrow">{% trans "Simple workflow" %}</div><h2>{% trans "From application to final decision" %}</h2></div>
+      <div class="landing-section__heading"><div class="landing-eyebrow">{% trans "Simple workflow" %}</div><h2>{% trans "From first sign-in to daily automation" %}</h2></div>
       <div class="landing-steps">
-        <div><span>1</span><strong>{% trans "Add an application" %}</strong><p>{% trans "Save the vacancy and the information that matters." %}</p></div>
-        <div><span>2</span><strong>{% trans "Connect your services" %}</strong><p>{% trans "Use Gmail, Telegram and Drive only where they add value." %}</p></div>
-        <div><span>3</span><strong>{% trans "Review updates" %}</strong><p>{% trans "Approve or reject AI suggestions before your records change." %}</p></div>
-        <div><span>4</span><strong>{% trans "Measure progress" %}</strong><p>{% trans "Use one consistent history for decisions and follow-ups." %}</p></div>
+        <div><span>1</span><strong>{% trans "Sign in with Google" %}</strong><p>{% trans "Start securely without creating another password." %}</p></div>
+        <div><span>2</span><strong>{% trans "Connect Telegram and Drive" %}</strong><p>{% trans "Follow the guided setup directly from the website." %}</p></div>
+        <div><span>3</span><strong>{% trans "Enable AI when needed" %}</strong><p>{% trans "Choose whether to use AI and keep token usage under control." %}</p></div>
+        <div><span>4</span><strong>{% trans "Review and track" %}</strong><p>{% trans "Approve suggested updates and keep one consistent application history." %}</p></div>
       </div>
     </div></section>
 
     <section class="landing-section container"><div class="landing-security">
-      <div><div class="landing-eyebrow">{% trans "Privacy by design" %}</div><h2>{% trans "Your job-search data remains under your control." %}</h2><p>{% trans "JobApply uses Google authentication, isolates user data, keeps attachments out of AI analysis and requires confirmation before applying suggested changes." %}</p></div>
-      <div class="landing-security__list"><span>🔐 {% trans "Google OAuth authentication" %}</span><span>👁️ {% trans "Human review before updates" %}</span><span>🧹 {% trans "Sanitized AI input" %}</span><span>💾 {% trans "Export and backup controls" %}</span></div>
+      <div><div class="landing-eyebrow">{% trans "Privacy by design" %}</div><h2>{% trans "Your job-search data remains under your control." %}</h2><p>{% trans "JobApply uses Google OAuth instead of local passwords, keeps AI optional, limits token usage and requires confirmation before suggested changes are applied." %}</p></div>
+      <div class="landing-security__list"><span>🔐 {% trans "Passwordless Google OAuth" %}</span><span>👁️ {% trans "Human review before updates" %}</span><span>🎛️ {% trans "Optional AI and token controls" %}</span><span>💾 {% trans "Google Drive backup integration" %}</span></div>
     </div></section>
 
     <section class="landing-cta container"><div><div class="landing-eyebrow">{% trans "Ready to organize your search?" %}</div><h2>{% trans "Start with one clear dashboard." %}</h2></div><a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a></section>
