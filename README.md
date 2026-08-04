@@ -228,17 +228,20 @@ ALLOWED_ACCOUNT_EMAILS=your-exact-google-email@example.com
 
 ### Standard production update
 
-Check for local changes first:
+Production deploys only from `agent/vps-no-docker-deploy`. The `master` branch is not a production source.
+
+Check the branch and local changes first:
 
 ```bash
 cd /opt/jobapply
+git branch --show-current
 git status --short
 ```
 
 Then update and validate:
 
 ```bash
-sudo -u jobapply git pull --ff-only
+sudo -u jobapply git -C /opt/jobapply pull --ff-only origin agent/vps-no-docker-deploy
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py check
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput
@@ -256,6 +259,105 @@ systemctl status jobapply-gmail-worker --no-pager -l
 systemctl status jobapply-telegram-bot --no-pager -l
 systemctl list-timers --all | grep jobapply
 ```
+
+## Telegram Bot
+
+The Telegram Bot is a private, read-only owner dashboard. It does not accept arbitrary shell commands and does not apply Gmail proposals automatically.
+
+Supported commands in the first version:
+
+- `/help`
+- `/status`
+- `/gmail`
+- `/applications`
+
+`/gmail` includes an HTTPS **Open in JobApply** button. Accept and Reject actions remain in the authenticated web interface.
+
+### BotFather setup
+
+1. Create a bot with `@BotFather` using `/newbot`.
+2. Store the returned token only in `/opt/jobapply/.env`.
+3. Send a private message to the bot.
+4. Read the update through the Bot API to obtain the private `from.id` and `chat.id` values.
+5. Configure the command list in BotFather or let `run_telegram_bot` publish it at startup.
+
+Never commit the bot token or real Telegram IDs.
+
+### Production configuration
+
+```env
+TELEGRAM_BOT_ENABLED=1
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_DEFAULT_CHAT_ID=...
+TELEGRAM_ALLOWED_CHAT_IDS=...
+TELEGRAM_ALLOWED_USER_IDS=...
+TELEGRAM_OWNER_EMAIL=your-exact-google-email@example.com
+TELEGRAM_ENV_LABEL=PRODUCTION
+TELEGRAM_NOTIFICATIONS_ENABLED=1
+```
+
+The bot validates the token and allowlists before polling. Both `from_user.id` and private `chat.id` must match the configured allowlists.
+
+### systemd service
+
+The production unit is `jobapply-telegram-bot.service`. It runs as `jobapply`, uses `/opt/jobapply` as its working directory and loads `/opt/jobapply/.env`.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobapply-telegram-bot.service
+sudo systemctl restart jobapply-telegram-bot.service
+sudo systemctl status jobapply-telegram-bot.service --no-pager -l
+```
+
+Logs:
+
+```bash
+sudo journalctl -u jobapply-telegram-bot.service -n 100 --no-pager -l
+sudo journalctl -u jobapply-telegram-bot.service -f
+```
+
+### Disable the bot
+
+Set:
+
+```env
+TELEGRAM_BOT_ENABLED=0
+TELEGRAM_NOTIFICATIONS_ENABLED=0
+```
+
+Then stop and disable the polling service:
+
+```bash
+sudo systemctl disable --now jobapply-telegram-bot.service
+```
+
+The web application, Gmail worker and backup service continue operating without Telegram.
+
+### Rotate the Telegram token
+
+1. Revoke or regenerate the token in `@BotFather`.
+2. Replace only `TELEGRAM_BOT_TOKEN` in `/opt/jobapply/.env`.
+3. Restart the bot service.
+4. Verify `/status` and review the service logs.
+
+```bash
+sudo systemctl restart jobapply-telegram-bot.service
+sudo systemctl status jobapply-telegram-bot.service --no-pager -l
+```
+
+Do not print the token in shell history, logs, screenshots or support messages.
+
+### Notifications
+
+The first version sends only significant events:
+
+- rejection proposal
+- interview invitation proposal
+- Gmail OAuth reconnect required
+- Gmail synchronization failure
+- backup failure
+
+Notifications use persistent delivery records, unique event keys, bounded retries and safe error categories. Delivery errors do not roll back Gmail proposals, heartbeat updates or backup operations.
 
 ## Backups
 
@@ -345,6 +447,8 @@ python manage.py compilemessages
 - API and mailbox errors are isolated to the affected sync/message.
 - Rules fallback preserves a safe error category without exposing provider details.
 - Token usage persistence is telemetry and does not control analysis success.
+- Telegram access is restricted to configured private user and chat IDs.
+- Telegram delivery failures do not roll back business operations.
 - Secrets belong in `.env` and must never be committed.
 
 ## Author
