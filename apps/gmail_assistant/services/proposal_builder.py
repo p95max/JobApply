@@ -38,6 +38,8 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     """Create deduplicated pending proposals without applying any application changes."""
     if message.user_id != analysis.user_id:
         raise ValueError("message and analysis must belong to the same user")
+
+    _normalize_known_event_type(message=message, analysis=analysis)
     if analysis.event_type in {GmailEventType.NOISE, GmailEventType.UNKNOWN}:
         return []
 
@@ -147,6 +149,18 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 )
             )
     return proposals
+
+
+def _normalize_known_event_type(*, message: Any, analysis: Any) -> None:
+    sender = str(getattr(message, "from_email", "") or "").casefold()
+    subject = str(getattr(message, "subject", "") or "").casefold()
+    if (
+        sender == "indeedapply@indeed.com"
+        and subject.startswith("bewerbung über indeed:")
+        and analysis.event_type == GmailEventType.APPLICATION_RECEIVED
+    ):
+        analysis.event_type = GmailEventType.APPLICATION_SENT
+        analysis.save(update_fields=["event_type", "updated_at"])
 
 
 def _is_action_required(*, message: Any, event_type: str, extracted: dict[str, Any]) -> bool:
