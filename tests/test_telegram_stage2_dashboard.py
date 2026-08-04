@@ -61,6 +61,14 @@ def test_gmail_command_adds_open_button(monkeypatch):
     assert "callback_data" not in button
 
 
+def test_disconnect_deep_link_returns_confirmation():
+    client = FakeClient()
+
+    handle_update(_update("/start disconnected"), client, _config())
+
+    assert client.calls == [(10, "Telegram disconnected from JobApply.", None)]
+
+
 def test_timeout_returns_safe_message(monkeypatch):
     client = FakeClient()
 
