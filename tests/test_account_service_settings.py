@@ -93,6 +93,7 @@ def test_settings_generates_hashed_telegram_link(client, account):
     assert profile.telegram_link_token_hash
     assert len(profile.telegram_link_token_hash) == len(hashlib.sha256(b"x").hexdigest())
     content = response.content.decode()
+    assert "🔴" in content
     assert 'href="https://t.me/jobapply_test_bot"' in content
     assert "@jobapply_test_bot" in content
     assert "https://t.me/jobapply_test_bot?start=" in content
@@ -120,7 +121,7 @@ def test_disconnect_clears_binding_and_redirects_to_bot(client, account):
     assert profile.telegram_linked_at is None
 
 
-def test_gmail_status_tab_hides_credentials(client, account):
+def test_gmail_status_tab_hides_credentials_and_service_links(client, account):
     user, _profile = account
     client.force_login(user)
 
@@ -132,9 +133,12 @@ def test_gmail_status_tab_hides_credentials(client, account):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Gmail status" in content
+    assert "🟢" in content
+    assert "Gmail" in content
     assert "Connected" in content
     assert "cannot be disconnected separately" in content
     assert "used to register and sign in to JobApply" in content
+    assert "Open Gmail Assistant" not in content
+    assert "Open Gmail statistics" not in content
     assert "refresh_token" not in content
     assert "access_token" not in content
