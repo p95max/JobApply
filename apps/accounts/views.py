@@ -82,8 +82,9 @@ def settings_view(request):
             token = profile.create_telegram_link_token()
             link_command = f"/start {token}"
             telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
+            if telegram_link_url:
+                return redirect(telegram_link_url)
             request.session["telegram_link_command"] = link_command
-            request.session["telegram_link_url"] = telegram_link_url
             messages.info(request, "Telegram link is valid for 15 minutes.")
             return redirect("accounts:settings")
         if action == "telegram_disconnect":
