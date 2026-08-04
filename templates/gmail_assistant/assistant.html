@@ -128,7 +128,7 @@
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
-        <p class="text-muted mb-0 mt-2">{% trans "It searches for new relevant Gmail messages and creates reviewable suggestions. It never changes an application by itself." %}</p>
+        <p class="text-muted mb-0 mt-2">{% trans "It searches relevant Gmail messages, rechecks saved analyses, and creates reviewable suggestions. It never changes an application by itself." %}</p>
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
@@ -171,7 +171,7 @@
       progress.classList.remove("d-none");
       syncButton.disabled = true;
       try {
-        const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}", {
+        const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?reanalyze=1", {
           method: "POST",
           headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
         });
