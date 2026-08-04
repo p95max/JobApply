@@ -14,6 +14,7 @@ from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_stats.models import GmailSyncState
 from apps.interviews.models import InterviewEvent, InterviewStatus
+from apps.telegram_bot.heartbeat import GMAIL_WORKER, TELEGRAM_BOT, HeartbeatStatus, get_heartbeat_status
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class StatusSnapshot:
     commit_sha: str
     last_gmail_sync_at: datetime | None
     next_gmail_check_at: datetime | None
+    worker_heartbeats: tuple[HeartbeatStatus, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,10 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
         commit_sha=_current_commit_sha(),
         last_gmail_sync_at=last_sync,
         next_gmail_check_at=next_check,
+        worker_heartbeats=(
+            get_heartbeat_status(GMAIL_WORKER),
+            get_heartbeat_status(TELEGRAM_BOT),
+        ),
     )
 
 
