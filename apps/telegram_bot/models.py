@@ -16,3 +16,31 @@ class WorkerHeartbeat(models.Model):
 
     def __str__(self) -> str:
         return self.worker_name
+
+
+class TelegramDeliveryStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    SENT = "sent", "Sent"
+    FAILED = "failed", "Failed"
+
+
+class TelegramDelivery(models.Model):
+    event_key = models.CharField(max_length=180, unique=True)
+    event_type = models.CharField(max_length=64)
+    chat_id = models.BigIntegerField()
+    message_id = models.BigIntegerField(null=True, blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=TelegramDeliveryStatus.choices,
+        default=TelegramDeliveryStatus.PENDING,
+    )
+    attempts = models.PositiveIntegerField(default=0)
+    error = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return self.event_key
