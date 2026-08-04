@@ -2,99 +2,84 @@
 {% load static i18n %}
 
 {% block page_scripts %}
-<script src="{% static 'js/gmail_stats.js' %}"></script>
+<script src="{% static 'js/gmail_stats.js' %}?v=3"></script>
 {% endblock %}
 
 {% block title %}{% trans "Gmail stats" %}{% endblock %}
 
 {% block content %}
+<div id="gmailStatsConfig" data-stats-url="{% url 'gmail_stats:gmail_stats_api' %}"></div>
 
-<div id="gmailStatsConfig"
-     data-stats-url="/gmail_stats/gmail/api/stats/"
-     data-sync-url="/gmail_stats/gmail/api/sync/">
-</div>
-
-<div class="container py-4">
+<div class="container py-4 service-page">
   {% include "reports/_nav.html" %}
 
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <section class="service-hero mb-4">
     <div>
-      <h1 class="h4 mb-1">{% trans "Gmail statistics" %}</h1>
+      <div class="service-eyebrow">📬 {% trans "Email analytics" %}</div>
+      <h1 class="h3 mb-2">{% trans "Gmail statistics" %}</h1>
+      <p class="text-body-secondary mb-0">
+        {% trans "AI-classified job-related emails. These are email events, not application records: one application may generate several messages." %}
+      </p>
+    </div>
 
-      <div class="text-muted small">
-        {% blocktrans %}
-        Automated estimation of responses and rejections from your Gmail.
-        The numbers are approximate and may not be fully accurate.
-        {% endblocktrans %}
+    <div class="service-toolbar">
+      <div class="service-field">
+        <label for="daysSelect">{% trans "Period" %}</label>
+        <select id="daysSelect" class="form-select form-select-sm">
+          <option value="30">{% trans "30 days" %}</option>
+          <option value="90">{% trans "90 days" %}</option>
+          <option value="180" selected>{% trans "180 days" %}</option>
+        </select>
       </div>
-    </div>
-
-    <div class="d-flex gap-2 align-items-center">
-      <label for="daysSelect" class="form-label mb-0 text-muted small">{% trans "Period" %}</label>
-
-      <select id="daysSelect" class="form-select form-select-sm" style="width: 120px;">
-        <option value="30">{% trans "30 days" %}</option>
-        <option value="90">{% trans "90 days" %}</option>
-        <option value="180" selected>{% trans "180 days" %}</option>
-      </select>
-
-      <button id="btnRefresh" class="btn btn-outline-secondary btn-sm">
-        {% trans "Refresh" %}
+      <button id="btnRefresh" class="btn btn-outline-secondary btn-sm service-refresh" type="button">
+        ↻ {% trans "Refresh" %}
       </button>
-
-      <button id="btnSync" class="btn btn-primary btn-sm">
-        {% trans "Sync Gmail" %}
-      </button>
-
-      <a class="btn btn-outline-primary btn-sm" href="{% url 'gmail_assistant:gmail_assistant' %}">
-        {% trans "Gmail Assistant" %}
-      </a>
     </div>
-  </div>
+  </section>
 
   <div id="alertBox" class="alert d-none" role="alert"></div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">{% trans "Responses" %}</div>
-          <div class="display-6" id="metricResponses">—</div>
-          <div class="text-muted small">{% trans "All detected replies" %}</div>
-        </div>
-      </div>
-    </div>
+  <div class="service-metric-grid mb-4">
+    <article class="service-metric-card service-metric-card--primary">
+      <div class="service-metric-icon" aria-hidden="true">📨</div>
+      <div class="service-metric-label">{% trans "Job-related emails" %}</div>
+      <div class="service-metric-value" id="metricEmails">—</div>
+      <div class="service-metric-help">{% trans "All AI-classified job-related messages in the selected period" %}</div>
+    </article>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">{% trans "Rejections (by keywords)" %}</div>
-          <div class="display-6" id="metricRejections">—</div>
-          <div class="text-muted small">{% trans "Absage / unfortunately" %}</div>
-        </div>
-      </div>
-    </div>
+    <article class="service-metric-card service-metric-card--danger">
+      <div class="service-metric-icon" aria-hidden="true">⛔</div>
+      <div class="service-metric-label">{% trans "Rejection emails" %}</div>
+      <div class="service-metric-value" id="metricRejections">—</div>
+      <div class="service-metric-help">{% trans "Messages classified as rejection events" %}</div>
+    </article>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">{% trans "Invites" %}</div>
-          <div class="display-6" id="metricInvites">—</div>
-          <div class="text-muted small">{% trans "Interview / meeting" %}</div>
-        </div>
-      </div>
-    </div>
+    <article class="service-metric-card service-metric-card--success">
+      <div class="service-metric-icon" aria-hidden="true">📅</div>
+      <div class="service-metric-label">{% trans "Interview and screening emails" %}</div>
+      <div class="service-metric-value" id="metricInvites">—</div>
+      <div class="service-metric-help">{% trans "Interview invitations, reschedules and screening events" %}</div>
+    </article>
 
-    <div class="col-12 col-md-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">{% trans "Auto-ack" %}</div>
-          <div class="display-6" id="metricAutoAck">—</div>
-          <div class="text-muted small">{% trans "We received your application" %}</div>
-        </div>
-      </div>
-    </div>
+    <article class="service-metric-card service-metric-card--info">
+      <div class="service-metric-icon" aria-hidden="true">✅</div>
+      <div class="service-metric-label">{% trans "Application acknowledgements" %}</div>
+      <div class="service-metric-value" id="metricAutoAck">—</div>
+      <div class="service-metric-help">{% trans "Application received, sent or confirmation messages" %}</div>
+    </article>
   </div>
-</div>
 
+  <section class="service-info-card">
+    <div class="service-info-card__icon" aria-hidden="true">ℹ️</div>
+    <div>
+      <div class="fw-semibold mb-1">{% trans "How to read these numbers" %}</div>
+      <p class="text-body-secondary mb-1">
+        {% trans "This page counts analyzed emails. The application statistics page counts current application records, so the totals are not expected to match." %}
+      </p>
+      <div class="small text-body-secondary">
+        {% trans "Last Gmail data sync" %}: <span id="syncStatusText">—</span>
+      </div>
+    </div>
+  </section>
+</div>
 {% endblock %}

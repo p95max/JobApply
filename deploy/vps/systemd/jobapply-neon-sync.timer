@@ -1,0 +1,11 @@
+[Unit]
+Description=Run JobApply Neon recovery sync weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00
+RandomizedDelaySec=20m
+Persistent=true
+Unit=jobapply-neon-sync.service
+
+[Install]
+WantedBy=timers.target

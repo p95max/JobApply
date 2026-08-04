@@ -1,71 +1,79 @@
-{% extends "base.html" %}
-{% load i18n %}
-
-{% block navbar %}{% endblock %}
-{% block content %}
+{% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 
-<nav class="navbar navbar-expand-lg navbar-dark border-bottom">
-  <div class="container">
-    <a class="navbar-brand" href="/">{% trans "JobApply" %}</a>
+<header class="app-header" data-app-header>
+  <div class="app-header__inner">
+    <a class="app-brand" href="/" aria-label="{% trans 'JobApply home' %}">
+      <span class="app-brand__mark" aria-hidden="true"><img src="{% static 'img/jobapply-mark.svg' %}" alt=""></span>
+      <span class="app-brand__text">JobApply</span>
+    </a>
 
-    <div class="ms-auto d-flex gap-2 align-items-center">
+    <button class="app-menu-toggle" type="button" aria-expanded="false" aria-controls="app-navigation" data-menu-toggle>
+      <span class="app-menu-toggle__icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="visually-hidden">{% trans "Open navigation" %}</span>
+    </button>
+
+    <nav class="app-navigation" id="app-navigation" aria-label="{% trans 'Main navigation' %}" data-menu-panel>
       {% if user.is_authenticated %}
-        <a class="btn btn-outline-light btn-sm nav-anim" href="/applications/">{% trans "Applications" %}</a>
-        <a class="btn btn-outline-light btn-sm nav-anim" href="/interviews/">{% trans "Interviews" %}</a>
-        <details class="dropdown services-dropdown">
-          <summary class="btn btn-outline-light btn-sm nav-anim dropdown-toggle">
-            {% trans "Services" %}
-          </summary>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-            <li><a class="dropdown-item" href="{% url 'reports:statistics' %}">📊 {% trans "Stats" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'gmail_stats:gmail_dashboard' %}">📬 {% trans "Gmail stats" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'gmail_assistant:gmail_assistant' %}">🤖 {% trans "Gmail Assistant" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'reports:import' %}">⬆️ {% trans "Import/Export" %}</a></li>
-            <li><a class="dropdown-item" href="{% url 'reports:drive_backups' %}">☁️ {% trans "Cloud backups" %}</a></li>
-          </ul>
-        </details>
+        <div class="app-navigation__primary">
+          <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span></a>
+          <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="{% url 'applications:list' %}"><span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span></a>
+          <a class="app-nav-link {% if request.path|slice:':12' == '/interviews/' %}is-active{% endif %}" href="/interviews/"><span aria-hidden="true">🗓️</span><span>{% trans "Interviews" %}</span></a>
+          <a class="app-nav-link {% if '/gmail/assistant/' in request.path %}is-active{% endif %}" href="{% url 'gmail_assistant:gmail_assistant' %}">
+            <span aria-hidden="true">✨</span><span>{% trans "Gmail Assistant" %}</span>
+            {% if gmail_assistant_pending_count %}<span class="app-nav-count">{% if gmail_assistant_pending_count > 99 %}99+{% else %}{{ gmail_assistant_pending_count }}{% endif %}</span>{% endif %}
+          </a>
 
+          <details class="app-dropdown" data-services-menu>
+            <summary class="app-nav-link {% if '/reports/statistics/' in request.path or '/gmail_stats/' in request.path and '/gmail/assistant/' not in request.path %}is-active{% endif %}">
+              <span aria-hidden="true">📊</span><span>{% trans "Reports" %}</span><span class="app-dropdown__chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="app-dropdown__menu">
+              <a href="{% url 'reports:statistics' %}"><span>📈</span><span>{% trans "Application statistics" %}</span></a>
+              <a href="{% url 'gmail_stats:gmail_dashboard' %}"><span>📬</span><span>{% trans "Gmail statistics" %}</span></a>
+            </div>
+          </details>
+        </div>
 
-        <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">
-          {% csrf_token %}
-          <input name="next" type="hidden" value="{{ request.get_full_path }}">
-          <button
-            type="submit"
-            name="language"
-            value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
-            class="btn btn-outline-light btn-sm nav-anim py-1 lh-1 d-inline-flex align-items-center"
-            style="height: 31px;"
-            title="{% if LANGUAGE_CODE == 'de' %}{% trans 'English' %}{% else %}{% trans 'Deutsch' %}{% endif %}"
-          >
-            <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-          </button>
-        </form>
+        <div class="app-navigation__actions">
+          <a class="app-create-action" href="{% url 'applications:create' %}"><span aria-hidden="true">＋</span><span>{% trans "Add" %}</span></a>
 
-        <a class="btn btn-outline-warning btn-sm nav-anim" href="/accounts/logout/">{% trans "Logout" %}</a>
+          <form action="{% url 'set_language' %}" method="post" class="app-language-form">
+            {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% trans 'Switch language' %}">
+              <span>{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span>
+            </button>
+          </form>
+
+          <details class="app-dropdown app-profile" data-services-menu>
+            <summary class="app-profile__trigger" aria-label="{% trans 'Open account menu' %}">
+              <span class="app-profile__avatar" aria-hidden="true">{{ user.first_name|default:user.username|slice:':1'|upper }}</span>
+              <span class="app-profile__name">{{ user.first_name|default:user.username|truncatechars:14 }}</span>
+              <span class="app-dropdown__chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="app-dropdown__menu app-dropdown__menu--right">
+              <div class="app-profile__meta">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                {% if user.email %}<span>{{ user.email }}</span>{% endif %}
+              </div>
+              <a href="{% url 'accounts:settings' %}"><span>⚙️</span><span>{% trans "Settings" %}</span></a>
+              <div class="app-dropdown__separator"></div>
+              <a class="app-dropdown__danger" href="/accounts/logout/"><span>↗</span><span>{% trans "Sign out" %}</span></a>
+            </div>
+          </details>
+        </div>
       {% else %}
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">{% trans "Applications" %}</a>
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">{% trans "Interviews" %}</a>
-        <a class="btn btn-outline-light btn-sm nav-anim is-disabled" href="#" data-disabled="1" aria-disabled="true" tabindex="-1">{% trans "Reports" %}</a>
-
-        <form action="{% url 'set_language' %}" method="post" class="d-inline-flex align-items-center m-0 p-0">
-          {% csrf_token %}
-          <input name="next" type="hidden" value="{{ request.get_full_path }}">
-          <button
-            type="submit"
-            name="language"
-            value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}"
-            class="btn btn-outline-light btn-sm nav-anim py-1 lh-1 d-inline-flex align-items-center"
-            style="height: 31px;"
-            title="{% if LANGUAGE_CODE == 'de' %}{% trans 'English' %}{% else %}{% trans 'Deutsch' %}{% endif %}"
-          >
-            <span style="display:block; line-height:1; font-size:16px;">{% if LANGUAGE_CODE == 'de' %}🇬🇧{% else %}🇩🇪{% endif %}</span>
-          </button>
-        </form>
-
-        <a class="btn btn-primary btn-sm nav-anim" href="/accounts/google/login/">{% trans "Sign in with Google" %}</a>
+        <div class="app-navigation__primary app-navigation__primary--guest">
+          <a class="app-nav-link" href="#features"><span>✨</span><span>{% trans "Features" %}</span></a>
+        </div>
+        <div class="app-navigation__actions">
+          <form action="{% url 'set_language' %}" method="post" class="app-language-form">
+            {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch"><span>{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span></button>
+          </form>
+          <a class="app-signin-action" href="/accounts/google/login/?next=/dashboard/">{% trans "Sign in with Google" %}</a>
+        </div>
       {% endif %}
-    </div>
+    </nav>
   </div>
-</nav>
-{% endblock %}
+</header>

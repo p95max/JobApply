@@ -2,79 +2,140 @@
 
 [![CI](https://github.com/p95max/JobApply/actions/workflows/ci.yml/badge.svg)](https://github.com/p95max/JobApply/actions/workflows/ci.yml)
 
----
+JobApply is a Django application for tracking job applications, recruiter replies and interviews. It uses a Google-first workflow: Google OAuth for authentication, read-only Gmail integration for response processing and optional Google Drive backups.
 
-**JobApply** is a focused Django job application tracker built around a **Google-first workflow**. It avoids feature bloat and unnecessary AI, providing only the tools needed to manage applications, process Gmail responses, plan interviews, and maintain backups.
+## Project status
 
-- **Google OAuth** is the only authentication method (no passwords).
-- **Google Drive backups** provide automated, rotation-based cloud backups.
-- **Gmail Assistant (read-only)** turns relevant Gmail messages into reviewable application and interview suggestions.
-- **Google Calendar integration**  #TODO .
+**Gmail Assistant stage 1 is complete.** The production workflow has been verified against real Gmail messages and the relevant automated test suite passes with:
 
-The project is designed for **dev-friendly, one-command startup via Docker Compose**.
+```text
+139 passed, 0 failed
+```
 
----
+The completed checklist is maintained in [`TODO.md`](TODO.md).
 
-## Why it exists (product pitch)
+## Main features
 
-If you already live in Google Workspace, you don’t want another app with yet another password and a fragile export flow.
-JobApply uses Google as the identity provider and (optionally) Google Drive as the storage layer for backups.
+- Google-only authentication with `django-allauth`
+- Application CRUD, statuses, filters and printable views
+- Interview planner linked to applications
+- Gmail statistics with read-only mailbox access
+- AI-first Gmail Assistant with rule-based fallback
+- Matching by Gmail thread, external application ID, company and job title
+- Reviewable proposals: the Assistant never changes an application automatically
+- Manual linking to an existing application or creation of a new application from an unmatched email
+- Token usage dashboard with 7/30-day totals, daily chart, model breakdown and estimated cost
+- Local PostgreSQL database with Google Drive dumps and optional Neon recovery sync
+- Docker Compose development environment
+- Native systemd/Caddy production deployment for a small VPS
 
----
+## Stack
 
-## Key features
+- Python 3.14
+- Django 5.2
+- PostgreSQL 18
+- Bootstrap 5
+- Poetry
+- Pytest and Ruff
+- OpenAI Responses API
+- Google OAuth, Gmail API and Drive API
 
-- **Google-only sign-in** (django-allauth)
-- **Printable & PDF-Ready Applications Dashboard with Filters and Sorting**
-- **Gmail Assistant** syncs, classifies and matches job-related emails, then creates suggestions that a user reviews before anything changes.
-- **Optional Google Drive connection**
-  - Create `JobApply/` folder (and optional `backups/` subfolder)
-  - Upload backups (CSV/XLSX)
-  - List & download backup files
-  - Disconnect Drive (revoke local tokens / unlink)
-  - **OPTIONAL** Auto Backup to Google Drive (latest + 2 retention)
-  
-- Applications CRUD with statuses + filters
-- Interview planner (linked to applications)
-- Services: local import/export + statistics
-- Terms/consent gate for data processing (first-time user flow)
+## Gmail Assistant
 
-- **Cloudflare Turnstile**
-  - Anti-bot gate before Google OAuth
-  - Applied to anonymous users only (never shown to authenticated users)
+The Gmail Assistant imports relevant messages through the Gmail API using the read-only scope:
 
+```text
+https://www.googleapis.com/auth/gmail.readonly
+```
 
----
+Workflow:
 
-## Tech stack
+1. Sign in with Google.
+2. Open **Services → Gmail Assistant**.
+3. Enable AI analysis when required.
+4. Run **Sync Gmail** or let the background worker check periodically.
+5. Review the detected event, evidence, match and proposed changes.
+6. Accept, edit, reject or ignore the proposal.
+7. For unmatched messages, link an existing application or create a new one from extracted email data.
 
-- **Python 3.14** (container image: `python:3.14-rc-slim`)
-- **Django 5+**
-- **PostgreSQL 18**
-- **Docker Compose v2** (`docker compose ...`)
-- **Poetry** for dependency management (installed in container)
-- **Pytest**
-- Google integrations:
-  - **django-allauth** for OAuth authentication
-  - **Google Drive API** via `google-api-python-client`
-  - **Gmail API** via `google-api-python-client` (read-only statistics and Assistant sync)
-  - **Cloudflare Turnstile** for pre-authentication bot protection
-  - 
----
+Only sanitized sender metadata, subject and bounded email text may be sent to OpenAI. Attachments are not sent. Gmail access remains read-only.
 
-## Quick start (Docker, dev mode)
+### Stage 1 capabilities
 
-### 1) Prereqs
-- Docker + Docker Compose v2 installed
-- A Google Cloud project with OAuth credentials (see below)
+- bounded Gmail candidate queries instead of unrestricted mailbox processing
+- inbound/outbound direction detection
+- outgoing-message exclusion from Gmail statistics
+- AI-first event classification with strict structured output
+- rules fallback when AI is disabled, unavailable, over the daily limit or returns an error
+- safe persistence of fallback error categories without provider details
+- application matching by thread, external ID and normalized company/title
+- normalization of gender markers such as `(m/w/d)`, `(f/m/d)` and `(gn)`
+- reviewable application, interview and required-action proposals
+- deterministic handling of known Indeed application-sent confirmations
+- suppression of optional job-board outreach nudges
+- periodic background sync and manual reanalysis
+- explicit user approval before any application change
 
-### 2) Configure env
-Create a `.env` file next to `docker-compose.yml` (you can start from `.env.example`):
+### AI configuration
+
+```env
+GMAIL_ASSISTANT_AI_ENABLED=1
+GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1
+GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS=21600
+GMAIL_ASSISTANT_AI_DAILY_LIMIT=50
+GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD=80
+GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED=1
+OPENAI_API_KEY=...
+OPENAI_EMAIL_MODEL=gpt-5.4-nano
+```
+
+AI is also controlled per user in the Gmail Assistant interface. The global environment flag alone does not opt a user in.
+
+### Token usage and estimated cost
+
+Every successful Gmail Assistant OpenAI request stores persistent usage telemetry in PostgreSQL:
+
+- model name
+- input tokens
+- output tokens
+- user and related Gmail message
+- request timestamp
+
+The **🪙 Token usage** subtab displays totals for 7 or 30 days, a daily chart and usage grouped by model. Cost is calculated per model, so historical requests made with an older model remain correctly represented.
+
+For `gpt-5.4-nano`, the configured standard rates per one million tokens are:
+
+```env
+OPENAI_INPUT_USD_PER_1M=0.20
+OPENAI_OUTPUT_USD_PER_1M=1.25
+```
+
+These generic environment values are used as fallback rates for unknown models. Known models use the model-specific price map in the application.
+
+The displayed amount is an estimate rather than the OpenAI invoice total. Cached-input pricing is not separated. Requests completed before database usage tracking was introduced cannot be reconstructed exactly.
+
+Migration:
+
+```bash
+python manage.py migrate
+python manage.py showmigrations gmail_assistant
+```
+
+## Development with Docker Compose
+
+### Requirements
+
+- Docker
+- Docker Compose v2
+- Google Cloud OAuth credentials
+
+Create `.env` from `.env.example` and configure at least:
 
 ```env
 DJANGO_SECRET_KEY=change-me
 DJANGO_DEBUG=1
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 
 POSTGRES_DB=jobapply
 POSTGRES_USER=jobapply
@@ -82,258 +143,274 @@ POSTGRES_PASSWORD=jobapply
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
 
-DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_EMAIL=admin@example.com
-DJANGO_SUPERUSER_PASSWORD=admin12345
-
-# Google OAuth (django-allauth)
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-DJANGO_SITE_DOMAIN=0.0.0.0:8000
+DJANGO_SITE_DOMAIN=localhost:8000
 DJANGO_SITE_NAME=JobApply
 
-# Cloudflare Turnstile (anti-bot gate before Google OAuth)
-TURNSTILE_ENABLED=1
-TURNSTILE_SITE_KEY=...
-TURNSTILE_SECRET_KEY=...
-
-# Gmail Assistant
-# Global AI capability; the user still has to opt in in the UI.
-GMAIL_ASSISTANT_AI_ENABLED=0
-OPENAI_API_KEY=...
-OPENAI_EMAIL_MODEL=gpt-4.1-mini
-# Background check for users who enabled AI analysis (15 minutes).
-GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1
-GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS=900
-
-# Hide admin behind a custom URL (optional)
-ADMIN_URL=admin
+TURNSTILE_ENABLED=0
 ```
 
-### 3) Start the stack
+Start the project:
+
 ```bash
 docker compose up --build
 ```
 
-The web app will be available at:
-- http://localhost:8000
+Open:
 
-**Important:** the container entrypoint is dev-friendly and does the plumbing for you:
-- waits for DB
-- runs migrations (when `DJANGO_AUTOMIGRATE=1`)
-- creates/updates Google SocialApp from env (idempotent)
-- creates superuser from env (idempotent)
-- starts Django dev server
----
+```text
+http://localhost:8000
+```
 
-## Docker entrypoint script (important)
+Run the Gmail worker logs:
 
-The container uses a **dev-friendly entrypoint** (`entrypoint.sh`) to make local setup painless. fileciteturn1file0
+```bash
+docker compose logs -f gmail-assistant-worker
+```
 
-What it does, in order:
+## Google Cloud setup
 
-1. **Installs dependencies** inside the container:
-   - `poetry install --no-interaction --no-ansi`
-2. **Waits for PostgreSQL** to accept connections (up to ~60 seconds):
-   - Uses `psycopg` to open/close a connection using `POSTGRES_*` env vars.
-3. **(Optional) Auto-makemigrations for development**
-   - Only if `DJANGO_AUTOMIGRATE=1`
-   - Runs `python manage.py makemigrations --noinput`
-4. **Runs migrations**
-   - `python manage.py migrate --noinput`
-5. **Creates Google SocialApp from env (idempotent)**
-   - `python manage.py create_google_socialapp_if_not_exists`
-   - This wires up `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` automatically.
-6. **Creates a Django superuser from env (idempotent)**
-   - `python manage.py create_superuser_if_not_exists`
-7. **Starts Django dev server**
-   - `python manage.py runserver 0.0.0.0:8000`
+Enable these APIs in the Google Cloud project:
 
-### Env flags used by the entrypoint
-- `DJANGO_AUTOMIGRATE=1` — runs `makemigrations` on startup (DEV only; don’t use in prod)
-- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — DB connection
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — used by the SocialApp creation command
-- `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, `DJANGO_SUPERUSER_PASSWORD` — superuser creation
+- Gmail API
+- Google Drive API
 
-**Why this matters:** it turns “clone → docker compose up” into a predictable, repeatable workflow (no manual migrations / admin creation / social app setup).
-
-
----
-
-## Google OAuth setup (mandatory)
-
-### A) Create OAuth credentials
-In **Google Cloud Console**:
-1. Create / select a project
-2. Configure **OAuth consent screen**
-3. Create **OAuth client ID** (Web application)
-4. Add **Authorized redirect URI**:
+For local development, register this OAuth callback:
 
 ```text
 http://localhost:8000/accounts/google/login/callback/
 ```
 
-> If you run behind a custom domain later, add its callback URL too.
+For production, also register:
 
-### B) Put credentials into `.env`
+```text
+https://jobapply.p95max.dev/accounts/google/login/callback/
+```
+
+The app uses these scopes:
+
+```text
+profile
+email
+https://www.googleapis.com/auth/gmail.readonly
+https://www.googleapis.com/auth/drive.file
+```
+
+## Production VPS deployment
+
+Production runs without Docker:
+
+- Caddy terminates HTTPS and serves static/media files
+- Gunicorn runs Django
+- PostgreSQL is the local primary database
+- `jobapply-gmail-worker.service` runs Gmail Assistant checks
+- `jobapply-telegram-bot.service` runs Telegram notifications
+- systemd timers run local backups and optional Neon synchronization
+
+Deployment files are under:
+
+```text
+deploy/vps/
+```
+
+Important environment values:
+
+```env
+DJANGO_DEBUG=0
+DJANGO_ALLOWED_HOSTS=jobapply.p95max.dev,127.0.0.1
+DJANGO_CSRF_TRUSTED_ORIGINS=https://jobapply.p95max.dev
+DJANGO_SITE_DOMAIN=jobapply.p95max.dev
+ALLOWED_ACCOUNT_EMAILS=your-exact-google-email@example.com
+```
+
+`ALLOWED_ACCOUNT_EMAILS` is fail-closed. Set the exact Google account email before restarting the application.
+
+### Standard production update
+
+Production deploys only from `agent/vps-no-docker-deploy`. The `master` branch is not a production source.
+
+Check the branch and local changes first:
+
+```bash
+cd /opt/jobapply
+git branch --show-current
+git status --short
+```
+
+Then update and validate:
+
+```bash
+sudo -u jobapply git -C /opt/jobapply pull --ff-only origin agent/vps-no-docker-deploy
+sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
+sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py check
+sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput
+systemctl restart jobapply-web
+systemctl restart jobapply-gmail-worker
+systemctl restart jobapply-telegram-bot
+systemctl reload caddy
+```
+
+Check services:
+
+```bash
+systemctl status jobapply-web --no-pager -l
+systemctl status jobapply-gmail-worker --no-pager -l
+systemctl status jobapply-telegram-bot --no-pager -l
+systemctl list-timers --all | grep jobapply
+```
+
+## Telegram Bot
+
+The Telegram Bot is a private, read-only owner dashboard. It does not accept arbitrary shell commands and does not apply Gmail proposals automatically.
+
+Supported commands in the first version:
+
+- `/help`
+- `/status`
+- `/gmail`
+- `/applications`
+
+`/gmail` includes an HTTPS **Open in JobApply** button. Accept and Reject actions remain in the authenticated web interface.
+
+### BotFather setup
+
+1. Create a bot with `@BotFather` using `/newbot`.
+2. Store the returned token only in `/opt/jobapply/.env`.
+3. Send a private message to the bot.
+4. Read the update through the Bot API to obtain the private `from.id` and `chat.id` values.
+5. Configure the command list in BotFather or let `run_telegram_bot` publish it at startup.
+
+Never commit the bot token or real Telegram IDs.
+
+### Production configuration
+
+```env
+TELEGRAM_BOT_ENABLED=1
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_DEFAULT_CHAT_ID=...
+TELEGRAM_ALLOWED_CHAT_IDS=...
+TELEGRAM_ALLOWED_USER_IDS=...
+TELEGRAM_OWNER_EMAIL=your-exact-google-email@example.com
+TELEGRAM_ENV_LABEL=PRODUCTION
+TELEGRAM_NOTIFICATIONS_ENABLED=1
+```
+
+The bot validates the token and allowlists before polling. Both `from_user.id` and private `chat.id` must match the configured allowlists.
+
+### systemd service
+
+The production unit is `jobapply-telegram-bot.service`. It runs as `jobapply`, uses `/opt/jobapply` as its working directory and loads `/opt/jobapply/.env`.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobapply-telegram-bot.service
+sudo systemctl restart jobapply-telegram-bot.service
+sudo systemctl status jobapply-telegram-bot.service --no-pager -l
+```
+
+Logs:
+
+```bash
+sudo journalctl -u jobapply-telegram-bot.service -n 100 --no-pager -l
+sudo journalctl -u jobapply-telegram-bot.service -f
+```
+
+### Disable the bot
+
 Set:
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
 
-### C) Login entry points
-
-This project is intentionally Google-first:
-
-- `/`  
-  - authenticated users are redirected directly to the application  
-  - anonymous users are redirected to the Turnstile gate
-
-- `/accounts/google/login/`  
-  Turnstile gate for anonymous users only (runs once per session, `never shown to authenticated users`)
-
-- `/accounts/google/oauth/`  
-  Starts Google OAuth flow after successful Turnstile verification
-
-- `/accounts/login/`  
-  Always redirected to the same Turnstile gate (Google-only authentication)
-
-
----
-
-## Google Drive integration (flagship feature)
-
-### 1) Enable the Google Drive/Gmail API (mandatory for backups and analytics)
-In Google Cloud Console:
-- **Your Project → APIs & Services → Library → Google Drive API → Enable**
-- **Your Project → APIs & Services → Library → Gmail API → Enable**
-
-If Drive API is not enabled, you can still sign in, but Drive operations will fail.
-
-### 2) How “Connect Drive” works
-Drive access is **opt-in** at the UI level:
-- User logs in with Google
-- User clicks **Connect Google Drive**
-- App runs allauth connect flow (`process=connect`) and stores tokens
-- Backups become available under **Reports → Cloud backups**
-
-### 3) Drive scope
-The app uses the `drive.file` scope:
-- `https://www.googleapis.com/auth/drive.file`
-
-This is the minimal scope required for app-managed uploads in the user’s Drive.
-
----
-
-### Auto Backup (Google Drive)
-
-JobApply can run **automatic backups to Google Drive** on a schedule.
-
-- **Runs every 5 minutes** (background worker)
-- Stores backups in your Drive under `JobApply/backups/`
-- **Retention policy:** keeps only **3 files**:
-  - `latest.xlsx` (most recent)
-  - `backup-1.xlsx`
-  - `backup-2.xlsx`
-- **Rotation logic** on each run:
-  - `backup-2` is removed
-  - `backup-1 → backup-2`
-  - `latest → backup-1`
-  - a new backup is uploaded as `latest`
-- **Per-user isolation:** each user can enable/disable auto backup independently
-- Requires Google Drive connection with **offline access** (`refresh_token`) and the **Drive API enabled** in Google Cloud Console
-
-> The feature is optional and controlled via the **Cloud Backups** toggle in the UI.
-
----
-
-### Gmail Statistics and Gmail Assistant (Read-Only)
-
-JobApply has two Gmail services under **Services**:
-
-- **Gmail stats** provides aggregate counts for replies, rejections, interview invites and auto-acknowledgements.
-- **Gmail Assistant** turns relevant messages into reviewable suggestions for applications and interviews.
-
-#### Gmail Assistant workflow
-
-1. Connect the Google account whose mailbox you want to use. The consent request must include `gmail.readonly`; Gmail API must be enabled in Google Cloud Console.
-2. Open **Services → Gmail Assistant** and use **Sync Gmail** to import candidate messages.
-3. Optionally enable **AI analysis**. This is disabled by default and records a per-user consent timestamp. With the default settings, the first opt-in also starts a sync.
-4. Review each pending proposal. You can accept it, edit and accept, choose another application, reject it or ignore it.
-
-The Assistant can suggest creating an application, updating an application status, recording a recruiter reply, creating/updating/cancelling an interview, or an action that needs manual completion. **It never applies a proposal automatically.**
-
-When `GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1`, the `gmail-assistant-worker` checks opted-in users at `GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS` (900 seconds by default). Automatic checks only create pending proposals; they never change applications or interviews by themselves.
-
-#### Privacy and failure behavior
-
-- Gmail access is strictly read-only: the app never sends, deletes, archives, labels, or follows links in email.
-- Attachments are not sent to OpenAI and full email bodies are not stored in `GmailMessage`.
-- AI receives only sanitized subject, sender metadata and bounded text, and only after explicit opt-in plus `GMAIL_ASSISTANT_AI_ENABLED=1` and a configured `OPENAI_API_KEY`.
-- Without an OpenAI key, the Assistant continues in rule-only mode.
-- Gmail/OpenAI errors are isolated to the relevant sync/message and do not apply changes or expose OAuth/API details in the UI.
-- Classifications and matching are suggestions, not guarantees; review every proposal before accepting it.
-
-
----
-
-## Local admin
-
-Admin is optionally exposed under a custom path via `ADMIN_URL`.
-
-Example:  
-If `ADMIN_URL=admin`, the admin panel is available at  
-`http://localhost:8000/admin/`.
-
-If `ADMIN_URL` is not set, the admin route is not registered.
-
-Superuser credentials are configured via `.env`:
-- `DJANGO_SUPERUSER_USERNAME`
-- `DJANGO_SUPERUSER_PASSWORD`
-
-
----
-
-## Useful commands (Docker)
-
-### Open a shell in the web container
-```bash
-docker compose exec web bash
+```env
+TELEGRAM_BOT_ENABLED=0
+TELEGRAM_NOTIFICATIONS_ENABLED=0
 ```
 
-### Run Django management commands
-```bash
-docker compose exec web poetry run python manage.py <command>
-```
-
-### Check the Gmail Assistant worker
-```bash
-docker compose logs -f gmail-assistant-worker
-```
-
-### Reset everything (⚠️ deletes DB volume)
-```bash
-docker compose down --remove-orphans -v
-```
-
----
-
-## Fixtures (dev test data)
-
-Upload fixtures into the DB and assign them to your Google user:
+Then stop and disable the polling service:
 
 ```bash
-docker compose exec web python manage.py loaddata fixtures/applications.json   && docker compose exec web python manage.py assign_fixtures_owner --email you-google-email@gmail.com --from-user-id 1
+sudo systemctl disable --now jobapply-telegram-bot.service
 ```
 
-Dry-run verification:
+The web application, Gmail worker and backup service continue operating without Telegram.
+
+### Rotate the Telegram token
+
+1. Revoke or regenerate the token in `@BotFather`.
+2. Replace only `TELEGRAM_BOT_TOKEN` in `/opt/jobapply/.env`.
+3. Restart the bot service.
+4. Verify `/status` and review the service logs.
+
 ```bash
-docker compose exec web python manage.py assign_fixtures_owner --email you-google-email@gmail.com --from-user-id 1 --dry-run
+sudo systemctl restart jobapply-telegram-bot.service
+sudo systemctl status jobapply-telegram-bot.service --no-pager -l
 ```
 
----
-## Testing (pytest)
+Do not print the token in shell history, logs, screenshots or support messages.
 
-- Run the full quality gate
+### Notifications
+
+The first version sends only significant events:
+
+- rejection proposal
+- interview invitation proposal
+- Gmail OAuth reconnect required
+- Gmail synchronization failure
+- backup failure
+
+Notifications use persistent delivery records, unique event keys, bounded retries and safe error categories. Delivery errors do not roll back Gmail proposals, heartbeat updates or backup operations.
+
+## Backups
+
+The VPS profile supports:
+
+- daily local PostgreSQL dumps
+- upload to Google Drive through rclone
+- weekly synchronization to an optional Neon recovery database
+
+Relevant timers:
+
+```text
+jobapply-backup.timer
+jobapply-neon-sync.timer
+```
+
+`active (waiting)` is the normal state for an enabled systemd timer.
+
+## Testing
+
+Run the complete quality gate:
+
+```bash
+poetry run pytest -ra -vv
+poetry run ruff check .
+poetry run python manage.py check
+poetry run python manage.py makemigrations --check --dry-run
+```
+
+The verified Gmail Assistant stage 1 test selection is:
+
+```bash
+DJANGO_SETTINGS_MODULE=config.settings poetry run pytest \
+  tests/test_application_matcher.py \
+  tests/test_gmail_assistant_pipeline.py \
+  tests/test_gmail_assistant_views.py \
+  tests/test_gmail_assistant_worker.py \
+  tests/test_gmail_classifier.py \
+  tests/test_gmail_credentials.py \
+  tests/test_gmail_models.py \
+  tests/test_gmail_sync.py \
+  tests/test_message_parser.py \
+  tests/test_proposals.py
+```
+
+Verified result on 4 August 2026:
+
+```text
+139 passed in 7.65s
+```
+
+With Docker:
+
 ```bash
 docker compose exec web poetry run pytest -ra -vv
 docker compose exec web poetry run ruff check .
@@ -341,52 +418,39 @@ docker compose exec web poetry run python manage.py check
 docker compose exec web poetry run python manage.py makemigrations --check --dry-run
 ```
 
-### Update German translations
-
-The web image includes GNU gettext for the project translation catalog. After
-adding or changing user-facing text, rebuild the web image and regenerate the
-German catalog before committing the resulting `.po` and `.mo` files:
+Verify migrations:
 
 ```bash
-docker compose up -d --build web
-docker compose exec -T web poetry run python manage.py makemessages -l de
-docker compose exec -T web poetry run python manage.py compilemessages
+python manage.py migrate --plan
+python manage.py migrate --noinput
+python manage.py showmigrations gmail_assistant gmail_stats
 ```
 
-### Migration verification
+## Translations
 
-Verify the current development database without changing its application data:
+After changing user-facing text:
 
 ```bash
-docker compose exec -T web poetry run python manage.py migrate --plan
-docker compose exec -T web poetry run python manage.py migrate --noinput
-docker compose exec -T web poetry run python manage.py showmigrations gmail_stats
+python manage.py makemessages -l de
+python manage.py compilemessages
 ```
 
-To verify a clean database, use a separate Compose project. It creates the
-temporary `jobapply-migration-check` volume only; the final command removes
-that temporary volume and leaves the regular `jobapply` database untouched.
+## Security and failure behavior
 
-```bash
-docker compose -p jobapply-migration-check up -d db
-docker compose -p jobapply-migration-check run --rm --no-deps --entrypoint "" web poetry run python manage.py migrate --noinput
-docker compose -p jobapply-migration-check run --rm --no-deps --entrypoint "" web poetry run python manage.py check
-docker compose -p jobapply-migration-check down -v
-```
+- Google OAuth is the only sign-in method.
+- Gmail access is read-only.
+- OpenAI requests use `store=False`.
+- AI output is validated against a strict schema before use.
+- Attachments are not sent to OpenAI.
+- Proposals require explicit user review.
+- Cross-user access to proposals and applications is blocked.
+- API and mailbox errors are isolated to the affected sync/message.
+- Rules fallback preserves a safe error category without exposing provider details.
+- Token usage persistence is telemetry and does not control analysis success.
+- Telegram access is restricted to configured private user and chat IDs.
+- Telegram delivery failures do not roll back business operations.
+- Secrets belong in `.env` and must never be committed.
 
----
+## Author
 
-## Roadmap (next integration)
-
-- Google Calendar integration (create interview events, reminders, sync)
-- Django Paginator(fix list_applications qs = qs.order_by(sort)[:200])
-- Email notifications
-- Tech support form
-- Mobile version
-
-- Testing(pytest)
-- Stronger backup/restore workflows (one-click restore)
-
-**Author:** Maksym Petrykin  
-Email: [m.petrykin@gmx.de](mailto:m.petrykin@gmx.de)  
-Telegram: [@max_p95](https://t.me/max_p95)
+Maksym Petrykin

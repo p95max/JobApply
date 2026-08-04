@@ -6,6 +6,7 @@ import pytest
 from django.urls import reverse
 
 from apps.accounts.models import UserProfile
+from apps.gmail_assistant.models import GmailAnalysis, GmailEventType
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus
 from apps.gmail_stats.services.direction import determine_direction, parse_recipients, parse_sender
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
@@ -138,7 +139,7 @@ def test_message_failure_does_not_abort_other_messages(django_user_model):
 def test_outbound_messages_are_excluded_from_statistics(client, django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     UserProfile.objects.create(user=user, google_data_access_consent=True)
-    GmailMessage.objects.create(
+    outbound = GmailMessage.objects.create(
         user=user,
         message_id="outbound",
         thread_id="outbound-thread",
@@ -146,7 +147,7 @@ def test_outbound_messages_are_excluded_from_statistics(client, django_user_mode
         received_at=datetime.now(timezone.utc),
         detected_type=GmailMessage.TYPE_RESPONSE,
     )
-    GmailMessage.objects.create(
+    inbound = GmailMessage.objects.create(
         user=user,
         message_id="inbound",
         thread_id="inbound-thread",
@@ -154,9 +155,21 @@ def test_outbound_messages_are_excluded_from_statistics(client, django_user_mode
         received_at=datetime.now(timezone.utc),
         detected_type=GmailMessage.TYPE_RESPONSE,
     )
+    GmailAnalysis.objects.create(
+        user=user,
+        message=outbound,
+        event_type=GmailEventType.GENERAL_UPDATE,
+        is_job_related=True,
+    )
+    GmailAnalysis.objects.create(
+        user=user,
+        message=inbound,
+        event_type=GmailEventType.GENERAL_UPDATE,
+        is_job_related=True,
+    )
 
     client.force_login(user)
     response = client.get(reverse("gmail_stats:gmail_stats_api"))
 
     assert response.status_code == 200
-    assert response.json()["responses"] == 1
+    assert response.json()["job_related_emails"] == 1

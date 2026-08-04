@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
 
+from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.google.views import oauth2_login
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
+
+from apps.gmail_stats.models import GmailSyncState
+from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 
 from .models import UserProfile
 
@@ -58,5 +64,65 @@ def consent(request):
             "profile": profile,
             "consent_text_1": "I agree to provide access to my Google account for authentication purposes.",
             "consent_text_2": "Administration is not responsible for storing personal data beyond reasonable security measures.",
+        },
+    )
+
+
+@login_required
+def settings_view(request):
+    profile = ensure_profile(request.user)
+    link_command = request.session.pop("telegram_link_command", "")
+    telegram_link_url = request.session.pop("telegram_link_url", "")
+    bot_username = str(getattr(settings, "TELEGRAM_BOT_USERNAME", "")).strip().lstrip("@")
+    telegram_bot_url = f"https://t.me/{bot_username}" if bot_username else ""
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "telegram_link":
+            token = profile.create_telegram_link_token()
+            link_command = f"/start {token}"
+            telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
+            if telegram_link_url:
+                return redirect(telegram_link_url)
+            request.session["telegram_link_command"] = link_command
+            messages.info(request, "Telegram link is valid for 15 minutes.")
+            return redirect("accounts:settings")
+        if action == "telegram_disconnect":
+            profile.clear_telegram_link()
+            if telegram_bot_url:
+                return redirect(f"{telegram_bot_url}?start=disconnected")
+            messages.success(request, "Telegram disconnected.")
+            return redirect("accounts:settings")
+
+    google_account = SocialAccount.objects.filter(user=request.user, provider="google").first()
+    gmail_email = request.user.email or ""
+    if google_account and google_account.extra_data:
+        gmail_email = google_account.extra_data.get("email") or gmail_email
+
+    gmail_connected = False
+    gmail_error = ""
+    try:
+        gmail_connected = bool(get_google_credentials_for_user(request.user))
+    except Exception as error:
+        gmail_error = type(error).__name__
+
+    sync_state = GmailSyncState.objects.filter(user=request.user).first()
+    interval_seconds = int(getattr(settings, "GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", 21600))
+
+    return render(
+        request,
+        "accounts/settings.html",
+        {
+            "profile": profile,
+            "active_tab": request.GET.get("tab", "telegram"),
+            "telegram_bot_username": bot_username,
+            "telegram_bot_url": telegram_bot_url,
+            "telegram_link_command": link_command,
+            "telegram_link_url": telegram_link_url,
+            "gmail_connected": gmail_connected,
+            "gmail_email": gmail_email,
+            "gmail_last_synced_at": sync_state.last_synced_at if sync_state else None,
+            "gmail_interval_hours": max(1, interval_seconds // 3600),
+            "gmail_safe_error": gmail_error,
         },
     )

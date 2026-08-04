@@ -7,4 +7,5 @@ app_name = "accounts"
 urlpatterns = [
     path("", views.root, name="root"),
     path("consent/", views.consent, name="consent"),
+    path("settings/", views.settings_view, name="settings"),
 ]

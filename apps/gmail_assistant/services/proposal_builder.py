@@ -24,12 +24,22 @@ _INTERVIEW_EVENTS = {
     GmailEventType.INTERVIEW_CANCELLED,
 }
 _MANUAL_ASSIGNMENT_EVENTS = {GmailEventType.REJECTION}
+_OPTIONAL_NUDGE_SENDERS = {"indeed.com"}
+_OPTIONAL_NUDGE_PHRASES = (
+    "heben sie sich mit einer kurzen nachricht",
+    "mit einer kurzen nachricht ihr interesse bestätigen",
+    "senden sie eine kurze nachricht, um ihr interesse zu bestätigen",
+    "send a short message to confirm your interest",
+    "stand out with a short message",
+)
 
 
 def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[ApplicationUpdateProposal]:
     """Create deduplicated pending proposals without applying any application changes."""
     if message.user_id != analysis.user_id:
         raise ValueError("message and analysis must belong to the same user")
+
+    _normalize_known_event_type(message=message, analysis=analysis)
     if analysis.event_type in {GmailEventType.NOISE, GmailEventType.UNKNOWN}:
         return []
 
@@ -37,7 +47,16 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     match_score = match.suggested.score if match.suggested else 0
     match_method = match.suggested.method if match.suggested else ""
     extracted = analysis.extracted_data
+    action_required = _is_action_required(message=message, event_type=analysis.event_type, extracted=extracted)
     proposals: list[ApplicationUpdateProposal] = []
+
+    if not action_required:
+        ApplicationUpdateProposal.objects.filter(
+            message=message,
+            analysis=analysis,
+            proposal_type=ProposalType.ACTION_REQUIRED,
+            status=ProposalStatus.PENDING,
+        ).delete()
 
     if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS and _can_create_application(extracted):
         proposal = _create_pending(
@@ -70,6 +89,18 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                     },
                 )
             )
+        if action_required:
+            proposals.append(
+                _create_pending(
+                    message=message,
+                    analysis=analysis,
+                    application=None,
+                    proposal_type=ProposalType.ACTION_REQUIRED,
+                    match_score=0,
+                    match_method="unmatched",
+                    changes={"action": _action_changes(extracted)},
+                )
+            )
         return proposals
 
     application_changes = _application_changes(message=message, analysis=analysis, application=application)
@@ -86,7 +117,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             )
         )
 
-    if analysis.event_type in _ACTION_EVENTS:
+    if action_required:
         proposals.append(
             _create_pending(
                 message=message,
@@ -95,13 +126,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 proposal_type=ProposalType.ACTION_REQUIRED,
                 match_score=match_score,
                 match_method=match_method,
-                changes={
-                    "action": {
-                        "required": True,
-                        "text": _string_or_none(extracted.get("action_text")),
-                        "deadline_at": _string_or_none(extracted.get("deadline_at")),
-                    }
-                },
+                changes={"action": _action_changes(extracted)},
             )
         )
 
@@ -124,6 +149,50 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 )
             )
     return proposals
+
+
+def _normalize_known_event_type(*, message: Any, analysis: Any) -> None:
+    sender = str(getattr(message, "from_email", "") or "").casefold()
+    subject = str(getattr(message, "subject", "") or "").casefold()
+    if (
+        sender == "indeedapply@indeed.com"
+        and subject.startswith("bewerbung über indeed:")
+        and analysis.event_type == GmailEventType.APPLICATION_RECEIVED
+    ):
+        analysis.event_type = GmailEventType.APPLICATION_SENT
+        analysis.save(update_fields=["event_type", "updated_at"])
+
+
+def _is_action_required(*, message: Any, event_type: str, extracted: dict[str, Any]) -> bool:
+    if event_type in _ACTION_EVENTS:
+        return True
+    if _is_optional_job_board_nudge(message=message, extracted=extracted):
+        return False
+    return extracted.get("action_required") is True and _string_or_none(extracted.get("action_text")) is not None
+
+
+def _is_optional_job_board_nudge(*, message: Any, extracted: dict[str, Any]) -> bool:
+    sender = str(getattr(message, "from_email", "") or "").lower()
+    sender_domain = sender.rsplit("@", 1)[-1] if "@" in sender else sender
+    if sender_domain not in _OPTIONAL_NUDGE_SENDERS:
+        return False
+    combined = " ".join(
+        str(value or "").lower()
+        for value in (
+            getattr(message, "subject", ""),
+            extracted.get("summary"),
+            extracted.get("action_text"),
+        )
+    )
+    return any(phrase in combined for phrase in _OPTIONAL_NUDGE_PHRASES)
+
+
+def _action_changes(extracted: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "required": True,
+        "text": _string_or_none(extracted.get("action_text")),
+        "deadline_at": _string_or_none(extracted.get("deadline_at")),
+    }
 
 
 def _application_changes(*, message: Any, analysis: Any, application: Any) -> dict[str, Any]:
@@ -186,10 +255,11 @@ def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
         },
     )
     if not created:
+        proposal.application = kwargs["application"]
         proposal.changes = kwargs["changes"]
         proposal.match_score = kwargs["match_score"]
         proposal.match_method = kwargs["match_method"]
-        proposal.save(update_fields=["changes", "match_score", "match_method", "updated_at"])
+        proposal.save(update_fields=["application", "changes", "match_score", "match_method", "updated_at"])
     return proposal
 
 

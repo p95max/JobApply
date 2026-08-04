@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -19,6 +20,7 @@ from apps.gmail_assistant.models import (
     GmailEventType,
     ProposalStatus,
 )
+from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
@@ -44,6 +46,24 @@ def _event_tone(event_type: str) -> str:
     return "secondary"
 
 
+def _group_proposals_by_message(proposals):
+    grouped = []
+    groups_by_message_id = {}
+    for proposal in proposals:
+        group = groups_by_message_id.get(proposal.message_id)
+        if group is None:
+            group = {
+                "message": proposal.message,
+                "analysis": proposal.analysis,
+                "representative": proposal,
+                "proposals": [],
+            }
+            groups_by_message_id[proposal.message_id] = group
+            grouped.append(group)
+        group["proposals"].append(proposal)
+    return grouped
+
+
 @login_required
 def gmail_assistant(request):
     proposal_queryset = (
@@ -55,17 +75,31 @@ def gmail_assistant(request):
         selected_status = ProposalStatus(request.GET.get("status", ProposalStatus.PENDING))
     except ValueError:
         selected_status = ProposalStatus.PENDING
-    proposals = proposal_queryset.filter(status=selected_status.value)
+    proposals = list(proposal_queryset.filter(status=selected_status.value)[:150])
+    proposal_groups = _group_proposals_by_message(proposals)[:50]
     proposal_counts = {
         proposal_status: proposal_queryset.filter(status=proposal_status).count()
         for proposal_status in ProposalStatus.values
     }
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    ai_policy = AIUsagePolicy.from_environment()
+    ai_daily_used = ai_policy.daily_usage(user=request.user)
+    ai_daily_remaining = max(0, ai_policy.daily_limit - ai_daily_used)
+    next_automatic_check_at = None
+    if (
+        django_settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED
+        and assistant_settings.ai_enabled
+        and assistant_settings.last_successful_run_at
+        and not assistant_settings.last_error_message
+    ):
+        next_automatic_check_at = assistant_settings.last_successful_run_at + timedelta(
+            seconds=django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS
+        )
     return render(
         request,
         "gmail_assistant/assistant.html",
         {
-            "proposals": proposals[:50],
+            "proposal_groups": proposal_groups,
             "selected_status": selected_status.value,
             "proposal_status_filters": [
                 {"value": value, "label": label, "count": proposal_counts[value]}
@@ -83,7 +117,13 @@ def gmail_assistant(request):
                 GmailEventType.INTERVIEW_RESCHEDULED,
             },
             "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
+            "next_automatic_check_at": next_automatic_check_at,
             "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
+            "ai_model_name": django_settings.OPENAI_EMAIL_MODEL,
+            "ai_daily_limit": ai_policy.daily_limit,
+            "ai_daily_used": ai_daily_used,
+            "ai_daily_remaining": ai_daily_remaining,
+            "ai_confidence_threshold": django_settings.GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD,
         },
     )
 

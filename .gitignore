@@ -33,3 +33,9 @@ build/
 .codex-tmp-*
 .txt
 TODO.md
+
+# VPS service-user home artifacts accidentally created in repository root
+/.cache/
+/.config/
+/.local/
+/poetry.toml

@@ -1,0 +1,593 @@
+JobApply — server scripts for the no-Docker VPS deployment
+==========================================================
+
+Purpose
+-------
+
+This document lists the server-side scripts and commands that can be used to install, deploy, maintain, diagnose and recover JobApply on a low-cost VPS.
+
+The active scripts are stored under:
+
+- deploy/vps/install.sh
+- deploy/vps/install-ops.sh
+- deploy/vps/scripts/
+
+During installation, operational scripts are copied to /usr/local/bin. The repository remains the source of truth; after changing files under deploy/vps, run deploy/vps/install-ops.sh again.
+
+
+1. Base server installer
+------------------------
+
+Repository file:
+
+deploy/vps/install.sh
+
+Purpose:
+
+- installs PostgreSQL, Caddy, rclone, build dependencies and system tools;
+- installs uv;
+- installs managed Python 3.13 for the jobapply user;
+- installs Poetry;
+- creates the jobapply system user;
+- creates /opt/jobapply and /var/backups/jobapply;
+- creates a 2 GB swap file when the server has no active swap;
+- enables PostgreSQL and Caddy.
+
+Run:
+
+sudo bash deploy/vps/install.sh
+
+Use this script only for the initial server bootstrap or after reviewing package changes. It runs apt-get and therefore requires root.
+
+
+2. Operations installer
+-----------------------
+
+Repository file:
+
+deploy/vps/install-ops.sh
+
+Purpose:
+
+- copies systemd service and timer files to /etc/systemd/system;
+- copies operational scripts to /usr/local/bin;
+- installs the Caddyfile;
+- creates the backup directory with restricted permissions;
+- reloads systemd;
+- enables web, Gmail worker and backup timers;
+- validates and reloads Caddy;
+- prints service and timer status.
+
+Run after the initial deployment and after every change under deploy/vps:
+
+cd /opt/jobapply
+chmod +x deploy/vps/install-ops.sh deploy/vps/scripts/*.sh
+./deploy/vps/install-ops.sh
+
+This follows the same source-of-truth model used by Argus: Git tracks the operation files, while root-owned installed copies run from /usr/local/bin and /etc/systemd/system.
+
+
+3. Local PostgreSQL backup
+--------------------------
+
+Repository file:
+
+deploy/vps/scripts/jobapply-backup-db.sh
+
+Installed path:
+
+/usr/local/bin/jobapply-backup-db.sh
+
+Purpose:
+
+- creates a PostgreSQL custom-format dump from DATABASE_URL;
+- writes to a temporary file first;
+- validates the archive with pg_restore --list;
+- atomically renames the validated file;
+- sets file mode 0600;
+- deletes local dumps older than seven days;
+- optionally copies the dump to Google Drive through rclone.
+
+Automatic execution:
+
+jobapply-backup.timer
+
+Manual execution through systemd:
+
+sudo systemctl start jobapply-backup.service
+sudo journalctl -u jobapply-backup.service -n 100 --no-pager -l
+
+Direct diagnostic execution:
+
+sudo -u jobapply -H env $(grep -v '^#' /opt/jobapply/.env | xargs) /usr/local/bin/jobapply-backup-db.sh
+
+Prefer systemd execution in normal operations because it uses the configured EnvironmentFile, logging and resource priority.
+
+Required environment variables:
+
+DATABASE_URL=postgresql://jobapply:password@127.0.0.1:5432/jobapply
+RCLONE_REMOTE=gdrive:JobApply/database-backups
+
+RCLONE_REMOTE may be empty. In that case the local validated dump is still created.
+
+
+4. Neon recovery synchronization
+--------------------------------
+
+Repository file:
+
+deploy/vps/scripts/jobapply-sync-db-to-neon.sh
+
+Installed path:
+
+/usr/local/bin/jobapply-sync-db-to-neon.sh
+
+Purpose:
+
+- dumps the local production database;
+- validates the dump;
+- restores it into a dedicated Neon recovery database;
+- rejects a pooled Neon endpoint;
+- rejects identical source and target URLs;
+- uses one transaction for remote replacement;
+- stops on the first restore error;
+- compares django_migrations counts after restoration.
+
+Automatic execution:
+
+jobapply-neon-sync.timer
+
+Manual execution:
+
+sudo systemctl start jobapply-neon-sync.service
+sudo journalctl -u jobapply-neon-sync.service -n 100 --no-pager -l
+
+Required environment variables:
+
+DATABASE_URL=postgresql://jobapply:password@127.0.0.1:5432/jobapply
+BACKUP_DATABASE_URL=postgresql://user:password@direct-neon-host/database?sslmode=require
+
+BACKUP_DATABASE_URL may be empty. The script then exits successfully without synchronization.
+
+Never use a pooled Neon endpoint containing -pooler. pg_restore needs a direct PostgreSQL connection.
+
+Never point BACKUP_DATABASE_URL to any database containing unrelated or production data. The restore intentionally cleans and replaces the target.
+
+
+5. Manual application deployment script
+----------------------------------------
+
+The minimal branch does not install automatic deployment by default. The following script can be created later as:
+
+/usr/local/bin/jobapply-deploy.sh
+
+Recommended implementation:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+PROJECT_DIR="${PROJECT_DIR:-/opt/jobapply}"
+BRANCH="${BRANCH:-master}"
+
+log() {
+    printf '[%s] %s\n' "$(date -Is)" "$*"
+}
+
+cd "$PROJECT_DIR"
+
+if [[ -n "$(git status --porcelain)" ]]; then
+    echo "ERROR: working tree is not clean" >&2
+    exit 1
+fi
+
+git fetch --prune origin
+LOCAL_SHA="$(git rev-parse HEAD)"
+REMOTE_SHA="$(git rev-parse "origin/$BRANCH")"
+
+if [[ "$LOCAL_SHA" = "$REMOTE_SHA" ]]; then
+    log "Already up to date"
+    exit 0
+fi
+
+git checkout "$BRANCH"
+git pull --ff-only origin "$BRANCH"
+
+sudo -u jobapply poetry install --only main --no-interaction
+sudo -u jobapply .venv/bin/python manage.py migrate --noinput
+sudo -u jobapply .venv/bin/python manage.py collectstatic --noinput
+sudo -u jobapply .venv/bin/python manage.py check --deploy --fail-level ERROR
+
+./deploy/vps/install-ops.sh
+systemctl restart jobapply-web.service jobapply-gmail-worker.service
+systemctl is-active --quiet jobapply-web.service
+systemctl is-active --quiet jobapply-gmail-worker.service
+
+log "Deployment completed: $(git rev-parse HEAD)"
+
+Why it is not enabled automatically yet:
+
+- the first production installation should be verified manually;
+- database backup should be confirmed before enabling unattended deployment;
+- Google OAuth redirect settings must be checked on the real domain;
+- an automatic pull should never overwrite an unclean working tree.
+
+After the production setup is stable, this script can be wrapped in a systemd oneshot service and optionally triggered manually or by a timer.
+
+
+6. Pre-deploy backup wrapper
+----------------------------
+
+A safer deploy flow can call a backup before migrations.
+
+Suggested script:
+
+/usr/local/bin/jobapply-deploy-with-backup.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+systemctl start jobapply-backup.service
+systemctl --quiet is-failed jobapply-backup.service && {
+    echo "ERROR: pre-deploy backup failed" >&2
+    exit 1
+}
+
+/usr/local/bin/jobapply-deploy.sh
+
+This reduces recovery risk when a migration or deployment introduces a problem.
+
+
+7. Server doctor script
+-----------------------
+
+A compact Argus-style diagnostic script can be added as:
+
+/usr/local/bin/jobapply-doctor.sh
+
+Recommended implementation:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+PROJECT_DIR="${PROJECT_DIR:-/opt/jobapply}"
+FAILED=0
+
+check_unit() {
+    local unit="$1"
+    if systemctl is-active --quiet "$unit"; then
+        printf 'OK     %s\n' "$unit"
+    else
+        printf 'FAILED %s\n' "$unit"
+        FAILED=1
+    fi
+}
+
+check_timer() {
+    local timer="$1"
+    if systemctl is-enabled --quiet "$timer" && systemctl is-active --quiet "$timer"; then
+        printf 'OK     %s\n' "$timer"
+    else
+        printf 'FAILED %s\n' "$timer"
+        FAILED=1
+    fi
+}
+
+printf '%s\n' 'JobApply doctor'
+printf '%s\n' '==============='
+
+check_unit postgresql.service
+check_unit caddy.service
+check_unit jobapply-web.service
+check_unit jobapply-gmail-worker.service
+check_timer jobapply-backup.timer
+check_timer jobapply-neon-sync.timer
+
+echo
+free -h
+echo
+df -h /
+echo
+systemctl --failed --no-pager -l || true
+echo
+systemctl list-timers --all --no-pager | grep jobapply || true
+echo
+journalctl --disk-usage
+
+echo
+cd "$PROJECT_DIR"
+sudo -u jobapply .venv/bin/python manage.py check --deploy --fail-level ERROR || FAILED=1
+
+echo
+printf 'Git HEAD:   %s\n' "$(git rev-parse HEAD)"
+printf 'Git branch: %s\n' "$(git branch --show-current)"
+printf 'Git state:  %s\n' "$(test -z "$(git status --porcelain)" && echo clean || echo dirty)"
+
+exit "$FAILED"
+
+Run:
+
+sudo /usr/local/bin/jobapply-doctor.sh
+
+Useful extension:
+
+The script can compare repository versions of deployment files with installed files under /usr/local/bin and /etc/systemd/system. This detects a common operational mistake: pulling new deployment scripts without running install-ops.sh.
+
+
+8. Health request script
+------------------------
+
+A lightweight external health script can be added as:
+
+/usr/local/bin/jobapply-health-check.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+URL="${JOBAPPLY_HEALTH_URL:-https://jobapply.p95max.dev/}"
+
+curl \
+    --fail \
+    --silent \
+    --show-error \
+    --max-time 20 \
+    --retry 2 \
+    --retry-delay 3 \
+    --output /dev/null \
+    "$URL"
+
+This checks public routing through DNS, TLS, Caddy and Gunicorn. It does not prove that every application dependency works.
+
+For a deeper check, JobApply can later add a dedicated /health/ Django endpoint that verifies the local database with a simple SELECT 1 query.
+
+
+9. Service restart helper
+-------------------------
+
+Suggested script:
+
+/usr/local/bin/jobapply-restart.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+systemctl restart jobapply-web.service jobapply-gmail-worker.service
+systemctl is-active --quiet jobapply-web.service
+systemctl is-active --quiet jobapply-gmail-worker.service
+systemctl status jobapply-web.service jobapply-gmail-worker.service --no-pager -l
+
+This is useful after changing .env without pulling new source code.
+
+
+10. Logs helper
+---------------
+
+Suggested script:
+
+/usr/local/bin/jobapply-logs.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+journalctl \
+    -u jobapply-web.service \
+    -u jobapply-gmail-worker.service \
+    -u jobapply-backup.service \
+    -u jobapply-neon-sync.service \
+    --since today \
+    --no-pager \
+    -l
+
+For live logs:
+
+journalctl -u jobapply-web.service -u jobapply-gmail-worker.service -f
+
+
+11. PostgreSQL size report
+--------------------------
+
+Suggested script:
+
+/usr/local/bin/jobapply-db-size.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+sudo -u postgres psql jobapply -X -v ON_ERROR_STOP=1 <<'SQL'
+SELECT current_database(), pg_size_pretty(pg_database_size(current_database()));
+SELECT
+    schemaname,
+    relname,
+    pg_size_pretty(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS total_size
+FROM pg_stat_user_tables
+ORDER BY pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) DESC
+LIMIT 20;
+SQL
+
+Use this to monitor whether Gmail metadata, application history or backup-related data grows unexpectedly.
+
+
+12. Backup verification script
+------------------------------
+
+Suggested script:
+
+/usr/local/bin/jobapply-verify-backup.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/jobapply}"
+LATEST="$(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'jobapply_*.dump' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+
+[[ -n "$LATEST" ]] || {
+    echo "ERROR: no local backup found" >&2
+    exit 1
+}
+
+pg_restore --list "$LATEST" >/dev/null
+AGE_SECONDS="$(( $(date +%s) - $(stat -c %Y "$LATEST") ))"
+
+if (( AGE_SECONDS > 129600 )); then
+    echo "ERROR: latest backup is older than 36 hours: $LATEST" >&2
+    exit 1
+fi
+
+echo "Backup is valid and recent: $LATEST"
+
+This validates archive readability and freshness. It does not replace a real restore test.
+
+
+13. Temporary restore test
+--------------------------
+
+A periodic restore test provides stronger assurance than pg_restore --list.
+
+Suggested manual commands:
+
+sudo -u postgres dropdb --if-exists jobapply_restore_test
+sudo -u postgres createdb -O jobapply jobapply_restore_test
+sudo -u jobapply pg_restore \
+    --no-owner \
+    --no-privileges \
+    --exit-on-error \
+    --dbname=postgresql://jobapply:LOCAL_PASSWORD@127.0.0.1:5432/jobapply_restore_test \
+    /var/backups/jobapply/jobapply_TIMESTAMP.dump
+sudo -u postgres psql jobapply_restore_test -tAc 'SELECT COUNT(*) FROM django_migrations;'
+sudo -u postgres dropdb jobapply_restore_test
+
+Run this manually after the initial deployment and occasionally after important schema changes.
+
+Do not run it when disk space is critically low.
+
+
+14. Memory pressure report
+--------------------------
+
+Suggested script:
+
+/usr/local/bin/jobapply-memory-report.sh
+
+Example:
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+free -h
+echo
+ps -eo pid,user,comm,rss,%mem,%cpu --sort=-rss | head -20
+echo
+systemd-cgtop --iterations=1 --depth=2 || true
+echo
+swapon --show
+
+Use it when the VPS begins swapping or a service is killed by the OOM killer.
+
+Inspect OOM events with:
+
+journalctl -k --since today | grep -Ei 'out of memory|oom|killed process'
+
+
+15. Disk cleanup helper
+-----------------------
+
+Suggested commands for a small VPS:
+
+journalctl --vacuum-time=14d
+apt-get clean
+find /var/backups/jobapply -type f -name 'jobapply_*.dump' -mtime +7 -delete
+sudo -u jobapply poetry cache clear pypi --all --no-interaction
+
+Do not automate broad rm commands without validating paths. The backup script already performs safe local dump retention.
+
+
+16. Firewall setup
+------------------
+
+Suggested initial setup with UFW on Ubuntu:
+
+apt-get install -y ufw
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+ufw status verbose
+
+PostgreSQL port 5432 must not be opened publicly.
+
+On Debian, nftables can be used instead. Do not enable both UFW and a separate conflicting firewall configuration without understanding their interaction.
+
+
+17. Useful systemd commands
+---------------------------
+
+Reload changed unit files:
+
+sudo systemctl daemon-reload
+
+Restart application processes:
+
+sudo systemctl restart jobapply-web.service jobapply-gmail-worker.service
+
+Enable timers:
+
+sudo systemctl enable --now jobapply-backup.timer jobapply-neon-sync.timer
+
+Inspect timers:
+
+systemctl list-timers --all | grep jobapply
+
+Run a scheduled job now:
+
+sudo systemctl start jobapply-backup.service
+sudo systemctl start jobapply-neon-sync.service
+
+Inspect failures:
+
+sudo systemctl --failed --no-pager -l
+
+Reset a failed unit after fixing the cause:
+
+sudo systemctl reset-failed jobapply-backup.service
+
+
+18. Recommended implementation order
+------------------------------------
+
+Required for first deployment:
+
+1. install.sh
+2. install-ops.sh
+3. jobapply-backup-db.sh
+4. jobapply-sync-db-to-neon.sh
+5. systemd services and timers
+6. Caddyfile
+
+Recommended after the first stable week:
+
+7. jobapply-doctor.sh
+8. jobapply-health-check.sh
+9. jobapply-verify-backup.sh
+10. jobapply-deploy.sh
+
+Optional convenience tools:
+
+11. jobapply-restart.sh
+12. jobapply-logs.sh
+13. jobapply-db-size.sh
+14. jobapply-memory-report.sh
+
+The initial branch installs only the scripts required for deployment and backup. The remaining examples are documented here so they can be added deliberately after the server configuration is proven stable.

@@ -79,6 +79,31 @@
     </div>
   </form>
 
+  {% if not proposal.application_id and proposal.proposal_type != "create_application" %}
+    <form method="post" action="{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}" class="card proposal-section proposal-section--assignment mb-3">
+      <div class="card-body">
+        {% csrf_token %}
+        <h2 class="proposal-section__title">{% trans "Create application from this email" %}</h2>
+        <p class="small text-muted">{% trans "Review the extracted details. The proposal will be linked to the new application, but it will not be accepted automatically." %}</p>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label" for="newApplicationTitle">{% trans "Job title" %}</label>
+            <input class="form-control" id="newApplicationTitle" name="title" maxlength="200" required value="{{ proposal.analysis.extracted_data.position_title|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="newApplicationCompany">{% trans "Company" %}</label>
+            <input class="form-control" id="newApplicationCompany" name="company" maxlength="200" required value="{{ proposal.analysis.extracted_data.company|default:'' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="newApplicationLocation">{% trans "Location" %}</label>
+            <input class="form-control" id="newApplicationLocation" name="location" maxlength="200" value="{{ proposal.analysis.extracted_data.location|default:'' }}">
+          </div>
+        </div>
+        <button class="btn btn-success mt-3">{% trans "Create and link application" %}</button>
+      </div>
+    </form>
+  {% endif %}
+
   {% if candidates and proposal.proposal_type != "create_application" %}
     <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}" class="card proposal-section proposal-section--assignment mb-3">
       <div class="card-body">

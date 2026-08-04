@@ -13,23 +13,33 @@ function getCookie(name) {
 }
 
 function getSelectedIds() {
-  return Array.from(document.querySelectorAll(".js-row-check:checked")).map(i => i.value);
+  return Array.from(new Set(
+    Array.from(document.querySelectorAll(".js-row-check:checked")).map(input => input.value)
+  ));
+}
+
+function syncMatchingCheckboxes(changedInput) {
+  document.querySelectorAll(`.js-row-check[value="${CSS.escape(changedInput.value)}"]`).forEach(input => {
+    input.checked = changedInput.checked;
+  });
 }
 
 function syncCheckAllState() {
-  const all = Array.from(document.querySelectorAll(".js-row-check"));
-  const checked = all.filter(i => i.checked);
+  const allIds = Array.from(new Set(
+    Array.from(document.querySelectorAll(".js-row-check")).map(input => input.value)
+  ));
+  const selectedIds = getSelectedIds();
   const checkAll = document.querySelector(".js-check-all");
   if (!checkAll) return;
 
-  if (all.length === 0) {
+  if (allIds.length === 0) {
     checkAll.checked = false;
     checkAll.indeterminate = false;
     return;
   }
 
-  checkAll.checked = checked.length === all.length;
-  checkAll.indeterminate = checked.length > 0 && checked.length < all.length;
+  checkAll.checked = selectedIds.length === allIds.length;
+  checkAll.indeterminate = selectedIds.length > 0 && selectedIds.length < allIds.length;
 }
 
 function syncBulkUI() {
@@ -42,34 +52,34 @@ function syncBulkUI() {
 
 document.addEventListener("click", function (e) {
   const bulkDelete = e.target.closest(".js-bulk-delete");
-if (bulkDelete) {
-  const ids = getSelectedIds();
-  if (ids.length === 0) return;
+  if (bulkDelete) {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
 
-  const ok = window.confirm(`Delete ${ids.length} selected application(s)? Data will be deleted!.`);
-  if (!ok) return;
+    const ok = window.confirm(`Delete ${ids.length} selected application(s)? Data will be deleted!.`);
+    if (!ok) return;
 
-  bulkDelete.disabled = true;
+    bulkDelete.disabled = true;
 
-  fetch("/applications/bulk-delete/", {
-    method: "POST",
-    headers: {
-      "X-CSRFToken": getCookie("csrftoken"),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ ids }),
-  })
-    .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json().catch(() => ({}));
+    fetch("/applications/bulk-delete/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken"),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ids }),
     })
-    .then(() => window.location.reload())
-    .catch(() => {
-      bulkDelete.disabled = false;
-      alert("Bulk delete failed. Check permissions/endpoint.");
-    });
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json().catch(() => ({}));
+      })
+      .then(() => window.location.reload())
+      .catch(() => {
+        bulkDelete.disabled = false;
+        alert("Bulk delete failed. Check permissions/endpoint.");
+      });
 
-  return;
+    return;
   }
 
   const row = e.target.closest(".js-row-link");
@@ -110,10 +120,11 @@ document.addEventListener("change", function (e) {
     return;
   }
 
-  if (e.target.closest(".js-row-check")) {
+  const rowCheck = e.target.closest(".js-row-check");
+  if (rowCheck) {
+    syncMatchingCheckboxes(rowCheck);
     syncCheckAllState();
     syncBulkUI();
-    return;
   }
 });
 
@@ -127,7 +138,6 @@ document.addEventListener("click", function (e) {
   if (!btn) return;
 
   const printUrl = btn.dataset.printUrl || location.href + (location.href.includes('?') ? '&' : '?') + 'print=1';
-
   const printWindow = window.open(printUrl, '_blank');
   printWindow.onload = function() {
     printWindow.print();

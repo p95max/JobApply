@@ -1,0 +1,308 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: JobApply\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Landing navigation"
+msgstr "Navigation der Startseite"
+
+msgid "Features"
+msgstr "Funktionen"
+
+msgid "Sign in"
+msgstr "Anmelden"
+
+msgid "Job search workspace with optional AI assistance"
+msgstr "Arbeitsbereich für die Jobsuche mit optionaler KI-Unterstützung"
+
+msgid "Keep every application, interview and recruiter email under control."
+msgstr "Behalten Sie jede Bewerbung, jedes Vorstellungsgespräch und jede Recruiter-E-Mail im Blick."
+
+msgid "JobApply brings application tracking, passwordless Google sign-in, Gmail updates, Telegram notifications and Google Drive backups into one clear workflow."
+msgstr "JobApply vereint Bewerbungsverfolgung, passwortlose Google-Anmeldung, Gmail-Updates, Telegram-Benachrichtigungen und Google-Drive-Backups in einem übersichtlichen Ablauf."
+
+msgid "Continue with Google"
+msgstr "Mit Google fortfahren"
+
+msgid "Explore features"
+msgstr "Funktionen entdecken"
+
+msgid "No separate password"
+msgstr "Kein separates Passwort"
+
+msgid "AI stays optional"
+msgstr "KI bleibt optional"
+
+msgid "Google Drive backups"
+msgstr "Google-Drive-Backups"
+
+msgid "Product preview"
+msgstr "Produktvorschau"
+
+msgid "Active applications"
+msgstr "Aktive Bewerbungen"
+
+msgid "this week"
+msgstr "diese Woche"
+
+msgid "Upcoming interviews"
+msgstr "Bevorstehende Vorstellungsgespräche"
+
+msgid "Next: Thursday"
+msgstr "Nächster Termin: Donnerstag"
+
+msgid "Gmail Assistant"
+msgstr "Gmail-Assistent"
+
+msgid "Active"
+msgstr "Aktiv"
+
+msgid "Interview invitation detected"
+msgstr "Einladung zum Vorstellungsgespräch erkannt"
+
+msgid "Review suggested update before applying it"
+msgstr "Vorgeschlagene Änderung vor dem Anwenden prüfen"
+
+msgid "Review"
+msgstr "Prüfen"
+
+msgid "Application received"
+msgstr "Bewerbung eingegangen"
+
+msgid "Matched with an existing application"
+msgstr "Mit einer bestehenden Bewerbung verknüpft"
+
+msgid "Everything in one place"
+msgstr "Alles an einem Ort"
+
+msgid "Built for a real, ongoing job search"
+msgstr "Für eine echte, laufende Jobsuche entwickelt"
+
+msgid "Less manual tracking, fewer missed updates and a complete history of your applications."
+msgstr "Weniger manuelle Pflege, weniger verpasste Updates und eine vollständige Historie Ihrer Bewerbungen."
+
+msgid "Application tracking"
+msgstr "Bewerbungsverfolgung"
+
+msgid "Track company, vacancy, status, salary, links, documents, notes and the full activity history."
+msgstr "Verfolgen Sie Unternehmen, Stelle, Status, Gehalt, Links, Dokumente, Notizen und die vollständige Aktivitätshistorie."
+
+msgid "Passwordless Google sign-in"
+msgstr "Passwortlose Google-Anmeldung"
+
+msgid "Create your account and sign in with Google. There is no separate JobApply password to remember or manage."
+msgstr "Erstellen Sie Ihr Konto und melden Sie sich mit Google an. Ein separates JobApply-Passwort ist nicht erforderlich."
+
+msgid "Optional AI Gmail Assistant"
+msgstr "Optionaler KI-Gmail-Assistent"
+
+msgid "Enable AI only when you need it, review every proposed change and control token usage with configurable processing limits."
+msgstr "Aktivieren Sie KI nur bei Bedarf, prüfen Sie jede vorgeschlagene Änderung und steuern Sie den Token-Verbrauch über konfigurierbare Verarbeitungslimits."
+
+msgid "Interview management"
+msgstr "Verwaltung von Vorstellungsgesprächen"
+
+msgid "Keep interview dates, formats, contacts and preparation notes connected to the correct application."
+msgstr "Verknüpfen Sie Termine, Formate, Kontakte und Vorbereitungsnotizen mit der richtigen Bewerbung."
+
+msgid "Telegram bot notifications"
+msgstr "Telegram-Bot-Benachrichtigungen"
+
+msgid "Connect the bot through a complete step-by-step setup on the website, then receive private job-search notifications in Telegram."
+msgstr "Verbinden Sie den Bot über eine vollständige Schritt-für-Schritt-Einrichtung auf der Website und erhalten Sie danach private Benachrichtigungen zur Jobsuche in Telegram."
+
+msgid "Google Drive backup integration"
+msgstr "Google-Drive-Backup-Integration"
+
+msgid "Connect Google Drive and keep automated PostgreSQL backups with visible status, schedules and recovery controls."
+msgstr "Verbinden Sie Google Drive und verwalten Sie automatisierte PostgreSQL-Backups mit sichtbarem Status, Zeitplänen und Wiederherstellungsoptionen."
+
+msgid "Simple workflow"
+msgstr "Einfacher Ablauf"
+
+msgid "From first sign-in to daily automation"
+msgstr "Von der ersten Anmeldung bis zur täglichen Automatisierung"
+
+msgid "Sign in with Google"
+msgstr "Mit Google anmelden"
+
+msgid "Start securely without creating another password."
+msgstr "Starten Sie sicher, ohne ein weiteres Passwort anzulegen."
+
+msgid "Connect Telegram and Drive"
+msgstr "Telegram und Drive verbinden"
+
+msgid "Follow the guided setup directly from the website."
+msgstr "Folgen Sie der geführten Einrichtung direkt auf der Website."
+
+msgid "Enable AI when needed"
+msgstr "KI bei Bedarf aktivieren"
+
+msgid "Choose whether to use AI and keep token usage under control."
+msgstr "Entscheiden Sie selbst, ob Sie KI verwenden, und behalten Sie den Token-Verbrauch unter Kontrolle."
+
+msgid "Review and track"
+msgstr "Prüfen und verfolgen"
+
+msgid "Approve suggested updates and keep one consistent application history."
+msgstr "Bestätigen Sie vorgeschlagene Updates und behalten Sie eine einheitliche Bewerbungshistorie."
+
+msgid "Privacy by design"
+msgstr "Datenschutz von Anfang an"
+
+msgid "Your job-search data remains under your control."
+msgstr "Ihre Daten zur Jobsuche bleiben unter Ihrer Kontrolle."
+
+msgid "JobApply uses Google OAuth instead of local passwords, keeps AI optional, limits token usage and requires confirmation before suggested changes are applied."
+msgstr "JobApply verwendet Google OAuth statt lokaler Passwörter, hält KI optional, begrenzt den Token-Verbrauch und verlangt eine Bestätigung, bevor vorgeschlagene Änderungen übernommen werden."
+
+msgid "Passwordless Google OAuth"
+msgstr "Passwortloses Google OAuth"
+
+msgid "Human review before updates"
+msgstr "Menschliche Prüfung vor Änderungen"
+
+msgid "Optional AI and token controls"
+msgstr "Optionale KI und Token-Kontrolle"
+
+msgid "Ready to organize your search?"
+msgstr "Bereit, Ihre Jobsuche zu organisieren?"
+
+msgid "Start with one clear dashboard."
+msgstr "Starten Sie mit einem übersichtlichen Dashboard."
+
+msgid "Application tracking with review-first automation"
+msgstr "Bewerbungsverfolgung mit prüfungsbasierter Automatisierung"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Applications"
+msgstr "Bewerbungen"
+
+msgid "Interviews"
+msgstr "Vorstellungsgespräche"
+
+msgid "Reports"
+msgstr "Berichte"
+
+msgid "Application statistics"
+msgstr "Bewerbungsstatistik"
+
+msgid "Gmail statistics"
+msgstr "Gmail-Statistik"
+
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "Switch language"
+msgstr "Sprache wechseln"
+
+msgid "Open account menu"
+msgstr "Kontomenü öffnen"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Telegram"
+msgstr "Telegram"
+
+msgid "Cloud backups"
+msgstr "Cloud-Backups"
+
+msgid "Import / Export"
+msgstr "Import / Export"
+
+msgid "Sign out"
+msgstr "Abmelden"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "Applications, interviews and Gmail Assistant updates in one place."
+msgstr "Bewerbungen, Vorstellungsgespräche und Gmail-Assistent-Updates an einem Ort."
+
+msgid "Suggestions to review"
+msgstr "Zu prüfende Vorschläge"
+
+msgid "From Gmail Assistant"
+msgstr "Vom Gmail-Assistenten"
+
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgid "You're all caught up"
+msgstr "Alles ist auf dem neuesten Stand"
+
+msgid "No pending Gmail suggestions."
+msgstr "Keine ausstehenden Gmail-Vorschläge."
+
+msgid "Last run"
+msgstr "Letzter Lauf"
+
+msgid "No successful run yet"
+msgstr "Noch kein erfolgreicher Lauf"
+
+msgid "Open Gmail Assistant"
+msgstr "Gmail-Assistent öffnen"
+
+msgid "Next interview"
+msgstr "Nächstes Vorstellungsgespräch"
+
+msgid "View all"
+msgstr "Alle anzeigen"
+
+msgid "Time"
+msgstr "Uhrzeit"
+
+msgid "No upcoming interviews"
+msgstr "Keine bevorstehenden Vorstellungsgespräche"
+
+msgid "Scheduled interviews will appear here."
+msgstr "Geplante Vorstellungsgespräche werden hier angezeigt."
+
+msgid "Recent applications"
+msgstr "Letzte Bewerbungen"
+
+msgid "Position"
+msgstr "Position"
+
+msgid "Updated"
+msgstr "Aktualisiert"
+
+msgid "No applications yet"
+msgstr "Noch keine Bewerbungen"
+
+msgid "Add your first application to start tracking it."
+msgstr "Fügen Sie Ihre erste Bewerbung hinzu, um mit der Verfolgung zu beginnen."
+
+msgid "Print"
+msgstr "Drucken"
+
+msgid "Filters"
+msgstr "Filter"
+
+msgid "Search, status, month and sort"
+msgstr "Suche, Status, Monat und Sortierung"
+
+msgid "Apply"
+msgstr "Anwenden"
+
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+msgid "Selected:"
+msgstr "Ausgewählt:"
+
+msgid "Delete selected"
+msgstr "Ausgewählte löschen"
+
+msgid "No applications found"
+msgstr "Keine Bewerbungen gefunden"
+
+msgid "Try clearing filters or add your first application."
+msgstr "Setzen Sie die Filter zurück oder fügen Sie Ihre erste Bewerbung hinzu."

@@ -13,8 +13,15 @@
     </div>
     <div class="d-flex align-items-center gap-2">
       <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
-      <button id="aiAnalysisSync" type="button" class="btn btn-primary btn-sm">{% trans "Sync Gmail" %}</button>
+      {% if settings.ai_enabled %}
+        <button id="aiAnalysisSync" type="button" class="btn btn-primary btn-sm">{% trans "Sync Gmail" %}</button>
+      {% endif %}
     </div>
+  </div>
+
+  <div class="nav nav-pills gap-2 mb-4">
+    <a class="btn btn-sm btn-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">📨 {% trans "Suggestions" %}</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage" %}</a>
   </div>
 
   {% if dev_tools_enabled %}
@@ -39,20 +46,40 @@
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
           <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
+          <small class="d-block text-muted mt-1">
+            {% trans "Model" %}: <code>{{ ai_model_name }}</code>
+            · {% trans "Today" %}: {{ ai_daily_used }}/{{ ai_daily_limit }}
+            · {% trans "Remaining" %}: {{ ai_daily_remaining }}
+            · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
+          </small>
         </div>
         <div class="form-check form-switch ms-auto">
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
           <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
         </div>
       </form>
-      <div class="small text-muted mt-3">
-        {% trans "Last successful Gmail sync" %}:
-        {% if settings.last_successful_run_at %}
-          {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
-        {% else %}
-          {% trans "Never" %}
-        {% endif %}
+
+      <div class="small mt-3 d-grid gap-1">
+        <div class="{% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
+          {% if settings.last_successful_run_at and not settings.last_error_message %}✅{% endif %}
+          {% trans "Last successful Gmail sync" %}:
+          {% if settings.last_successful_run_at %}
+            {{ settings.last_successful_run_at|date:"d.m.Y H:i" }}
+          {% else %}
+            {% trans "Never" %}
+          {% endif %}
+        </div>
+        <div class="{% if next_automatic_check_at %}text-success{% else %}text-muted{% endif %}">
+          {% if next_automatic_check_at %}✅{% endif %}
+          {% trans "Next automatic check" %}:
+          {% if next_automatic_check_at %}
+            {{ next_automatic_check_at|date:"d.m.Y H:i" }}
+          {% else %}
+            {% trans "Not scheduled" %}
+          {% endif %}
+        </div>
       </div>
+
       {% if settings.last_error_message %}
         <div class="alert alert-warning small mb-0 mt-2" role="alert">
           {% trans "The latest Gmail sync needs attention. Try syncing again or reconnect Google if the problem continues." %}
@@ -69,26 +96,38 @@
     {% endfor %}
   </div>
 
-  {% for proposal in proposals %}
-    <a
-      class="card mb-3 text-reset text-decoration-none {% if proposal.analysis.event_type == 'rejection' %}border-danger{% elif proposal.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif proposal.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif proposal.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
-      href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}"
-    >
+  {% for group in proposal_groups %}
+    <section class="card mb-3 {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}">
       <div class="card-body">
-        <div class="d-flex justify-content-between gap-3">
-          <div>
-            <div class="fw-semibold">{{ proposal.message.subject|default:"—" }}</div>
-            <div class="small text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div class="min-w-0">
+            <div class="fw-semibold">{{ group.message.subject|default:"—" }}</div>
+            <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
           </div>
-          <span class="badge {% if proposal.analysis.event_type == 'rejection' %}bg-danger{% elif proposal.analysis.event_type in technical_event_types %}bg-primary{% elif proposal.analysis.event_type in interview_event_types %}bg-success{% elif proposal.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{% if proposal.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ proposal.analysis.event_type }}</span>
+          <span class="badge flex-shrink-0 {% if group.analysis.event_type == 'rejection' %}bg-danger{% elif group.analysis.event_type in technical_event_types %}bg-primary{% elif group.analysis.event_type in interview_event_types %}bg-success{% elif group.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            {% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}
+          </span>
         </div>
+
         <div class="small mt-2">
           {% trans "Match" %}:
-          {% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
-          ({{ proposal.match_score }})
+          {% if group.representative.match_method %}{{ group.representative.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
+          ({{ group.representative.match_score }})
+        </div>
+
+        <div class="mt-3 pt-3 border-top d-grid gap-2">
+          <div class="small text-muted">
+            {% blocktrans count counter=group.proposals|length %}{{ counter }} suggested change{% plural %}{{ counter }} suggested changes{% endblocktrans %}
+          </div>
+          {% for proposal in group.proposals %}
+            <a class="btn btn-sm btn-outline-light d-flex justify-content-between align-items-center gap-2 text-start" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">
+              <span>{{ proposal.get_proposal_type_display }}</span>
+              <span aria-hidden="true">›</span>
+            </a>
+          {% endfor %}
         </div>
       </div>
-    </a>
+    </section>
   {% empty %}
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}
@@ -102,7 +141,7 @@
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
-        <p class="text-muted mb-0 mt-2">{% trans "It searches for new relevant Gmail messages and creates reviewable suggestions. It never changes an application by itself." %}</p>
+        <p class="text-muted mb-0 mt-2">{% trans "It searches relevant Gmail messages, rechecks saved analyses, and creates reviewable suggestions. It never changes an application by itself." %}</p>
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
@@ -136,27 +175,29 @@
   });
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
-  syncButton.addEventListener("click", async () => {
-    progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
-    progressSpinner.classList.remove("d-none");
-    progress.classList.remove("alert-danger");
-    progress.classList.add("alert-info");
-    progress.classList.remove("d-none");
-    syncButton.disabled = true;
-    try {
-      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}", {
-        method: "POST",
-        headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
-      });
-      if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
-      window.location.reload();
-    } catch (error) {
-      progressText.textContent = error.message;
-      progressSpinner.classList.add("d-none");
-      progress.classList.remove("alert-info");
-      progress.classList.add("alert-danger");
-      syncButton.disabled = false;
-    }
-  });
+  if (syncButton) {
+    syncButton.addEventListener("click", async () => {
+      progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+      progressSpinner.classList.remove("d-none");
+      progress.classList.remove("alert-danger");
+      progress.classList.add("alert-info");
+      progress.classList.remove("d-none");
+      syncButton.disabled = true;
+      try {
+        const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?reanalyze=1", {
+          method: "POST",
+          headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
+        });
+        if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
+        window.location.reload();
+      } catch (error) {
+        progressText.textContent = error.message;
+        progressSpinner.classList.add("d-none");
+        progress.classList.remove("alert-info");
+        progress.classList.add("alert-danger");
+        syncButton.disabled = false;
+      }
+    });
+  }
 </script>
 {% endblock %}

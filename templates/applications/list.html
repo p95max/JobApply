@@ -2,56 +2,50 @@
 {% load static i18n %}
 
 {% block page_css %}
-<link rel="stylesheet" href="{% static 'css/applications.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/applications.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/applications_dashboard.css' %}?v=1">
 <link rel="stylesheet" href="{% static 'css/print.css' %}">
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{% static 'js/apps_list.js' %}"></script>
+<script src="{% static 'js/apps_list.js' %}?v=2"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<main class="dashboard-page applications-page">
+  <section class="dashboard-shell">
+    {% include "includes/apps_list_header.html" %}
 
-  {% include "includes/apps_list_header.html" %}
-
-  {% if items %}
-
-    <div class="d-flex justify-content-between align-items-center mb-2 no-print">
-      <div class="small text-body-secondary">
-        {% trans "Selected:" %} <span class="js-selected-count">0</span>
-      </div>
-      <div class="d-flex gap-2">
+    {% if items %}
+      <div class="applications-selection no-print">
+        <div class="small text-body-secondary">
+          {% trans "Selected:" %} <span class="js-selected-count">0</span>
+        </div>
         <button class="btn btn-sm btn-outline-danger js-bulk-delete" type="button" disabled>
           🗑️ {% trans "Delete selected" %}
         </button>
       </div>
-    </div>
 
-    <div id="print-area">
-      <div class="card border-0 shadow-sm glass-card">
+      {% include 'includes/apps_list_cards.html' %}
+
+      <div id="print-area" class="d-none d-md-block dashboard-card applications-table-card">
         <div class="table-responsive">
           {% include 'includes/apps_list_table.html' %}
         </div>
       </div>
-    </div>
 
-    {% include 'includes/paginator.html' %}
-
-  {% else %}
-    <div class="card border-0 shadow-sm glass-card">
-      <div class="card-body text-center py-5">
-        <h2 class="h5 mb-2">{% trans "No applications found" %}</h2>
-        <p class="text-body-secondary mb-3">
-          {% blocktrans %}
-          Try clearing filters or add your first <span class="badge bg-secondary">application</span>.
-          {% endblocktrans %}
-        </p>
-        <a class="btn btn-primary" href="{% url 'applications:create' %}">
-          ✚ {% trans "Add application" %}
-        </a>
+      {% include 'includes/paginator.html' %}
+    {% else %}
+      <div class="dashboard-card dashboard-empty applications-empty">
+        <span>📋</span>
+        <div>
+          <strong>{% trans "No applications found" %}</strong>
+          <p>{% trans "Try clearing filters or add your first application." %}</p>
+          <a class="btn btn-primary mt-2" href="{% url 'applications:create' %}">✚ {% trans "Add application" %}</a>
+        </div>
       </div>
-    </div>
-  {% endif %}
-</div>
+    {% endif %}
+  </section>
+</main>
 {% endblock %}

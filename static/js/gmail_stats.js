@@ -1,135 +1,68 @@
 document.addEventListener("DOMContentLoaded", () => {
   const daysSelect = document.getElementById("daysSelect");
   const btnRefresh = document.getElementById("btnRefresh");
-  const btnSync = document.getElementById("btnSync");
-
   const alertBox = document.getElementById("alertBox");
-  const metricResponses = document.getElementById("metricResponses");
+  const metricEmails = document.getElementById("metricEmails");
   const metricRejections = document.getElementById("metricRejections");
   const metricInvites = document.getElementById("metricInvites");
   const metricAutoAck = document.getElementById("metricAutoAck");
   const syncStatusText = document.getElementById("syncStatusText");
+  const config = document.getElementById("gmailStatsConfig");
 
-  function showAlert(message, kind = "danger") {
+  function showAlert(message) {
     if (!alertBox) return;
-    alertBox.className = "alert alert-" + kind;
+    alertBox.className = "alert alert-danger";
     alertBox.textContent = message;
     alertBox.classList.remove("d-none");
   }
 
   function hideAlert() {
-    if (!alertBox) return;
-    alertBox.classList.add("d-none");
+    alertBox?.classList.add("d-none");
   }
 
-  const cfg = document.getElementById("gmailStatsConfig");
-  if (!cfg) {
-    showAlert("Missing #gmailStatsConfig in HTML. Put it inside {% block content %}.", "danger");
-    return;
-  }
-
-  const STATS_URL = (cfg.dataset.statsUrl || "").trim();
-  const SYNC_URL = (cfg.dataset.syncUrl || "").trim();
-
-
-  if (!STATS_URL || STATS_URL.includes("{%")) {
-    showAlert(
-      "statsUrl is not rendered (contains '{% ... %}'). You are editing a different template OR server didn't reload the file. Check View Page Source for data-stats-url.",
-      "danger"
-    );
-    return;
-  }
-
-  if (!SYNC_URL || SYNC_URL.includes("{%")) {
-    showAlert(
-      "syncUrl is not rendered (contains '{% ... %}'). Check View Page Source for data-sync-url.",
-      "danger"
-    );
+  if (!config?.dataset.statsUrl) {
+    showAlert("Gmail statistics configuration is missing.");
     return;
   }
 
   async function loadStats() {
     hideAlert();
     const days = daysSelect?.value || "180";
+    const originalLabel = btnRefresh?.textContent || "Refresh";
 
-    const resp = await fetch(`${STATS_URL}?days=${encodeURIComponent(days)}`, {
-      headers: { Accept: "application/json" },
-      credentials: "same-origin",
-    });
-
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      showAlert(data.error || "Failed to load stats.");
-      return;
+    if (btnRefresh) {
+      btnRefresh.disabled = true;
+      btnRefresh.textContent = "…";
     }
-
-    if (metricResponses) metricResponses.textContent = data.responses ?? "—";
-    if (metricRejections) metricRejections.textContent = data.rejections ?? "—";
-    if (metricInvites) metricInvites.textContent = data.invites ?? "—";
-    if (metricAutoAck) metricAutoAck.textContent = data.auto_ack ?? "—";
-  }
-
-  async function syncGmail() {
-    hideAlert();
-    if (btnSync) {
-      btnSync.disabled = true;
-      btnSync.textContent = "Syncing...";
-    }
-
-    const days = daysSelect?.value || "180";
 
     try {
-      const resp = await fetch(`${SYNC_URL}?days=${encodeURIComponent(days)}`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        credentials: "same-origin",
-      });
+      const response = await fetch(
+        `${config.dataset.statsUrl}?days=${encodeURIComponent(days)}`,
+        {headers: {Accept: "application/json"}, credentials: "same-origin"},
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Failed to load statistics.");
 
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        showAlert(data.error || "Sync failed.");
-        return;
+      if (metricEmails) metricEmails.textContent = data.job_related_emails ?? "—";
+      if (metricRejections) metricRejections.textContent = data.rejections ?? "—";
+      if (metricInvites) metricInvites.textContent = data.invites ?? "—";
+      if (metricAutoAck) metricAutoAck.textContent = data.auto_ack ?? "—";
+      if (syncStatusText) {
+        syncStatusText.textContent = data.last_synced_at
+          ? new Date(data.last_synced_at).toLocaleString()
+          : "—";
       }
-
-      const r = data.result || {};
-        if (syncStatusText) {
-          if (data.last_synced_at) {
-            const dt = new Date(data.last_synced_at);
-            syncStatusText.textContent = "Last sync: " + dt.toLocaleString();
-          } else {
-            syncStatusText.textContent = "Not synced yet.";
-          }
-        }
-
-
-
-
-      await loadStats();
-      showAlert("Sync completed.", "success");
-    } catch (e) {
-      showAlert("Sync failed: " + String(e));
+    } catch (error) {
+      showAlert(error.message || "Failed to load statistics.");
     } finally {
-      if (btnSync) {
-        btnSync.disabled = false;
-        btnSync.textContent = "Sync Gmail";
+      if (btnRefresh) {
+        btnRefresh.disabled = false;
+        btnRefresh.textContent = originalLabel;
       }
     }
-  }
-
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(";").shift();
-    return "";
   }
 
   btnRefresh?.addEventListener("click", loadStats);
-  btnSync?.addEventListener("click", syncGmail);
   daysSelect?.addEventListener("change", loadStats);
-
   loadStats();
 });
-
