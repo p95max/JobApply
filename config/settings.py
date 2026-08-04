@@ -72,6 +72,7 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
                 "apps.gmail_assistant.context_processors.gmail_assistant_notifications",
             ],
         },
