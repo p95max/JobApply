@@ -17,15 +17,17 @@ def test_status_snapshot_includes_commit_and_gmail_schedule(django_user_model, m
     user = django_user_model.objects.create_user("owner", email="owner@example.com")
     JobApplication.objects.create(user=user, company="Example GmbH", title="Developer")
     synced_at = timezone.now()
+    commit_at = timezone.now()
     GmailSyncState.objects.create(user=user, last_synced_at=synced_at)
     settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS = 900
-    monkeypatch.setattr("apps.telegram_bot.selectors._current_commit_sha", lambda: "abc1234")
+    monkeypatch.setattr("apps.telegram_bot.selectors._current_commit", lambda: ("abc1234", commit_at))
 
     snapshot = get_status_snapshot(user.email)
 
     assert snapshot.database_ok is True
     assert snapshot.total_applications == 1
     assert snapshot.commit_sha == "abc1234"
+    assert snapshot.commit_at == commit_at
     assert snapshot.last_gmail_sync_at == synced_at
     assert snapshot.next_gmail_check_at == synced_at + timedelta(seconds=900)
 
@@ -41,6 +43,7 @@ def test_status_text_renders_stage_2_fields():
             commit_sha="abc1234",
             last_gmail_sync_at=now,
             next_gmail_check_at=now + timedelta(minutes=15),
+            commit_at=now,
         ),
     )
 
