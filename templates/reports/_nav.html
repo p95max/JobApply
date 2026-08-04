@@ -1,35 +1,5 @@
-{% load i18n %}
-
-<div class="mb-4">
-  <div class="mb-2">
-    <h1 class="h4 mb-1">{% trans "Services" %}</h1>
-    <div class="text-muted small">
-      {% trans "Gmail Assistant, import and export, cloud backups" %}
-    </div>
-  </div>
-
-  <ul class="nav nav-tabs services-tabs border-0">
-    <li class="nav-item">
-      <a class="nav-link {% if request.resolver_match.url_name == 'gmail_assistant' or request.resolver_match.url_name == 'gmail_proposals' or request.resolver_match.url_name == 'gmail_proposal_detail' %}active{% endif %}"
-         href="{% url 'gmail_assistant:gmail_assistant' %}">
-        {% if gmail_assistant_enabled %}🟢{% else %}🔴{% endif %}
-        <span class="ms-1">{% trans "Gmail Assistant" %}</span>
-      </a>
-    </li>
-
-    <li class="nav-item">
-      <a class="nav-link {% if request.resolver_match.url_name == 'import' %}active{% endif %}"
-         href="{% url 'reports:import' %}">
-        ⬆ <span class="ms-1">{% trans "Import/Export" %}</span>
-      </a>
-    </li>
-
-    <li class="nav-item">
-      <a class="nav-link {% if request.resolver_match.url_name == 'drive_backups' %}active{% endif %}"
-         href="{% url 'reports:drive_backups' %}">
-        {% if cloud_backups_enabled %}🟢{% else %}🔴{% endif %}
-        <span class="ms-1">{% trans "Cloud backups" %}</span>
-      </a>
-    </li>
-  </ul>
-</div>
+{% comment %}
+Legacy cross-service tabs removed.
+Gmail Assistant is available in the primary navigation, while Cloud backups
+and Import/Export are available from the account menu.
+{% endcomment %}
