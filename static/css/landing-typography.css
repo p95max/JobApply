@@ -1,0 +1,38 @@
+body:has(.landing-shell),
+.landing-shell,
+.landing-shell button,
+.landing-shell input,
+.landing-shell select,
+.landing-shell textarea {
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+}
+
+.landing-brand {
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.08rem;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.landing-hero h1,
+.landing-section h2,
+.landing-security h2,
+.landing-cta h2 {
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-style: normal;
+  font-weight: 780;
+  text-wrap: balance;
+}
+
+.landing-hero h1 {
+  letter-spacing: -0.055em;
+}
+
+.landing-lead,
+.landing-feature-card p,
+.landing-section__heading p,
+.landing-security p {
+  letter-spacing: -0.008em;
+}
