@@ -98,6 +98,26 @@ def test_settings_generates_hashed_telegram_link(client, account):
     assert "https://t.me/jobapply_test_bot?start=" in content
     assert "/start " in content
     assert "return to this page and refresh it" in content
+    assert "opening Telegram Web in your browser is recommended" in content
+
+
+@override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")
+def test_disconnect_clears_binding_and_redirects_to_bot(client, account):
+    user, profile = account
+    profile.telegram_user_id = 200
+    profile.telegram_chat_id = 100
+    profile.telegram_linked_at = timezone.now()
+    profile.save(update_fields=["telegram_user_id", "telegram_chat_id", "telegram_linked_at"])
+    client.force_login(user)
+
+    response = client.post(reverse("accounts:settings"), {"action": "telegram_disconnect"})
+
+    assert response.status_code == 302
+    assert response.url == "https://t.me/jobapply_test_bot?start=disconnected"
+    profile.refresh_from_db()
+    assert profile.telegram_user_id is None
+    assert profile.telegram_chat_id is None
+    assert profile.telegram_linked_at is None
 
 
 def test_gmail_status_tab_hides_credentials(client, account):
