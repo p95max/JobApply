@@ -4,8 +4,13 @@
 {% block content %}
 {% systemd_timer "jobapply-backup.timer" as backup_timer %}
 {% systemd_timer "jobapply-neon-sync.timer" as neon_timer %}
-<div class="container mt-4" style="max-width: 920px;">
-  {% include "reports/_nav.html" %}
+<div class="container py-4">
+  <div class="mb-4">
+    <h1 class="h3 mb-1">{% trans "Settings" %}</h1>
+    <p class="text-body-secondary mb-0">{% trans "Manage connected services and account integrations." %}</p>
+  </div>
+
+  {% include "accounts/_settings_nav.html" %}
 
   {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
