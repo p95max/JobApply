@@ -72,7 +72,6 @@ TEMPLATES = [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
                 "apps.gmail_assistant.context_processors.gmail_assistant_notifications",
             ],
         },
@@ -160,6 +159,18 @@ except ValueError:
     GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS = 900
 GMAIL_ASSISTANT_DEV_TOOLS = getenv("GMAIL_ASSISTANT_DEV_TOOLS", "0") == "1"
 OPENAI_API_KEY = getenv("OPENAI_API_KEY", "")
-OPENAI_EMAIL_MODEL = getenv("OPENAI_EMAIL_MODEL", "gpt-4.1-mini")
+OPENAI_EMAIL_MODEL = getenv("OPENAI_EMAIL_MODEL", "gpt-5.4-nano")
+try:
+    GMAIL_ASSISTANT_AI_DAILY_LIMIT = max(0, int(getenv("GMAIL_ASSISTANT_AI_DAILY_LIMIT", "50")))
+except ValueError:
+    GMAIL_ASSISTANT_AI_DAILY_LIMIT = 50
+try:
+    GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD = min(
+        100,
+        max(0, int(getenv("GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD", "80"))),
+    )
+except ValueError:
+    GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD = 80
+GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED = getenv("GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED", "1") == "1"
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
