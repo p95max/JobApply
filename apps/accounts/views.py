@@ -88,6 +88,8 @@ def settings_view(request):
             return redirect("accounts:settings")
         if action == "telegram_disconnect":
             profile.clear_telegram_link()
+            if telegram_bot_url:
+                return redirect(f"{telegram_bot_url}?start=disconnected")
             messages.success(request, "Telegram disconnected.")
             return redirect("accounts:settings")
 
