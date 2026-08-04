@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.gmail_stats",
     "apps.gmail_assistant.apps.GmailAssistantConfig",
+    "apps.telegram_bot.apps.TelegramBotConfig",
 ]
 
 MIDDLEWARE = [
