@@ -2,6 +2,7 @@ from django.urls import path, include, reverse
 from django.shortcuts import redirect, render
 from django.contrib import admin
 
+from apps.accounts.dashboard import dashboard
 from apps.accounts.views_turnstile import google_login_gate
 from allauth.socialaccount.providers.google.views import oauth2_login
 from django.conf.urls.static import static
@@ -14,7 +15,7 @@ admin_path = f"{settings.ADMIN_URL.strip('/')}/" if getattr(settings, "ADMIN_URL
 
 def root(request):
     if request.user.is_authenticated:
-        return redirect("/applications/")
+        return redirect("/dashboard/")
     return render(request, "landing.html")
 
 
@@ -25,6 +26,7 @@ def google_only_login(request):
 
 urlpatterns = [
     path("", root, name="landing"),
+    path("dashboard/", dashboard, name="dashboard"),
 
     path("accounts/login/", google_only_login),
     path("accounts/google/login/", google_login_gate, name="google_login_gate"),
