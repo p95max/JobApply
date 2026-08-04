@@ -25,6 +25,7 @@ def _config(**overrides):
     return TelegramConfig(**values)
 
 
+@pytest.mark.django_db
 def test_unauthorized_chat_id_is_rejected():
     update = {
         "message": {
