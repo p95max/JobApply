@@ -9,6 +9,8 @@ from django.utils import timezone as django_timezone
 
 from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis, GmailAssistantSettings
 from apps.gmail_assistant.services.ai_analyzer import (
+    PROMPT_VERSION,
+    SCHEMA_VERSION,
     AIAnalysisContext,
     AIAnalyzerConfig,
     AIAnalyzerError,
@@ -110,8 +112,8 @@ def _record_analysis(
                 "confidence": confidence if confidence is not None else rule.confidence,
                 "extracted_data": extracted_data,
                 "model_name": model_name,
-                "prompt_version": "v1",
-                "schema_version": "v1",
+                "prompt_version": PROMPT_VERSION,
+                "schema_version": SCHEMA_VERSION,
                 "analyzed_at": django_timezone.now(),
             },
         )
