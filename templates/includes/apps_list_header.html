@@ -4,31 +4,18 @@
   <div>
     <h1 class="h4 mb-1">{% trans "Your Applications" %}</h1>
     {% if all_apps_total %}
-      <small class="text-body-secondary">
-        {% trans "Total" %}: {{ all_apps_total }}
-      </small>
+      <small class="text-body-secondary">{% trans "Total" %}: {{ all_apps_total }}</small>
     {% endif %}
   </div>
 
-  <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-secondary js-print"
-            data-print-url="?{{ base_qs }}&print=1">
-      🖨️ {% trans "Print" %}
-    </button>
-
-    <a class="btn btn-primary" href="{% url 'applications:create' %}">
-      ✚ {% trans "Add application" %}
-    </a>
-  </div>
+  <button type="button" class="btn btn-outline-secondary js-print" data-print-url="?{{ base_qs }}&print=1">
+    🖨️ {% trans "Print" %}
+  </button>
 </div>
 
 <details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or month or sort != '-applied_at' %} open{% endif %}>
   <summary class="applications-filters__summary">
-    <span class="applications-filters__title">
-      <span aria-hidden="true">🔎</span>
-      <span>{% trans "Filters" %}</span>
-    </span>
-
+    <span class="applications-filters__title"><span aria-hidden="true">🔎</span><span>{% trans "Filters" %}</span></span>
     <span class="applications-filters__meta">
       {% if q or status or month or sort != '-applied_at' %}
         <span class="applications-filters__active">{% trans "Active" %}</span>
@@ -42,22 +29,11 @@
   <div class="applications-filters__body">
     <form class="row g-2 align-items-end" method="get">
       <div class="col-12 col-lg-4">
-        <label class="form-label small text-body-secondary mb-1">
-          {% trans "Search" %}
-        </label>
-        <input
-          type="text"
-          name="q"
-          value="{{ q|default:'' }}"
-          class="form-control"
-          placeholder="{% trans 'Title, company, location...' %}"
-        />
+        <label class="form-label small text-body-secondary mb-1">{% trans "Search" %}</label>
+        <input type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="{% trans 'Title, company, location...' %}" />
       </div>
-
       <div class="col-12 col-sm-6 col-lg-2">
-        <label class="form-label small text-body-secondary mb-1">
-          {% trans "Status" %}
-        </label>
+        <label class="form-label small text-body-secondary mb-1">{% trans "Status" %}</label>
         <select class="form-select" name="status">
           <option value="" {% if not status %}selected{% endif %}>{% trans "All" %}</option>
           <option value="applied" {% if status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
@@ -67,41 +43,22 @@
           <option value="rejected" {% if status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
         </select>
       </div>
-
       <div class="col-12 col-sm-6 col-lg-2">
-        <label class="form-label small text-body-secondary mb-1">
-          {% trans "Month" %}
-        </label>
+        <label class="form-label small text-body-secondary mb-1">{% trans "Month" %}</label>
         <input type="month" name="month" value="{{ month|default:'' }}" class="form-control" />
       </div>
-
       <div class="col-12 col-sm-6 col-lg-2">
-        <label class="form-label small text-body-secondary mb-1">
-          {% trans "Sort" %}
-        </label>
+        <label class="form-label small text-body-secondary mb-1">{% trans "Sort" %}</label>
         <select class="form-select" name="sort">
-          <option value="-applied_at" {% if sort == "-applied_at" %}selected{% endif %}>
-            {% trans "Applied ↓" %}
-          </option>
-          <option value="applied_at" {% if sort == "applied_at" %}selected{% endif %}>
-            {% trans "Applied ↑" %}
-          </option>
-          <option value="-updated_at" {% if sort == "-updated_at" %}selected{% endif %}>
-            {% trans "Updated ↓" %}
-          </option>
-          <option value="updated_at" {% if sort == "updated_at" %}selected{% endif %}>
-            {% trans "Updated ↑" %}
-          </option>
+          <option value="-applied_at" {% if sort == "-applied_at" %}selected{% endif %}>{% trans "Applied ↓" %}</option>
+          <option value="applied_at" {% if sort == "applied_at" %}selected{% endif %}>{% trans "Applied ↑" %}</option>
+          <option value="-updated_at" {% if sort == "-updated_at" %}selected{% endif %}>{% trans "Updated ↓" %}</option>
+          <option value="updated_at" {% if sort == "updated_at" %}selected{% endif %}>{% trans "Updated ↑" %}</option>
         </select>
       </div>
-
       <div class="col-12 col-sm-6 col-lg-2 d-grid d-sm-flex gap-2">
-        <button class="btn btn-primary flex-fill" type="submit">
-          {% trans "Apply" %}
-        </button>
-        <a class="btn btn-outline-secondary flex-fill" href="{% url 'applications:list' %}">
-          {% trans "Reset" %}
-        </a>
+        <button class="btn btn-primary flex-fill" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary flex-fill" href="{% url 'applications:list' %}">{% trans "Reset" %}</a>
       </div>
     </form>
   </div>
