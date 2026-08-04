@@ -13,7 +13,7 @@
             <h2 class="h5 mb-1">Gmail</h2>
             <p class="text-body-secondary mb-0">{% trans "Read-only connection used by Gmail Stats and Gmail Assistant." %}</p>
           </div>
-          {% if gmail_connected %}<span class="badge text-bg-success">{% trans "Connected" %}</span>{% else %}<span class="badge text-bg-warning">{% trans "Needs attention" %}</span>{% endif %}
+          {% if gmail_connected %}<span class="badge text-bg-success">🟢 {% trans "Connected" %}</span>{% else %}<span class="badge text-bg-warning">⚠️ {% trans "Needs attention" %}</span>{% endif %}
         </div>
         <div class="alert alert-info">{% trans "This Google account cannot be disconnected separately because it is used to register and sign in to JobApply." %}</div>
         <dl class="row mb-0">
