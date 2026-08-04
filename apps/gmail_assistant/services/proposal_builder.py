@@ -70,6 +70,18 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                     },
                 )
             )
+        if _is_action_required(analysis.event_type, extracted):
+            proposals.append(
+                _create_pending(
+                    message=message,
+                    analysis=analysis,
+                    application=None,
+                    proposal_type=ProposalType.ACTION_REQUIRED,
+                    match_score=0,
+                    match_method="unmatched",
+                    changes={"action": _action_changes(extracted)},
+                )
+            )
         return proposals
 
     application_changes = _application_changes(message=message, analysis=analysis, application=application)
@@ -86,7 +98,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             )
         )
 
-    if analysis.event_type in _ACTION_EVENTS:
+    if _is_action_required(analysis.event_type, extracted):
         proposals.append(
             _create_pending(
                 message=message,
@@ -95,13 +107,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 proposal_type=ProposalType.ACTION_REQUIRED,
                 match_score=match_score,
                 match_method=match_method,
-                changes={
-                    "action": {
-                        "required": True,
-                        "text": _string_or_none(extracted.get("action_text")),
-                        "deadline_at": _string_or_none(extracted.get("deadline_at")),
-                    }
-                },
+                changes={"action": _action_changes(extracted)},
             )
         )
 
@@ -124,6 +130,18 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 )
             )
     return proposals
+
+
+def _is_action_required(event_type: str, extracted: dict[str, Any]) -> bool:
+    return event_type in _ACTION_EVENTS or extracted.get("action_required") is True
+
+
+def _action_changes(extracted: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "required": True,
+        "text": _string_or_none(extracted.get("action_text")),
+        "deadline_at": _string_or_none(extracted.get("deadline_at")),
+    }
 
 
 def _application_changes(*, message: Any, analysis: Any, application: Any) -> dict[str, Any]:
@@ -186,10 +204,11 @@ def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
         },
     )
     if not created:
+        proposal.application = kwargs["application"]
         proposal.changes = kwargs["changes"]
         proposal.match_score = kwargs["match_score"]
         proposal.match_method = kwargs["match_method"]
-        proposal.save(update_fields=["changes", "match_score", "match_method", "updated_at"])
+        proposal.save(update_fields=["application", "changes", "match_score", "match_method", "updated_at"])
     return proposal
 
 
