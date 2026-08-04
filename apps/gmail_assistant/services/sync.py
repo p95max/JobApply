@@ -7,25 +7,22 @@ from typing import Any
 from django.db import DatabaseError, transaction
 from django.utils import timezone as django_timezone
 
-from apps.gmail_assistant.models import (
-    AnalysisClassifier,
-    GmailAnalysis,
-    GmailAssistantSettings,
-)
+from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis, GmailAssistantSettings
 from apps.gmail_assistant.services.ai_analyzer import (
     AIAnalysisContext,
-    AIAnalyzerError,
     AIAnalyzerConfig,
+    AIAnalyzerError,
     OpenAIEmailAnalyzer,
     SanitizedEmail,
 )
+from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_email_text
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
-from apps.gmail_stats.services.direction import determine_direction
-from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
 from apps.gmail_assistant.services.proposal_builder import build_proposals
 from apps.gmail_assistant.services.queries import build_candidate_query
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
+from apps.gmail_stats.services.direction import determine_direction
+from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
 
 logger = logging.getLogger(__name__)
 
@@ -121,11 +118,14 @@ def _record_analysis(
     return analysis
 
 
-def _rule_data(rule: RuleClassification) -> dict[str, Any]:
-    return {"evidence": list(rule.evidence)}
+def _rule_data(rule: RuleClassification, *, fallback_reason: str = "") -> dict[str, Any]:
+    data: dict[str, Any] = {"evidence": list(rule.evidence)}
+    if fallback_reason:
+        data["fallback_reason"] = fallback_reason
+    return data
 
 
-def _ai_data(result: Any) -> dict[str, Any]:
+def _ai_data(result: Any, *, requires_manual_review: bool) -> dict[str, Any]:
     interview = None
     if result.interview:
         interview = {
@@ -149,17 +149,12 @@ def _ai_data(result: Any) -> dict[str, Any]:
         "deadline_at": result.deadline_at,
         "interview": interview,
         "evidence": list(result.evidence),
+        "requires_manual_review": requires_manual_review,
     }
 
 
-def _should_use_ai(*, rule: RuleClassification, ai_enabled: bool, config: AIAnalyzerConfig) -> bool:
-    return (
-        ai_enabled
-        and config.enabled
-        and bool(config.api_key)
-        and rule.event_type != "noise"
-        and (rule.is_job_related or rule.confidence < 70)
-    )
+def _ai_available(*, ai_enabled: bool, config: AIAnalyzerConfig) -> bool:
+    return ai_enabled and config.enabled and bool(config.api_key) and bool(config.model)
 
 
 def _update_message_status(*, message: GmailMessage, status: str, error: str = "") -> None:
@@ -174,6 +169,22 @@ def _assistant_settings(user: Any) -> GmailAssistantSettings | None:
     return GmailAssistantSettings.objects.filter(user=user).only("ai_enabled").first()
 
 
+def _record_rule_fallback(
+    *,
+    user: Any,
+    message: GmailMessage,
+    rule: RuleClassification,
+    reason: str,
+) -> GmailAnalysis:
+    return _record_analysis(
+        user=user,
+        message=message,
+        rule=rule,
+        classifier=AnalysisClassifier.RULE,
+        extracted_data=_rule_data(rule, fallback_reason=reason),
+    )
+
+
 def sync_gmail_messages_for_user(
     *,
     user: Any,
@@ -183,27 +194,24 @@ def sync_gmail_messages_for_user(
     ai_analyzer: OpenAIEmailAnalyzer | None = None,
     reanalyze_existing: bool = False,
 ) -> dict[str, int]:
-    """Run the bounded, per-message Gmail assistant pipeline for one user.
-
-    ``reanalyze_existing`` is used once when a user newly opts in to AI so
-    historical messages saved by the statistics-only sync are not skipped.
-    """
+    """Run the bounded, per-message Gmail assistant pipeline for one user."""
     if not 1 <= days <= 365:
         raise ValueError("days must be between 1 and 365")
 
     candidate_days = _candidate_days(user=user, requested_days=days)
-    ids = set(
-        gmail_client.list_message_ids(build_candidate_query(candidate_days), max_results=max_results_each)
-    )
+    ids = set(gmail_client.list_message_ids(build_candidate_query(candidate_days), max_results=max_results_each))
     existing = set(
         GmailMessage.objects.filter(user=user, message_id__in=ids)
         .exclude(processing_status=GmailProcessingStatus.FAILED)
         .values_list("message_id", flat=True)
     )
     profile_email = gmail_client.get_profile_email()
-    settings = _assistant_settings(user)
+    assistant_settings = _assistant_settings(user)
     config = ai_analyzer.config if ai_analyzer else AIAnalyzerConfig.from_environment()
     analyzer = ai_analyzer or OpenAIEmailAnalyzer(config)
+    policy = AIUsagePolicy.from_environment()
+    initial_ai_usage = policy.daily_usage(user=user)
+    ai_calls_reserved = 0
     counters = {
         "days": candidate_days,
         "fetched_candidates": len(ids),
@@ -216,6 +224,9 @@ def sync_gmail_messages_for_user(
         "analyses_created": 0,
         "analyzed_by_rules": 0,
         "analyzed_by_ai": 0,
+        "ai_limit_reached": 0,
+        "ai_low_confidence": 0,
+        "ai_fallbacks": 0,
         "proposals_created": 0,
         "unmatched": 0,
     }
@@ -260,32 +271,36 @@ def sync_gmail_messages_for_user(
                 counters["analyzed_by_rules"] += 1
                 continue
 
-            use_ai = _should_use_ai(
-                rule=rule,
-                ai_enabled=bool(settings and settings.ai_enabled),
-                config=config,
-            )
+            ai_enabled = bool(assistant_settings and assistant_settings.ai_enabled)
+            capacity_available = initial_ai_usage + ai_calls_reserved < policy.daily_limit
+            use_ai = _ai_available(ai_enabled=ai_enabled, config=config) and capacity_available
+
             if use_ai:
+                ai_calls_reserved += 1
                 try:
                     result = analyzer.analyze(
                         SanitizedEmail(
                             message_id=message_id,
-                            subject=parsed.subject,
+                            subject=sanitize_email_text(parsed.subject),
                             from_name=parsed.from_name,
                             from_email=parsed.from_email,
-                            text=parsed.text,
+                            text=sanitize_email_text(parsed.text),
                         ),
                         AIAnalysisContext(
                             rule_event_type=rule.event_type,
                             rule_confidence=rule.confidence,
                         ),
                     )
+                    requires_manual_review = policy.requires_manual_review(result.confidence)
                     analysis = _record_analysis(
                         user=user,
                         message=message,
                         rule=rule,
-                        classifier=AnalysisClassifier.RULE_AI,
-                        extracted_data=_ai_data(result),
+                        classifier=AnalysisClassifier.AI,
+                        extracted_data=_ai_data(
+                            result,
+                            requires_manual_review=requires_manual_review,
+                        ),
                         event_type=result.event_type,
                         confidence=result.confidence,
                         is_job_related=result.is_job_related,
@@ -293,37 +308,52 @@ def sync_gmail_messages_for_user(
                     )
                     counters["analyses_created"] += 1
                     counters["analyzed_by_ai"] += 1
+                    counters["ai_low_confidence"] += int(requires_manual_review)
                 except AIAnalyzerError as error:
                     logger.warning(
                         "Gmail AI analysis failed message_id=%s error=%s",
                         message_id,
                         type(error).__name__,
                     )
-                    analysis = _record_analysis(
+                    if not policy.rules_fallback_enabled:
+                        _update_message_status(
+                            message=message,
+                            status=GmailProcessingStatus.FAILED,
+                            error=type(error).__name__,
+                        )
+                        counters["failed"] += 1
+                        continue
+                    analysis = _record_rule_fallback(
                         user=user,
                         message=message,
                         rule=rule,
-                        classifier=AnalysisClassifier.RULE,
-                        extracted_data=_rule_data(rule),
+                        reason=type(error).__name__,
                     )
                     counters["analyses_created"] += 1
+                    counters["analyzed_by_rules"] += 1
+                    counters["ai_fallbacks"] += 1
+            else:
+                reason = "ai_disabled"
+                if _ai_available(ai_enabled=ai_enabled, config=config) and not capacity_available:
+                    reason = "daily_limit_reached"
+                    counters["ai_limit_reached"] += 1
+                if not policy.rules_fallback_enabled:
                     _update_message_status(
                         message=message,
-                        status=GmailProcessingStatus.ANALYZED,
-                        error=type(error).__name__,
+                        status=GmailProcessingStatus.FAILED,
+                        error=reason,
                     )
-                    counters["analyzed_by_rules"] += 1
+                    counters["failed"] += 1
                     continue
-            else:
-                analysis = _record_analysis(
+                analysis = _record_rule_fallback(
                     user=user,
                     message=message,
                     rule=rule,
-                    classifier=AnalysisClassifier.RULE,
-                    extracted_data=_rule_data(rule),
+                    reason=reason,
                 )
                 counters["analyses_created"] += 1
                 counters["analyzed_by_rules"] += 1
+                counters["ai_fallbacks"] += int(reason != "ai_disabled")
 
             match = match_for_message(
                 user=user,
@@ -335,11 +365,7 @@ def sync_gmail_messages_for_user(
             counters["unmatched"] += int(match.is_unmatched)
             _update_message_status(
                 message=message,
-                status=(
-                    GmailProcessingStatus.PROPOSAL_CREATED
-                    if proposals
-                    else GmailProcessingStatus.ANALYZED
-                ),
+                status=(GmailProcessingStatus.PROPOSAL_CREATED if proposals else GmailProcessingStatus.ANALYZED),
             )
         except (AttributeError, DatabaseError, RuntimeError, TypeError, ValueError) as error:
             logger.warning(
@@ -354,12 +380,12 @@ def sync_gmail_messages_for_user(
         state, _ = GmailSyncState.objects.get_or_create(user=user)
         state.last_synced_at = datetime.now(timezone.utc)
         state.save(update_fields=["last_synced_at"])
-        if settings:
-            settings.last_successful_run_at = django_timezone.now()
+        if assistant_settings:
+            assistant_settings.last_successful_run_at = django_timezone.now()
             if counters["failed"]:
-                settings.last_error_at = django_timezone.now()
-                settings.last_error_message = "message_processing_failed"
-                settings.save(
+                assistant_settings.last_error_at = django_timezone.now()
+                assistant_settings.last_error_message = "message_processing_failed"
+                assistant_settings.save(
                     update_fields=[
                         "last_successful_run_at",
                         "last_error_at",
@@ -368,9 +394,9 @@ def sync_gmail_messages_for_user(
                     ]
                 )
             else:
-                settings.last_error_at = None
-                settings.last_error_message = ""
-                settings.save(
+                assistant_settings.last_error_at = None
+                assistant_settings.last_error_message = ""
+                assistant_settings.save(
                     update_fields=[
                         "last_successful_run_at",
                         "last_error_at",
