@@ -78,7 +78,7 @@ def gmail_assistant(request):
     proposals = list(proposal_queryset.filter(status=selected_status.value)[:150])
     proposal_groups = _group_proposals_by_message(proposals)[:50]
     proposal_counts = {
-        proposal_status: proposal_queryset.filter(status=proposal_status).values("message_id").distinct().count()
+        proposal_status: proposal_queryset.filter(status=proposal_status).count()
         for proposal_status in ProposalStatus.values
     }
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
