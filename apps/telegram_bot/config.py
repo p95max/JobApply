@@ -24,6 +24,7 @@ class TelegramConfig:
     default_chat_id: int | None
     allowed_chat_ids: frozenset[int]
     allowed_user_ids: frozenset[int]
+    owner_user_id: int | None
     owner_email: str
     environment_label: str
     notifications_enabled: bool
@@ -31,10 +32,15 @@ class TelegramConfig:
     @classmethod
     def from_env(cls) -> "TelegramConfig":
         default_chat = getenv("TELEGRAM_DEFAULT_CHAT_ID", "").strip()
+        owner_user = getenv("TELEGRAM_OWNER_USER_ID", "").strip()
         try:
             default_chat_id = int(default_chat) if default_chat else None
         except ValueError as exc:
             raise ValueError("TELEGRAM_DEFAULT_CHAT_ID must be an integer") from exc
+        try:
+            owner_user_id = int(owner_user) if owner_user else None
+        except ValueError as exc:
+            raise ValueError("TELEGRAM_OWNER_USER_ID must be an integer") from exc
 
         return cls(
             enabled=getenv("TELEGRAM_BOT_ENABLED", "0") == "1",
@@ -42,6 +48,7 @@ class TelegramConfig:
             default_chat_id=default_chat_id,
             allowed_chat_ids=parse_id_set(getenv("TELEGRAM_ALLOWED_CHAT_IDS", "")),
             allowed_user_ids=parse_id_set(getenv("TELEGRAM_ALLOWED_USER_IDS", "")),
+            owner_user_id=owner_user_id,
             owner_email=getenv("TELEGRAM_OWNER_EMAIL", "").strip(),
             environment_label=getenv("TELEGRAM_ENV_LABEL", "DEVELOPMENT").strip() or "DEVELOPMENT",
             notifications_enabled=getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "0") == "1",
