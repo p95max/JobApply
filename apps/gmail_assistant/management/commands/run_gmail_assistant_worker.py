@@ -10,6 +10,7 @@ from apps.gmail_assistant.models import GmailAssistantSettings
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
+from apps.telegram_bot.heartbeat import GMAIL_WORKER, record_heartbeat
 
 
 class Command(BaseCommand):
@@ -21,9 +22,9 @@ class Command(BaseCommand):
         while True:
             try:
                 self._tick()
+                record_heartbeat(GMAIL_WORKER, expected_interval_seconds=interval, success=True)
             except Exception as error:
-                # The web container may still be applying migrations when this
-                # worker starts. Retry quickly instead of waiting a full interval.
+                record_heartbeat(GMAIL_WORKER, expected_interval_seconds=interval, success=False, error=error)
                 self.stderr.write(self.style.ERROR(f"Gmail Assistant worker error: {error}"))
                 time.sleep(2)
                 continue
