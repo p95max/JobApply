@@ -12,7 +12,7 @@
     </a>
     <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
       <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
-      <a class="btn btn-outline-light btn-sm" href="{% url 'google_login_gate' %}?next=/applications/">{% trans "Sign in" %}</a>
+      <a class="btn btn-outline-light btn-sm" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Sign in" %}</a>
     </nav>
   </header>
 
@@ -21,141 +21,60 @@
       <div class="landing-hero__copy">
         <div class="landing-eyebrow">{% trans "Job search workspace with AI assistance" %}</div>
         <h1>{% trans "Keep every application, interview and recruiter email under control." %}</h1>
-        <p class="landing-lead">
-          {% trans "JobApply turns your job search into one clear workflow: track applications, review Gmail updates, manage interviews and keep reliable backups." %}
-        </p>
+        <p class="landing-lead">{% trans "JobApply turns your job search into one clear workflow: track applications, review Gmail updates, manage interviews and keep reliable backups." %}</p>
         <div class="landing-actions">
-          <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/applications/">
-            {% trans "Continue with Google" %}
-          </a>
+          <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a>
           <a class="btn btn-outline-light btn-lg" href="#features">{% trans "Explore features" %}</a>
         </div>
         <div class="landing-trust">
-          <span>✓ {% trans "Review before changes" %}</span>
-          <span>✓ {% trans "Private account data" %}</span>
-          <span>✓ {% trans "Google Drive backups" %}</span>
+          <span>✓ {% trans "Review before changes" %}</span><span>✓ {% trans "Private account data" %}</span><span>✓ {% trans "Google Drive backups" %}</span>
         </div>
       </div>
 
       <div class="landing-preview" aria-label="{% trans 'Product preview' %}">
-        <div class="landing-preview__topbar">
-          <span></span><span></span><span></span>
-          <strong>JobApply</strong>
-        </div>
+        <div class="landing-preview__topbar"><span></span><span></span><span></span><strong>JobApply</strong></div>
         <div class="landing-preview__body">
-          <div class="landing-preview__metric">
-            <small>{% trans "Active applications" %}</small>
-            <strong>18</strong>
-            <span>+4 {% trans "this week" %}</span>
-          </div>
-          <div class="landing-preview__metric">
-            <small>{% trans "Upcoming interviews" %}</small>
-            <strong>3</strong>
-            <span>{% trans "Next: Thursday" %}</span>
-          </div>
+          <div class="landing-preview__metric"><small>{% trans "Active applications" %}</small><strong>18</strong><span>+4 {% trans "this week" %}</span></div>
+          <div class="landing-preview__metric"><small>{% trans "Upcoming interviews" %}</small><strong>3</strong><span>{% trans "Next: Thursday" %}</span></div>
           <div class="landing-preview__panel landing-preview__panel--wide">
-            <div class="landing-preview__panel-title">
-              <span>🤖 {% trans "Gmail Assistant" %}</span>
-              <span class="landing-status">● {% trans "Active" %}</span>
-            </div>
-            <div class="landing-preview__mail">
-              <span class="landing-preview__icon">✉</span>
-              <div><strong>{% trans "Interview invitation detected" %}</strong><small>{% trans "Review suggested update before applying it" %}</small></div>
-              <span class="landing-preview__badge">{% trans "Review" %}</span>
-            </div>
-            <div class="landing-preview__mail">
-              <span class="landing-preview__icon">✓</span>
-              <div><strong>{% trans "Application received" %}</strong><small>{% trans "Matched with an existing application" %}</small></div>
-              <span class="landing-preview__badge landing-preview__badge--muted">92%</span>
-            </div>
+            <div class="landing-preview__panel-title"><span>🤖 {% trans "Gmail Assistant" %}</span><span class="landing-status">● {% trans "Active" %}</span></div>
+            <div class="landing-preview__mail"><span class="landing-preview__icon">✉</span><div><strong>{% trans "Interview invitation detected" %}</strong><small>{% trans "Review suggested update before applying it" %}</small></div><span class="landing-preview__badge">{% trans "Review" %}</span></div>
+            <div class="landing-preview__mail"><span class="landing-preview__icon">✓</span><div><strong>{% trans "Application received" %}</strong><small>{% trans "Matched with an existing application" %}</small></div><span class="landing-preview__badge landing-preview__badge--muted">92%</span></div>
           </div>
         </div>
       </div>
     </section>
 
     <section id="features" class="landing-section container">
-      <div class="landing-section__heading">
-        <div class="landing-eyebrow">{% trans "Everything in one place" %}</div>
-        <h2>{% trans "Built for a real, ongoing job search" %}</h2>
-        <p>{% trans "Less manual tracking, fewer missed updates and a complete history of your applications." %}</p>
-      </div>
+      <div class="landing-section__heading"><div class="landing-eyebrow">{% trans "Everything in one place" %}</div><h2>{% trans "Built for a real, ongoing job search" %}</h2><p>{% trans "Less manual tracking, fewer missed updates and a complete history of your applications." %}</p></div>
       <div class="landing-feature-grid">
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">📋</span>
-          <h3>{% trans "Application tracking" %}</h3>
-          <p>{% trans "Track company, vacancy, status, salary, links, documents, notes and the full activity history." %}</p>
-        </article>
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">🤖</span>
-          <h3>{% trans "AI Gmail Assistant" %}</h3>
-          <p>{% trans "Detect confirmations, interviews, requests, offers and rejections. Every proposed change requires your review." %}</p>
-        </article>
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">🗓️</span>
-          <h3>{% trans "Interview management" %}</h3>
-          <p>{% trans "Keep interview dates, formats, contacts and preparation notes connected to the correct application." %}</p>
-        </article>
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">📊</span>
-          <h3>{% trans "Useful statistics" %}</h3>
-          <p>{% trans "See application volume, conversion, response patterns and progress without maintaining separate spreadsheets." %}</p>
-        </article>
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">📨</span>
-          <h3>{% trans "Telegram notifications" %}</h3>
-          <p>{% trans "Receive important job-search updates and use quick status commands from your private Telegram chat." %}</p>
-        </article>
-        <article class="landing-feature-card">
-          <span class="landing-feature-card__icon">☁️</span>
-          <h3>{% trans "Reliable backups" %}</h3>
-          <p>{% trans "Export your data and keep automated PostgreSQL backups in Google Drive with visible health status." %}</p>
-        </article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">📋</span><h3>{% trans "Application tracking" %}</h3><p>{% trans "Track company, vacancy, status, salary, links, documents, notes and the full activity history." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">🤖</span><h3>{% trans "AI Gmail Assistant" %}</h3><p>{% trans "Detect confirmations, interviews, requests, offers and rejections. Every proposed change requires your review." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">🗓️</span><h3>{% trans "Interview management" %}</h3><p>{% trans "Keep interview dates, formats, contacts and preparation notes connected to the correct application." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">📊</span><h3>{% trans "Useful statistics" %}</h3><p>{% trans "See application volume, conversion, response patterns and progress without maintaining separate spreadsheets." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">📨</span><h3>{% trans "Telegram notifications" %}</h3><p>{% trans "Receive important job-search updates and use quick status commands from your private Telegram chat." %}</p></article>
+        <article class="landing-feature-card"><span class="landing-feature-card__icon">☁️</span><h3>{% trans "Reliable backups" %}</h3><p>{% trans "Export your data and keep automated PostgreSQL backups in Google Drive with visible health status." %}</p></article>
       </div>
     </section>
 
-    <section class="landing-section landing-section--workflow">
-      <div class="container">
-        <div class="landing-section__heading">
-          <div class="landing-eyebrow">{% trans "Simple workflow" %}</div>
-          <h2>{% trans "From application to final decision" %}</h2>
-        </div>
-        <div class="landing-steps">
-          <div><span>1</span><strong>{% trans "Add an application" %}</strong><p>{% trans "Save the vacancy and the information that matters." %}</p></div>
-          <div><span>2</span><strong>{% trans "Connect your services" %}</strong><p>{% trans "Use Gmail, Telegram and Drive only where they add value." %}</p></div>
-          <div><span>3</span><strong>{% trans "Review updates" %}</strong><p>{% trans "Approve or reject AI suggestions before your records change." %}</p></div>
-          <div><span>4</span><strong>{% trans "Measure progress" %}</strong><p>{% trans "Use one consistent history for decisions and follow-ups." %}</p></div>
-        </div>
+    <section class="landing-section landing-section--workflow"><div class="container">
+      <div class="landing-section__heading"><div class="landing-eyebrow">{% trans "Simple workflow" %}</div><h2>{% trans "From application to final decision" %}</h2></div>
+      <div class="landing-steps">
+        <div><span>1</span><strong>{% trans "Add an application" %}</strong><p>{% trans "Save the vacancy and the information that matters." %}</p></div>
+        <div><span>2</span><strong>{% trans "Connect your services" %}</strong><p>{% trans "Use Gmail, Telegram and Drive only where they add value." %}</p></div>
+        <div><span>3</span><strong>{% trans "Review updates" %}</strong><p>{% trans "Approve or reject AI suggestions before your records change." %}</p></div>
+        <div><span>4</span><strong>{% trans "Measure progress" %}</strong><p>{% trans "Use one consistent history for decisions and follow-ups." %}</p></div>
       </div>
-    </section>
+    </div></section>
 
-    <section class="landing-section container">
-      <div class="landing-security">
-        <div>
-          <div class="landing-eyebrow">{% trans "Privacy by design" %}</div>
-          <h2>{% trans "Your job-search data remains under your control." %}</h2>
-          <p>{% trans "JobApply uses Google authentication, isolates user data, keeps attachments out of AI analysis and requires confirmation before applying suggested changes." %}</p>
-        </div>
-        <div class="landing-security__list">
-          <span>🔐 {% trans "Google OAuth authentication" %}</span>
-          <span>👁️ {% trans "Human review before updates" %}</span>
-          <span>🧹 {% trans "Sanitized AI input" %}</span>
-          <span>💾 {% trans "Export and backup controls" %}</span>
-        </div>
-      </div>
-    </section>
+    <section class="landing-section container"><div class="landing-security">
+      <div><div class="landing-eyebrow">{% trans "Privacy by design" %}</div><h2>{% trans "Your job-search data remains under your control." %}</h2><p>{% trans "JobApply uses Google authentication, isolates user data, keeps attachments out of AI analysis and requires confirmation before applying suggested changes." %}</p></div>
+      <div class="landing-security__list"><span>🔐 {% trans "Google OAuth authentication" %}</span><span>👁️ {% trans "Human review before updates" %}</span><span>🧹 {% trans "Sanitized AI input" %}</span><span>💾 {% trans "Export and backup controls" %}</span></div>
+    </div></section>
 
-    <section class="landing-cta container">
-      <div>
-        <div class="landing-eyebrow">{% trans "Ready to organize your search?" %}</div>
-        <h2>{% trans "Start with one clear dashboard." %}</h2>
-      </div>
-      <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/applications/">{% trans "Continue with Google" %}</a>
-    </section>
+    <section class="landing-cta container"><div><div class="landing-eyebrow">{% trans "Ready to organize your search?" %}</div><h2>{% trans "Start with one clear dashboard." %}</h2></div><a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a></section>
   </main>
 
-  <footer class="landing-footer container">
-    <span>© 2026 JobApply</span>
-    <span>{% trans "Application tracking with review-first automation" %}</span>
-  </footer>
+  <footer class="landing-footer container"><span>© 2026 JobApply</span><span>{% trans "Application tracking with review-first automation" %}</span></footer>
 </div>
 {% endblock %}
