@@ -46,6 +46,11 @@
           <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
           <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
+          <small class="d-block text-muted mt-1">
+            {% trans "Model" %}: <code>{{ ai_model_name }}</code>
+            · {% trans "Daily limit" %}: {{ ai_daily_limit }}
+            · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
+          </small>
         </div>
         <div class="form-check form-switch ms-auto">
           <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
