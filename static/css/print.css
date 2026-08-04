@@ -1,72 +1,113 @@
 .print-only { display: none !important; }
 
 @media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
   .no-print { display: none !important; }
   .print-only { display: inline-block !important; }
 
-  html, body {
-    background: #fff !important;
-    background-color: #fff !important;
+  html,
+  body {
+    width: 100% !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
   }
 
   body * {
     visibility: hidden !important;
-    background: transparent !important;
   }
 
   #print-area,
   #print-area * {
     visibility: visible !important;
-    background: #fff !important;
-    background-color: #fff !important;
-    color: #000 !important;
   }
 
   #print-area {
+    display: block !important;
     position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  #print-area .table-responsive {
+    display: block !important;
     width: 100% !important;
+    overflow: visible !important;
   }
 
   #print-area table {
-    font-size: 9pt !important;
+    display: table !important;
     width: 100% !important;
+    margin: 0 !important;
     table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-family: "Segoe UI", Arial, sans-serif !important;
+    font-size: 8pt !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  #print-area thead {
+    display: table-header-group !important;
+  }
+
+  #print-area tbody {
+    display: table-row-group !important;
+  }
+
+  #print-area tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   #print-area th,
   #print-area td {
-    padding: 3px 2px !important;
+    padding: 4px 3px !important;
+    border: 1px solid #cfd4da !important;
     white-space: normal !important;
-    border: 1px solid #dee2e6 !important;
+    overflow-wrap: anywhere !important;
+    color: #000 !important;
+    background: #fff !important;
   }
 
-  #print-area, #print-area * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  #print-area th {
+    font-weight: 700 !important;
   }
 
-  #print-area .status-select { display: none !important; }
+  #print-area .status-select {
+    display: none !important;
+  }
 
-  .status-badge {
+  #print-area .status-badge {
     --st-color: #000;
     display: inline-block !important;
-    padding: 1px 8px;
-    border-radius: 999px;
+    padding: 1px 6px !important;
     border: 1px solid var(--st-color) !important;
-    line-height: 1.1;
-    white-space: nowrap;
-    font-size: 8pt;
+    border-radius: 999px !important;
+    color: #000 !important;
+    background: #fff !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    font-size: 7pt !important;
   }
 
-  .status-app-applied   { --st-color: #0d6efd; }
-  .status-app-screen    { --st-color: #6f42c1; }
-  .status-app-interview { --st-color: #fd7e14; }
-  .status-app-offer     { --st-color: #198754; }
-  .status-app-rejected  { --st-color: #dc3545; }
+  #print-area .status-app-applied   { --st-color: #0d6efd; }
+  #print-area .status-app-screen    { --st-color: #6f42c1; }
+  #print-area .status-app-interview { --st-color: #fd7e14; }
+  #print-area .status-app-offer     { --st-color: #198754; }
+  #print-area .status-app-rejected  { --st-color: #dc3545; }
 }
