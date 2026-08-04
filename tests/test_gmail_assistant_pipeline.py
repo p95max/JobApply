@@ -177,11 +177,11 @@ def test_ai_pipeline_uses_fake_analyzer_and_creates_pending_proposals(django_use
     analysis = GmailAnalysis.objects.get(user=user)
     assert result["analyzed_by_ai"] == 1
     assert result["analyses_created"] == 1
-    assert result["proposals_created"] == 2
+    assert result["proposals_created"] == 3
     assert len(analyzer.calls) == 1
-    assert analysis.classifier == AnalysisClassifier.RULE_AI
+    assert analysis.classifier == AnalysisClassifier.AI
     assert analysis.model_name == "gpt-4.1-mini"
-    assert analysis.proposals.filter(status=ProposalStatus.PENDING).count() == 2
+    assert analysis.proposals.filter(status=ProposalStatus.PENDING).count() == 3
 
 
 @pytest.mark.django_db
@@ -210,7 +210,7 @@ def test_first_ai_opt_in_reanalyzes_previously_synced_messages(django_user_model
     analysis = GmailAnalysis.objects.get(user=user, message__message_id="message-1")
     assert result["skipped_existing"] == 0
     assert len(analyzer.calls) == 1
-    assert analysis.classifier == AnalysisClassifier.RULE_AI
+    assert analysis.classifier == AnalysisClassifier.AI
 
 
 @pytest.mark.django_db
