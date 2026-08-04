@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import signal
+import subprocess
 from contextlib import contextmanager
 from typing import Any, Iterator
 
@@ -18,6 +19,7 @@ from .texts import applications_text, gmail_text, help_text, status_text
 
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
+DEPLOY_SERVICE = "jobapply-deploy.service"
 
 
 class CommandTimedOut(Exception):
@@ -42,6 +44,10 @@ def _chat_id(update: dict[str, Any]) -> int:
     return int(update["message"]["chat"]["id"])
 
 
+def _user_id(update: dict[str, Any]) -> int:
+    return int(update["message"]["from"]["id"])
+
+
 def _jobapply_url(path: str = "/") -> str:
     domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
     if domain.startswith(("http://", "https://")):
@@ -49,6 +55,36 @@ def _jobapply_url(path: str = "/") -> str:
     else:
         base_url = f"https://{domain}"
     return f"{base_url}{path}"
+
+
+def _queue_deploy(update: dict[str, Any], config: TelegramConfig) -> str:
+    if config.owner_user_id is None or _user_id(update) != config.owner_user_id:
+        logger.warning("Rejected owner-only /deploy command from Telegram user %s", _user_id(update))
+        return "This command is available only to the bot owner."
+
+    active = subprocess.run(
+        ["systemctl", "is-active", "--quiet", DEPLOY_SERVICE],
+        check=False,
+        timeout=3,
+    ).returncode == 0
+    if active:
+        return "Deploy is already running or waiting in the background queue."
+
+    result = subprocess.run(
+        ["sudo", "-n", "systemctl", "--no-block", "start", DEPLOY_SERVICE],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    if result.returncode != 0:
+        logger.error("Could not queue deploy: %s", result.stderr.strip())
+        return "Could not queue deploy. Check the Telegram bot service logs."
+
+    return (
+        "🚀 Deploy queued.\n"
+        "It will wait until the shared background queue is free, then run tests and deploy master."
+    )
 
 
 def handle_update(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
@@ -91,6 +127,8 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 }
             elif text == "/applications":
                 reply = applications_text(get_application_summary(config.owner_email))
+            elif text == "/deploy":
+                reply = _queue_deploy(update, config)
             else:
                 reply = "Unknown command. Use /help."
     except CommandTimedOut:
