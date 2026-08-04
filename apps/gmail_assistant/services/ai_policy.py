@@ -5,10 +5,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from django.utils import timezone
-
-from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis
-
 _DEFAULT_DAILY_LIMIT = 50
 _DEFAULT_CONFIDENCE_THRESHOLD = 80
 _SECRET_LINE_RE = re.compile(
@@ -50,6 +46,12 @@ class AIUsagePolicy:
         )
 
     def daily_usage(self, *, user: Any) -> int:
+        # Keep ORM imports local so pure policy/sanitization unit tests do not
+        # require Django initialization or pytest-django.
+        from django.utils import timezone
+
+        from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis
+
         return GmailAnalysis.objects.filter(
             user=user,
             classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
