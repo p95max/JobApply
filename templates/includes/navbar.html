@@ -26,12 +26,20 @@
           </a>
 
           <details class="app-services" data-services-menu>
-            <summary class="app-nav-link {% if '/reports/' in request.path or '/gmail/' in request.path %}is-active{% endif %}">
+            <summary class="app-nav-link {% if '/reports/statistics/' in request.path or '/gmail_stats/' in request.path and '/gmail/assistant/' not in request.path %}is-active{% endif %}">
+              <span aria-hidden="true">📊</span><span>{% trans "Statistics" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="app-services__menu">
+              <a href="{% url 'reports:statistics' %}"><span>📈</span><span>{% trans "Applications" %}</span></a>
+              <a href="{% url 'gmail_stats:gmail_dashboard' %}"><span>📬</span><span>{% trans "Gmail" %}</span></a>
+            </div>
+          </details>
+
+          <details class="app-services" data-services-menu>
+            <summary class="app-nav-link {% if '/gmail/assistant/' in request.path or '/reports/import/' in request.path or '/reports/drive/' in request.path %}is-active{% endif %}">
               <span aria-hidden="true">✨</span><span>{% trans "Services" %}</span><span class="app-services__chevron" aria-hidden="true">⌄</span>
             </summary>
             <div class="app-services__menu">
-              <a href="{% url 'reports:statistics' %}"><span>📊</span><span>{% trans "Stats" %}</span></a>
-              <a href="{% url 'gmail_stats:gmail_dashboard' %}"><span>📬</span><span>{% trans "Gmail stats" %}</span></a>
               <a href="{% url 'gmail_assistant:gmail_assistant' %}">
                 <span>🤖</span><span>{% trans "Gmail Assistant" %}</span>
                 {% if gmail_assistant_pending_count %}<span class="app-services__count">{{ gmail_assistant_pending_count }}</span>{% endif %}
@@ -40,6 +48,10 @@
               <a href="{% url 'reports:drive_backups' %}"><span>☁️</span><span>{% trans "Cloud backups" %}</span></a>
             </div>
           </details>
+
+          <a class="app-nav-link {% if '/app/settings/' in request.path %}is-active{% endif %}" href="{% url 'accounts:settings' %}">
+            <span aria-hidden="true">⚙️</span><span>{% trans "Settings" %}</span>
+          </a>
         </div>
 
         <div class="app-navigation__actions">
@@ -68,6 +80,7 @@
         <div class="app-navigation__primary app-navigation__primary--guest">
           <span class="app-nav-link is-disabled"><span>📋</span><span>{% trans "Applications" %}</span></span>
           <span class="app-nav-link is-disabled"><span>🗓️</span><span>{% trans "Interviews" %}</span></span>
+          <span class="app-nav-link is-disabled"><span>📊</span><span>{% trans "Statistics" %}</span></span>
           <span class="app-nav-link is-disabled"><span>✨</span><span>{% trans "Services" %}</span></span>
         </div>
         <div class="app-navigation__actions">
