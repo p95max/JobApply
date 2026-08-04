@@ -187,6 +187,13 @@ def _record_rule_fallback(
     )
 
 
+def _safe_fallback_error(analysis: GmailAnalysis) -> str:
+    reason = analysis.extracted_data.get("fallback_reason")
+    if isinstance(reason, str) and reason.endswith("Error"):
+        return reason
+    return ""
+
+
 def sync_gmail_messages_for_user(
     *,
     user: Any,
@@ -368,6 +375,7 @@ def sync_gmail_messages_for_user(
             _update_message_status(
                 message=message,
                 status=(GmailProcessingStatus.PROPOSAL_CREATED if proposals else GmailProcessingStatus.ANALYZED),
+                error=_safe_fallback_error(analysis),
             )
         except (AttributeError, DatabaseError, RuntimeError, TypeError, ValueError) as error:
             logger.warning(
