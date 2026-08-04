@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.gmail_assistant.models import GmailAnalysis, GmailEventType
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.models import GmailSyncState
+from apps.gmail_stats.models import GmailDirection, GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 
@@ -35,6 +35,7 @@ def gmail_stats_api(request):
     analyses = GmailAnalysis.objects.filter(
         user=request.user,
         message__received_at__gte=since,
+        message__direction=GmailDirection.INBOUND,
         is_job_related=True,
     )
     state = GmailSyncState.objects.filter(user=request.user).first()
