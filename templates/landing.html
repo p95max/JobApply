@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
 {% block navbar %}{% endblock %}
 
@@ -12,6 +13,17 @@
     </a>
     <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
       <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
+      <form action="{% url 'set_language' %}" method="post" class="app-language-form">
+        {% csrf_token %}
+        <input name="next" type="hidden" value="{{ request.get_full_path }}">
+        <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
+          {% if LANGUAGE_CODE == 'de' %}
+            <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="">
+          {% else %}
+            <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1e9-1f1ea.svg" alt="">
+          {% endif %}
+        </button>
+      </form>
       <a class="btn btn-outline-light btn-sm" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Sign in" %}</a>
     </nav>
   </header>
