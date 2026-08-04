@@ -39,6 +39,13 @@ class Command(BaseCommand):
 
         client = TelegramClient(config.token)
         offset: int | None = None
+
+        try:
+            client.set_commands()
+            self.stdout.write(self.style.SUCCESS("Telegram command menu published."))
+        except (requests.RequestException, RuntimeError, ValueError):
+            logger.exception("Telegram command menu publication failed")
+
         self.stdout.write(self.style.SUCCESS("Telegram Bot polling started."))
 
         try:
