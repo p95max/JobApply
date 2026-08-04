@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.models import UserProfile
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.interviews.models import InterviewEvent
 
@@ -14,13 +15,23 @@ def test_dashboard_requires_authentication(client):
     response = client.get(reverse("dashboard"))
 
     assert response.status_code == 302
-    assert "/accounts/login/" in response.url
+    assert "/accounts/google/login/" in response.url
 
 
 @pytest.mark.django_db
 def test_dashboard_shows_user_metrics_only(client):
     user = get_user_model().objects.create_user(username="dashboard-user")
     other_user = get_user_model().objects.create_user(username="other-user")
+    UserProfile.objects.create(
+        user=user,
+        google_data_access_consent=True,
+        consent_accepted_at=timezone.now(),
+    )
+    UserProfile.objects.create(
+        user=other_user,
+        google_data_access_consent=True,
+        consent_accepted_at=timezone.now(),
+    )
     application = JobApplication.objects.create(
         user=user,
         company="Example GmbH",
