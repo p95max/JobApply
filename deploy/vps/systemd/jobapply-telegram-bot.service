@@ -16,7 +16,9 @@ TimeoutStopSec=30
 KillSignal=SIGTERM
 StandardOutput=journal
 StandardError=journal
-NoNewPrivileges=true
+# Required so the bot can invoke only the exact NOPASSWD systemctl command
+# allowed by deploy/vps/sudoers/jobapply-deploy.
+NoNewPrivileges=false
 PrivateTmp=true
 
 [Install]
