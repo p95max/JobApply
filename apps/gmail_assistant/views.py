@@ -96,6 +96,9 @@ def gmail_assistant(request):
             "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
             "next_automatic_check_at": next_automatic_check_at,
             "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
+            "ai_model_name": django_settings.OPENAI_EMAIL_MODEL,
+            "ai_daily_limit": django_settings.GMAIL_ASSISTANT_AI_DAILY_LIMIT,
+            "ai_confidence_threshold": django_settings.GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD,
         },
     )
 
