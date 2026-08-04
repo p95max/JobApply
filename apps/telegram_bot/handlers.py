@@ -69,7 +69,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 total, proposals = get_gmail_summary(config.owner_email)
                 reply = gmail_text(total, proposals)
                 reply_markup = {
-                    "inline_keyboard": [[{"text": "Open in JobApply", "url": _jobapply_url("/services/gmail-assistant/")}]]
+                    "inline_keyboard": [[{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]]
                 }
             elif text == "/applications":
                 reply = applications_text(get_application_summary(config.owner_email))
