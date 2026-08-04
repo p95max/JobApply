@@ -72,6 +72,7 @@ def gmail_sync_api(request):
         return JsonResponse({"error": "days must be an integer"}, status=400)
     if not 1 <= days <= 365:
         return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
+    reanalyze_existing = request.GET.get("reanalyze", "0") == "1"
 
     try:
         credentials = get_google_credentials_for_user(request.user)
@@ -97,7 +98,13 @@ def gmail_sync_api(request):
         return JsonResponse({"error": "Gmail access failed. Reconnect Google and try again."}, status=403)
 
     try:
-        result = sync_gmail_messages_for_user(user=request.user, gmail_client=gmail, days=days, max_results_each=500)
+        result = sync_gmail_messages_for_user(
+            user=request.user,
+            gmail_client=gmail,
+            days=days,
+            max_results_each=500,
+            reanalyze_existing=reanalyze_existing,
+        )
     except (RuntimeError, ValueError) as error:
         logger.warning("Gmail sync failed user_id=%s error=%s", request.user.id, type(error).__name__)
         return JsonResponse({"error": "Gmail sync failed. Try again later."}, status=502)
