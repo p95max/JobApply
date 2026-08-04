@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.telegram_bot.client import TelegramClient
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import handle_update
+from apps.telegram_bot.heartbeat import TELEGRAM_BOT, record_heartbeat
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +52,14 @@ class Command(BaseCommand):
         try:
             while not stop_requested:
                 try:
+                    record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60)
                     updates = client.get_updates(offset)
                     for update in updates:
                         offset = int(update["update_id"]) + 1
                         handle_update(update, client, config)
-                except (requests.RequestException, RuntimeError, ValueError):
+                    record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=True)
+                except (requests.RequestException, RuntimeError, ValueError) as error:
+                    record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=False, error=error)
                     logger.exception("Telegram polling iteration failed")
                     time.sleep(5)
         finally:
