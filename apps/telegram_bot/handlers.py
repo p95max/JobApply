@@ -8,6 +8,8 @@ from typing import Any, Iterator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
+from apps.accounts.telegram_linking import bind_telegram_from_start
+
 from .client import TelegramClient
 from .config import TelegramConfig
 from .permissions import is_update_allowed
@@ -50,12 +52,24 @@ def _jobapply_url(path: str = "/") -> str:
 
 
 def handle_update(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
+    message = update.get("message") or {}
+    text_raw = str(message.get("text", "")).strip()
+
+    if text_raw.startswith("/start "):
+        try:
+            profile = bind_telegram_from_start(update)
+        except Exception:
+            logger.exception("Telegram account binding failed")
+            profile = None
+        if profile is not None:
+            client.send_message(_chat_id(update), "Telegram connected to JobApply.")
+            return
+
     if not is_update_allowed(update, config):
         logger.warning("Rejected unauthorized Telegram update")
         return
 
-    message = update.get("message") or {}
-    text = str(message.get("text", "")).strip().split(maxsplit=1)[0].split("@", 1)[0]
+    text = text_raw.split(maxsplit=1)[0].split("@", 1)[0]
     chat_id = _chat_id(update)
     reply_markup = None
 
