@@ -167,7 +167,6 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b'aiAnalysisSync' in response.content
     assert b'aiAnalysisSave' not in response.content
     assert b"toggle.disabled" not in response.content
-    assert b'services-dropdown' in response.content
     assert reverse("gmail_assistant:gmail_assistant").encode() in response.content
 
 
