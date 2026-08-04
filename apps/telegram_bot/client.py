@@ -47,10 +47,19 @@ class TelegramClient:
         if not data.get("ok"):
             raise RuntimeError("Telegram setMyCommands returned an error")
 
-    def send_message(self, chat_id: int, text: str) -> None:
+    def send_message(
+        self,
+        chat_id: int,
+        text: str,
+        *,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         response = self.session.post(
             f"{self.base_url}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            json=payload,
             timeout=10,
         )
         response.raise_for_status()
