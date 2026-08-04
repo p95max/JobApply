@@ -10,7 +10,8 @@ User=jobapply
 Group=jobapply
 WorkingDirectory=/opt/jobapply
 EnvironmentFile=/opt/jobapply/.env
-ExecStart=/usr/local/bin/jobapply-sync-db-to-neon.sh
+Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
+ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-neon-sync /usr/local/bin/jobapply-sync-db-to-neon.sh
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
