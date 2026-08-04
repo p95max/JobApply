@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -34,7 +36,7 @@ def test_dashboard_shows_user_metrics_only(client):
     InterviewEvent.objects.create(
         user=user,
         application=application,
-        starts_at=timezone.now() + timezone.timedelta(days=2),
+        starts_at=timezone.now() + timedelta(days=2),
     )
     client.force_login(user)
 
