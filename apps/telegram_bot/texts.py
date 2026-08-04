@@ -19,7 +19,8 @@ def help_text(environment: str) -> str:
         "/help — available commands\n"
         "/status — service summary\n"
         "/gmail — pending Gmail proposals\n"
-        "/applications — application statistics"
+        "/applications — application statistics\n"
+        "/deploy — queue production deploy (owner only)"
     )
 
 
