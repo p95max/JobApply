@@ -37,7 +37,16 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     match_score = match.suggested.score if match.suggested else 0
     match_method = match.suggested.method if match.suggested else ""
     extracted = analysis.extracted_data
+    action_required = _is_action_required(analysis.event_type, extracted)
     proposals: list[ApplicationUpdateProposal] = []
+
+    if not action_required:
+        ApplicationUpdateProposal.objects.filter(
+            message=message,
+            analysis=analysis,
+            proposal_type=ProposalType.ACTION_REQUIRED,
+            status=ProposalStatus.PENDING,
+        ).delete()
 
     if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS and _can_create_application(extracted):
         proposal = _create_pending(
@@ -70,7 +79,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                     },
                 )
             )
-        if _is_action_required(analysis.event_type, extracted):
+        if action_required:
             proposals.append(
                 _create_pending(
                     message=message,
@@ -98,7 +107,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             )
         )
 
-    if _is_action_required(analysis.event_type, extracted):
+    if action_required:
         proposals.append(
             _create_pending(
                 message=message,
@@ -133,7 +142,9 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
 
 
 def _is_action_required(event_type: str, extracted: dict[str, Any]) -> bool:
-    return event_type in _ACTION_EVENTS or extracted.get("action_required") is True
+    if event_type in _ACTION_EVENTS:
+        return True
+    return extracted.get("action_required") is True and _string_or_none(extracted.get("action_text")) is not None
 
 
 def _action_changes(extracted: dict[str, Any]) -> dict[str, Any]:
