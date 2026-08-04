@@ -24,10 +24,10 @@ class TelegramConfig:
     default_chat_id: int | None
     allowed_chat_ids: frozenset[int]
     allowed_user_ids: frozenset[int]
-    owner_user_id: int | None
     owner_email: str
     environment_label: str
     notifications_enabled: bool
+    owner_user_id: int | None = None
 
     @classmethod
     def from_env(cls) -> "TelegramConfig":
@@ -48,10 +48,10 @@ class TelegramConfig:
             default_chat_id=default_chat_id,
             allowed_chat_ids=parse_id_set(getenv("TELEGRAM_ALLOWED_CHAT_IDS", "")),
             allowed_user_ids=parse_id_set(getenv("TELEGRAM_ALLOWED_USER_IDS", "")),
-            owner_user_id=owner_user_id,
             owner_email=getenv("TELEGRAM_OWNER_EMAIL", "").strip(),
             environment_label=getenv("TELEGRAM_ENV_LABEL", "DEVELOPMENT").strip() or "DEVELOPMENT",
             notifications_enabled=getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "0") == "1",
+            owner_user_id=owner_user_id,
         )
 
     def validate_for_polling(self) -> None:
