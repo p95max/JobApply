@@ -59,19 +59,25 @@ def test_deploy_is_rejected_for_non_owner():
     assert "only to the bot owner" in _queue_deploy(update, make_config())
 
 
+@patch("apps.telegram_bot.handlers._claim_deploy_request", return_value=False)
+def test_duplicate_deploy_is_rejected(claim_mock):
+    update = {"message": {"chat": {"id": 100}, "from": {"id": 200}}}
+    assert "already queued" in _queue_deploy(update, make_config())
+    claim_mock.assert_called_once_with()
+
+
+@patch("apps.telegram_bot.handlers._claim_deploy_request", return_value=True)
 @patch("apps.telegram_bot.handlers.subprocess.run")
-def test_owner_can_queue_deploy(run_mock):
-    run_mock.side_effect = [
-        SimpleNamespace(returncode=3),
-        SimpleNamespace(returncode=0, stderr=""),
-    ]
+def test_owner_can_queue_deploy(run_mock, claim_mock):
+    run_mock.return_value = SimpleNamespace(returncode=0, stderr="")
     update = {"message": {"chat": {"id": 100}, "from": {"id": 200}}}
 
     reply = _queue_deploy(update, make_config())
 
     assert "Deploy queued" in reply
-    assert run_mock.call_count == 2
-    assert run_mock.call_args_list[1].args[0] == [
+    assert "3–10 minutes" in reply
+    claim_mock.assert_called_once_with()
+    assert run_mock.call_args.args[0] == [
         "sudo",
         "-n",
         "systemctl",
