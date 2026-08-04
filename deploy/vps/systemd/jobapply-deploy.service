@@ -1,0 +1,13 @@
+[Unit]
+Description=JobApply queued production deployment
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/jobapply
+EnvironmentFile=/opt/jobapply/.env
+Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
+TimeoutStartSec=45min
+ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-deploy /usr/local/sbin/jobapply-deploy
