@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.accounts.telegram_linking import linked_profile_for_ids
+
 from .config import TelegramConfig
 
 
@@ -19,4 +21,11 @@ def is_update_allowed(update: dict[str, Any], config: TelegramConfig) -> bool:
     except (KeyError, TypeError, ValueError):
         return False
 
-    return chat_id in config.allowed_chat_ids and user_id in config.allowed_user_ids
+    if chat_id in config.allowed_chat_ids and user_id in config.allowed_user_ids:
+        return True
+
+    return linked_profile_for_ids(
+        user_id=user_id,
+        chat_id=chat_id,
+        owner_email=config.owner_email,
+    ) is not None
