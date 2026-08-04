@@ -25,9 +25,13 @@ def help_text(environment: str) -> str:
 
 def status_text(environment: str, snapshot: StatusSnapshot) -> str:
     db_status = "OK" if snapshot.database_ok else "FAILED"
+    commit_line = f"Commit: <code>{escape(snapshot.commit_sha)}</code>"
+    if snapshot.commit_at is not None:
+        commit_line += f" · {escape(_format_dt(snapshot.commit_at))}"
+
     lines = [
         f"<b>JobApply · {escape(environment)}</b>",
-        f"Commit: <code>{escape(snapshot.commit_sha)}</code>",
+        commit_line,
         f"Database: <b>{db_status}</b>",
         f"Applications: <b>{snapshot.total_applications}</b>",
         f"Pending Gmail proposals: <b>{snapshot.pending_proposals}</b>",
