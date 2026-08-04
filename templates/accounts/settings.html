@@ -96,7 +96,7 @@
           </form>
         {% else %}
           <p>{% trans "Generate a one-time link, open it in Telegram and confirm the connection. The token expires after 15 minutes." %}</p>
-          <form method="post" class="mb-3">
+          <form method="post" target="_blank" class="mb-3">
             {% csrf_token %}
             <input type="hidden" name="action" value="telegram_link">
             <button class="btn btn-primary" type="submit">{% trans "Connect Telegram" %}</button>
