@@ -27,6 +27,7 @@ _COMPANY_SUFFIXES = frozenset(
         "ug",
     }
 )
+_POSITION_NOISE_TOKENS = frozenset({"m", "w", "d", "f", "x", "gn"})
 _EXCLUDED_STATUSES = frozenset({"archived", "rejected"})
 
 
@@ -72,8 +73,8 @@ def normalize_company(value: str | None) -> str:
 
 
 def normalize_position(value: str | None) -> str:
-    """Normalize a position title only for comparison, preserving stored display values."""
-    return " ".join(_normalized_tokens(value))
+    """Normalize a position title and drop common gender-marker noise."""
+    return " ".join(token for token in _normalized_tokens(value) if token not in _POSITION_NOISE_TOKENS)
 
 
 def match_applications(
@@ -180,6 +181,9 @@ def _score_candidate(application: Any, email: EmailMatchData) -> MatchCandidate 
     if company and title and company == application_company and title == application_title:
         score, method = 95, "exact_company_title"
         evidence.extend(("exact normalized company", "exact normalized title"))
+    elif company and title and company == application_company and _title_contains(title, application_title):
+        score, method = 92, "exact_company_title_containment"
+        evidence.extend(("exact normalized company", "one normalized title contains the other"))
     elif sender_domain_match and title_ratio >= 80:
         score, method = 82, "sender_domain_title"
         evidence.extend(("sender domain matches company", "similar normalized title"))
@@ -193,6 +197,10 @@ def _score_candidate(application: Any, email: EmailMatchData) -> MatchCandidate 
         score = min(100, score + 3)
         evidence.append("email is near application date")
     return MatchCandidate(application, score, method, tuple(evidence))
+
+
+def _title_contains(left: str, right: str) -> bool:
+    return bool(left and right and (left in right or right in left))
 
 
 def _outcome(candidates: tuple[MatchCandidate, ...]) -> ApplicationMatch:
