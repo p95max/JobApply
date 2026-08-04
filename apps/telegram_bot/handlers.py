@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import signal
 import subprocess
 from contextlib import contextmanager
@@ -20,6 +21,7 @@ from .texts import applications_text, gmail_text, help_text, status_text
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
 DEPLOY_SERVICE = "jobapply-deploy.service"
+DEPLOY_REQUEST_MARKER = "/var/tmp/jobapply-deploy.requested"
 
 
 class CommandTimedOut(Exception):
@@ -57,18 +59,23 @@ def _jobapply_url(path: str = "/") -> str:
     return f"{base_url}{path}"
 
 
+def _claim_deploy_request() -> bool:
+    try:
+        fd = os.open(DEPLOY_REQUEST_MARKER, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        return False
+    with os.fdopen(fd, "w", encoding="utf-8") as marker:
+        marker.write(str(os.getpid()))
+    return True
+
+
 def _queue_deploy(update: dict[str, Any], config: TelegramConfig) -> str:
     if config.owner_user_id is None or _user_id(update) != config.owner_user_id:
         logger.warning("Rejected owner-only /deploy command from Telegram user %s", _user_id(update))
         return "This command is available only to the bot owner."
 
-    active = subprocess.run(
-        ["systemctl", "is-active", "--quiet", DEPLOY_SERVICE],
-        check=False,
-        timeout=3,
-    ).returncode == 0
-    if active:
-        return "Deploy is already running or waiting in the background queue."
+    if not _claim_deploy_request():
+        return "⏳ Deploy is already queued, waiting, or running."
 
     result = subprocess.run(
         ["sudo", "-n", "systemctl", "--no-block", "start", DEPLOY_SERVICE],
@@ -78,12 +85,17 @@ def _queue_deploy(update: dict[str, Any], config: TelegramConfig) -> str:
         timeout=5,
     )
     if result.returncode != 0:
+        try:
+            os.unlink(DEPLOY_REQUEST_MARKER)
+        except FileNotFoundError:
+            pass
         logger.error("Could not queue deploy: %s", result.stderr.strip())
         return "Could not queue deploy. Check the Telegram bot service logs."
 
     return (
         "🚀 Deploy queued.\n"
-        "It will wait until the shared background queue is free, then run tests and deploy master."
+        "Estimated time: about 3–10 minutes.\n"
+        "You will receive a start message when the shared queue is free and a final result afterwards."
     )
 
 
