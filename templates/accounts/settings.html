@@ -12,10 +12,14 @@
 
   <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
-      <a class="nav-link {% if active_tab != 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">Telegram</a>
+      <a class="nav-link {% if active_tab != 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
+        {% if profile.telegram_chat_id %}🟢{% else %}🔴{% endif %} Telegram
+      </a>
     </li>
     <li class="nav-item">
-      <a class="nav-link {% if active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">Gmail status</a>
+      <a class="nav-link {% if active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">
+        {% if gmail_connected %}🟢{% else %}🔴{% endif %} Gmail
+      </a>
     </li>
   </ul>
 
@@ -48,11 +52,6 @@
           <dt class="col-sm-4">{% trans "Last safe error category" %}</dt>
           <dd class="col-sm-8">{{ gmail_safe_error|default:"—" }}</dd>
         </dl>
-
-        <div class="mt-4 d-flex flex-wrap gap-2">
-          <a class="btn btn-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Open Gmail Assistant" %}</a>
-          <a class="btn btn-outline-secondary" href="{% url 'gmail_stats:gmail_dashboard' %}">{% trans "Open Gmail statistics" %}</a>
-        </div>
       </div>
     </div>
   {% else %}
