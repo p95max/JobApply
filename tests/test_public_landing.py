@@ -11,8 +11,11 @@ def test_public_root_renders_landing_page(client):
     assert "Keep every application, interview and recruiter email under control." in content
     assert "Continue with Google" in content
     assert "Application tracking" in content
-    assert "AI Gmail Assistant" in content
-    assert "Reliable backups" in content
+    assert "Passwordless Google sign-in" in content
+    assert "Optional AI Gmail Assistant" in content
+    assert "Telegram bot notifications" in content
+    assert "Google Drive backup integration" in content
+    assert "control token usage" in content
 
 
 @pytest.mark.django_db
