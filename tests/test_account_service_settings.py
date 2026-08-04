@@ -95,6 +95,7 @@ def test_settings_generates_hashed_telegram_link(client, account):
     content = response.content.decode()
     assert "https://t.me/jobapply_test_bot?start=" in content
     assert "/start " in content
+    assert "return here and reload this page" in content
 
 
 def test_gmail_status_tab_hides_credentials(client, account):
