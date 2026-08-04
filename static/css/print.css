@@ -13,10 +13,25 @@
   body {
     width: 100% !important;
     min-height: 0 !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
+  }
+
+  .dashboard-page,
+  .applications-page,
+  .dashboard-shell {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .applications-page .dashboard-shell > :not(#print-area) {
+    display: none !important;
   }
 
   body * {
@@ -30,10 +45,11 @@
 
   #print-area {
     display: block !important;
-    position: absolute !important;
-    inset: 0 auto auto 0 !important;
+    position: static !important;
     width: 100% !important;
     max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
