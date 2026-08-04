@@ -9,8 +9,8 @@ class GmailAssistantConfig(AppConfig):
     verbose_name = "Gmail Assistant"
 
     def ready(self) -> None:
-        # Register the model kept in a separate module.
-        from apps.gmail_assistant import usage_models  # noqa: F401
+        # Register models and signal handlers kept in separate modules.
+        from apps.gmail_assistant import signals, usage_models  # noqa: F401
         from apps.gmail_assistant.services.token_usage_handler import (
             PostgreSQLTokenUsageHandler,
         )
