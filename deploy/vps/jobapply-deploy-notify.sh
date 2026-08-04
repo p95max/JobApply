@@ -7,7 +7,12 @@ ENV_LABEL="${TELEGRAM_ENV_LABEL:-PRODUCTION}"
 TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 CHAT_ID="${TELEGRAM_DEFAULT_CHAT_ID:-}"
 STARTED_AT="$(date +%s)"
-START_COMMIT="$(git -C /opt/jobapply rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+get_commit() {
+  sudo -u jobapply git -C /opt/jobapply rev-parse --short HEAD 2>/dev/null || echo unknown
+}
+
+START_COMMIT="$(get_commit)"
 
 cleanup() {
   rm -f "$REQUEST_MARKER"
@@ -40,7 +45,7 @@ format_duration() {
   fi
 }
 
-send_telegram "⏳ JobApply deploy started (${ENV_LABEL}).\nCommit before deploy: ${START_COMMIT}\nEstimated time: about 3–10 minutes."
+send_telegram "$(printf '⏳ JobApply deploy started (%s).\nCommit before deploy: %s\nEstimated time: about 3–10 minutes.' "$ENV_LABEL" "$START_COMMIT")"
 
 set +e
 "$DEPLOY_COMMAND"
@@ -49,7 +54,7 @@ set -e
 
 finished_at="$(date +%s)"
 duration="$(format_duration $((finished_at - STARTED_AT)))"
-end_commit="$(git -C /opt/jobapply rev-parse --short HEAD 2>/dev/null || echo unknown)"
+end_commit="$(get_commit)"
 
 if (( status == 0 )); then
   if [[ "$START_COMMIT" == "$end_commit" ]]; then
@@ -59,9 +64,9 @@ if (( status == 0 )); then
     result="UPDATED"
     icon="✅"
   fi
-  send_telegram "${icon} JobApply deploy finished: ${result}.\nCommit: ${end_commit}\nDuration: ${duration}."
+  send_telegram "$(printf '%s JobApply deploy finished: %s.\nCommit: %s\nDuration: %s.' "$icon" "$result" "$end_commit" "$duration")"
 else
-  send_telegram "❌ JobApply deploy FAILED.\nExit code: ${status}\nCommit: ${end_commit}\nDuration: ${duration}.\nCheck: journalctl -u jobapply-deploy.service"
+  send_telegram "$(printf '❌ JobApply deploy FAILED.\nExit code: %s\nCommit: %s\nDuration: %s.\nCheck: journalctl -u jobapply-deploy.service' "$status" "$end_commit" "$duration")"
 fi
 
 exit "$status"
