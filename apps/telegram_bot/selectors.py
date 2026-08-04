@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from django.conf import settings
@@ -60,7 +60,7 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
     sync_state = GmailSyncState.objects.filter(user=user).only("last_synced_at").first()
     last_sync = sync_state.last_synced_at if sync_state else None
     interval_seconds = int(getattr(settings, "GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", 900))
-    next_check = last_sync + timezone.timedelta(seconds=interval_seconds) if last_sync else None
+    next_check = last_sync + timedelta(seconds=interval_seconds) if last_sync else None
 
     return StatusSnapshot(
         database_ok=database_ok,
