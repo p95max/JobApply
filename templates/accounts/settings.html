@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">{% trans "Settings" %}</h1>
+      <p class="text-body-secondary mb-0">{% trans "Manage connected services and account integrations." %}</p>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link {% if active_tab != 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">Telegram</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">Gmail status</a>
+    </li>
+  </ul>
+
+  {% if active_tab == 'gmail' %}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h2 class="h5 mb-1">Gmail</h2>
+            <p class="text-body-secondary mb-0">{% trans "Read-only connection used by Gmail Stats and Gmail Assistant." %}</p>
+          </div>
+          {% if gmail_connected %}
+            <span class="badge text-bg-success">{% trans "Connected" %}</span>
+          {% else %}
+            <span class="badge text-bg-warning">{% trans "Needs attention" %}</span>
+          {% endif %}
+        </div>
+
+        <dl class="row mb-0">
+          <dt class="col-sm-4">{% trans "Google account" %}</dt>
+          <dd class="col-sm-8">{{ gmail_email|default:"—" }}</dd>
+          <dt class="col-sm-4">{% trans "Last synchronization" %}</dt>
+          <dd class="col-sm-8">{% if gmail_last_synced_at %}{{ gmail_last_synced_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd>
+          <dt class="col-sm-4">{% trans "Automatic check interval" %}</dt>
+          <dd class="col-sm-8">{{ gmail_interval_hours }} h</dd>
+          <dt class="col-sm-4">{% trans "Last safe error category" %}</dt>
+          <dd class="col-sm-8">{{ gmail_safe_error|default:"—" }}</dd>
+        </dl>
+
+        <div class="mt-4 d-flex flex-wrap gap-2">
+          <a class="btn btn-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Open Gmail Assistant" %}</a>
+          <a class="btn btn-outline-secondary" href="{% url 'gmail_stats:gmail_dashboard' %}">{% trans "Open Gmail statistics" %}</a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h2 class="h5 mb-1">Telegram</h2>
+            <p class="text-body-secondary mb-0">{% trans "Connect your private Telegram chat to JobApply notifications and commands." %}</p>
+          </div>
+          {% if profile.telegram_chat_id %}
+            <span class="badge text-bg-success">{% trans "Connected" %}</span>
+          {% else %}
+            <span class="badge text-bg-secondary">{% trans "Not connected" %}</span>
+          {% endif %}
+        </div>
+
+        {% if profile.telegram_chat_id %}
+          <dl class="row">
+            <dt class="col-sm-4">Telegram user ID</dt>
+            <dd class="col-sm-8">{{ profile.telegram_user_id }}</dd>
+            <dt class="col-sm-4">Telegram chat ID</dt>
+            <dd class="col-sm-8">{{ profile.telegram_chat_id }}</dd>
+            <dt class="col-sm-4">{% trans "Connected at" %}</dt>
+            <dd class="col-sm-8">{% if profile.telegram_linked_at %}{{ profile.telegram_linked_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd>
+          </dl>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="telegram_disconnect">
+            <button class="btn btn-outline-danger" type="submit">{% trans "Disconnect Telegram" %}</button>
+          </form>
+        {% else %}
+          <p>{% trans "Generate a one-time link, open it in Telegram and confirm the connection. The token expires after 15 minutes." %}</p>
+          <form method="post" class="mb-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="telegram_link">
+            <button class="btn btn-primary" type="submit">{% trans "Connect Telegram" %}</button>
+          </form>
+
+          {% if telegram_link_command %}
+            <div class="alert alert-info mb-0">
+              {% if telegram_link_url %}
+                <a class="btn btn-primary mb-3" href="{{ telegram_link_url }}" target="_blank" rel="noopener">{% trans "Open Telegram" %}</a>
+              {% endif %}
+              <div class="small text-body-secondary mb-1">{% trans "Or send this command to the JobApply bot:" %}</div>
+              <code class="user-select-all">{{ telegram_link_command }}</code>
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
