@@ -66,6 +66,16 @@
           {% endif %}
         </div>
 
+        {% if telegram_bot_url %}
+          <div class="alert alert-secondary d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+              <div class="fw-semibold">{% trans "JobApply Telegram bot" %}</div>
+              <div class="small text-body-secondary">@{{ telegram_bot_username }}</div>
+            </div>
+            <a class="btn btn-outline-primary" href="{{ telegram_bot_url }}" target="_blank" rel="noopener">{% trans "Open bot" %}</a>
+          </div>
+        {% endif %}
+
         {% if profile.telegram_chat_id %}
           <dl class="row">
             <dt class="col-sm-4">Telegram user ID</dt>
@@ -91,12 +101,13 @@
           {% if telegram_link_command %}
             <div class="alert alert-info mb-0">
               {% if telegram_link_url %}
-                <a class="btn btn-primary mb-3" href="{{ telegram_link_url }}" target="_blank" rel="noopener">{% trans "Open Telegram" %}</a>
+                <a class="btn btn-primary mb-3" href="{{ telegram_link_url }}" target="_blank" rel="noopener">{% trans "Open Telegram and connect" %}</a>
               {% endif %}
               <div class="small text-body-secondary mb-1">{% trans "Or send this command to the JobApply bot:" %}</div>
               <code class="user-select-all">{{ telegram_link_command }}</code>
-              <hr>
-              <div class="fw-semibold">{% trans "After the bot replies 'Telegram connected to JobApply.', return here and reload this page to update the connection status." %}</div>
+              <div class="mt-3 small">
+                {% trans "After the bot replies “Telegram connected to JobApply.”, return to this page and refresh it to see the Connected status." %}
+              </div>
             </div>
           {% endif %}
         {% endif %}
