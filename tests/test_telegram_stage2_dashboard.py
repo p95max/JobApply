@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 from django.test import override_settings
+from django.urls import resolve
 
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import CommandTimedOut, _jobapply_url, handle_update
@@ -40,10 +41,10 @@ def _update(command: str) -> dict:
 
 
 @override_settings(DJANGO_SITE_DOMAIN="jobapply.p95max.dev")
-def test_jobapply_url_is_https():
-    assert _jobapply_url("/services/gmail-assistant/") == (
-        "https://jobapply.p95max.dev/services/gmail-assistant/"
-    )
+def test_jobapply_url_is_https_and_resolves():
+    path = "/gmail_stats/gmail/assistant/"
+    assert _jobapply_url(path) == f"https://jobapply.p95max.dev{path}"
+    assert resolve(path).url_name == "gmail_assistant"
 
 
 def test_gmail_command_adds_open_button(monkeypatch):
@@ -55,6 +56,7 @@ def test_gmail_command_adds_open_button(monkeypatch):
     _chat_id, _text, markup = client.calls[0]
     button = markup["inline_keyboard"][0][0]
     assert button["text"] == "Open in JobApply"
+    assert button["url"].endswith("/gmail_stats/gmail/assistant/")
     assert button["url"].startswith("https://")
     assert "callback_data" not in button
 
