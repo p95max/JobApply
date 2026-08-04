@@ -73,14 +73,15 @@ def settings_view(request):
     profile = ensure_profile(request.user)
     link_command = request.session.pop("telegram_link_command", "")
     telegram_link_url = request.session.pop("telegram_link_url", "")
+    bot_username = str(getattr(settings, "TELEGRAM_BOT_USERNAME", "")).strip().lstrip("@")
+    telegram_bot_url = f"https://t.me/{bot_username}" if bot_username else ""
 
     if request.method == "POST":
         action = request.POST.get("action", "")
         if action == "telegram_link":
             token = profile.create_telegram_link_token()
             link_command = f"/start {token}"
-            bot_username = str(getattr(settings, "TELEGRAM_BOT_USERNAME", "")).strip().lstrip("@")
-            telegram_link_url = f"https://t.me/{bot_username}?start={quote(token)}" if bot_username else ""
+            telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
             request.session["telegram_link_command"] = link_command
             request.session["telegram_link_url"] = telegram_link_url
             messages.info(request, "Telegram link is valid for 15 minutes.")
@@ -111,6 +112,8 @@ def settings_view(request):
         {
             "profile": profile,
             "active_tab": request.GET.get("tab", "telegram"),
+            "telegram_bot_username": bot_username,
+            "telegram_bot_url": telegram_bot_url,
             "telegram_link_command": link_command,
             "telegram_link_url": telegram_link_url,
             "gmail_connected": gmail_connected,
