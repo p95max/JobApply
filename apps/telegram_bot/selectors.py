@@ -25,6 +25,7 @@ class StatusSnapshot:
     commit_sha: str
     last_gmail_sync_at: datetime | None
     next_gmail_check_at: datetime | None
+    commit_at: datetime | None = None
     worker_heartbeats: tuple[HeartbeatStatus, ...] = ()
 
 
@@ -38,10 +39,10 @@ def get_owner(email: str):
     return get_user_model().objects.get(email__iexact=email)
 
 
-def _current_commit_sha() -> str:
+def _current_commit() -> tuple[str, datetime | None]:
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "show", "-s", "--format=%h%n%cI", "HEAD"],
             cwd=Path(settings.BASE_DIR),
             capture_output=True,
             check=True,
@@ -49,8 +50,21 @@ def _current_commit_sha() -> str:
             timeout=2,
         )
     except (OSError, subprocess.SubprocessError):
-        return "unknown"
-    return result.stdout.strip() or "unknown"
+        return "unknown", None
+
+    lines = result.stdout.strip().splitlines()
+    commit_sha = lines[0].strip() if lines else "unknown"
+    commit_at = None
+    if len(lines) > 1:
+        try:
+            commit_at = datetime.fromisoformat(lines[1].strip())
+        except ValueError:
+            commit_at = None
+    return commit_sha or "unknown", commit_at
+
+
+def _current_commit_sha() -> str:
+    return _current_commit()[0]
 
 
 def get_status_snapshot(email: str) -> StatusSnapshot:
@@ -63,6 +77,7 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
     last_sync = sync_state.last_synced_at if sync_state else None
     interval_seconds = int(getattr(settings, "GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", 900))
     next_check = last_sync + timedelta(seconds=interval_seconds) if last_sync else None
+    commit_sha, commit_at = _current_commit()
 
     return StatusSnapshot(
         database_ok=database_ok,
@@ -71,9 +86,10 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
             user=user,
             status=ProposalStatus.PENDING,
         ).count(),
-        commit_sha=_current_commit_sha(),
+        commit_sha=commit_sha,
         last_gmail_sync_at=last_sync,
         next_gmail_check_at=next_check,
+        commit_at=commit_at,
         worker_heartbeats=(
             get_heartbeat_status(GMAIL_WORKER),
             get_heartbeat_status(TELEGRAM_BOT),
