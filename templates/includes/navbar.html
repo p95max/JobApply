@@ -57,9 +57,6 @@
                 {% if user.email %}<span>{{ user.email }}</span>{% endif %}
               </div>
               <a href="{% url 'accounts:settings' %}"><span>⚙️</span><span>{% trans "Settings" %}</span></a>
-              <a href="{% url 'accounts:settings' %}?tab=telegram"><span>📨</span><span>{% trans "Telegram" %}</span></a>
-              <a href="{% url 'reports:drive_backups' %}"><span>☁️</span><span>{% trans "Cloud backups" %}</span></a>
-              <a href="{% url 'reports:import' %}"><span>↕️</span><span>{% trans "Import / Export" %}</span></a>
               <div class="app-dropdown__separator"></div>
               <a class="app-dropdown__danger" href="/accounts/logout/"><span>↗</span><span>{% trans "Sign out" %}</span></a>
             </div>
