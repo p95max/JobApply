@@ -41,6 +41,7 @@ def test_group_chat_is_rejected():
     assert is_update_allowed(update, make_config()) is False
 
 
+@pytest.mark.django_db
 def test_unknown_user_is_rejected():
     update = {"message": {"chat": {"id": 100, "type": "private"}, "from": {"id": 999}}}
     assert is_update_allowed(update, make_config()) is False
