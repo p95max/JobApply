@@ -14,7 +14,13 @@ from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_stats.models import GmailSyncState
 from apps.interviews.models import InterviewEvent, InterviewStatus
-from apps.telegram_bot.heartbeat import GMAIL_WORKER, TELEGRAM_BOT, HeartbeatStatus, get_heartbeat_status
+from apps.telegram_bot.heartbeat import (
+    BACKUP_WORKER,
+    GMAIL_WORKER,
+    TELEGRAM_BOT,
+    HeartbeatStatus,
+    get_heartbeat_status,
+)
 
 
 @dataclass(frozen=True)
@@ -93,6 +99,7 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
         worker_heartbeats=(
             get_heartbeat_status(GMAIL_WORKER),
             get_heartbeat_status(TELEGRAM_BOT),
+            get_heartbeat_status(BACKUP_WORKER),
         ),
     )
 
