@@ -8,6 +8,7 @@ DB_USER="${DB_USER:-jobapply}"
 BRANCH="${BRANCH:-master}"
 PYTHON="${PYTHON:-$APP_DIR/.venv/bin/python}"
 MANAGE="$APP_DIR/manage.py"
+GUNICORN_VERSION="${GUNICORN_VERSION:-26.0.0}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script as root: sudo $0" >&2
@@ -66,6 +67,18 @@ else
     --disable-pip-version-check \
     "." pytest-django
 fi
+
+# Gunicorn is required by jobapply-web.service. Keep it present even while
+# Poetry --sync removes packages that are not yet represented in poetry.lock.
+echo "==> Ensuring Gunicorn ${GUNICORN_VERSION} is installed"
+sudo -u "$APP_USER" "$PYTHON" -m pip install \
+  --disable-pip-version-check \
+  "gunicorn==${GUNICORN_VERSION}"
+
+[[ -x "$APP_DIR/.venv/bin/gunicorn" ]] || {
+  echo "Gunicorn executable is missing after dependency installation." >&2
+  exit 1
+}
 
 echo "==> Granting temporary CREATEDB permission for pytest"
 sudo -u "$DB_ADMIN" psql -v ON_ERROR_STOP=1 \
