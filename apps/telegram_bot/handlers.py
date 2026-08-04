@@ -55,6 +55,10 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
     message = update.get("message") or {}
     text_raw = str(message.get("text", "")).strip()
 
+    if text_raw == "/start disconnected":
+        client.send_message(_chat_id(update), "Telegram disconnected from JobApply.")
+        return
+
     if text_raw.startswith("/start "):
         try:
             profile = bind_telegram_from_start(update)
