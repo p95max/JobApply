@@ -6,11 +6,18 @@ from datetime import datetime, time, timedelta
 from django import template
 from django.utils import timezone
 
+from apps.telegram_bot.models import WorkerHeartbeat
+
 register = template.Library()
 
 _ALLOWED_TIMERS = {
     "jobapply-backup.timer",
     "jobapply-neon-sync.timer",
+}
+
+_HEARTBEAT_WORKERS = {
+    "jobapply-backup.timer": "backup_worker",
+    "jobapply-neon-sync.timer": "neon_sync_worker",
 }
 
 _FALLBACK_SCHEDULES = {
@@ -102,9 +109,21 @@ def _fallback_next_run(unit_name: str) -> dict[str, str]:
     }
 
 
+def _last_success_from_heartbeat(unit_name: str) -> datetime | None:
+    worker_name = _HEARTBEAT_WORKERS.get(unit_name)
+    if not worker_name:
+        return None
+
+    heartbeat = WorkerHeartbeat.objects.filter(worker_name=worker_name).first()
+    if not heartbeat:
+        return None
+
+    return heartbeat.last_success_at or heartbeat.last_seen_at
+
+
 @register.simple_tag
 def systemd_timer(unit_name: str) -> dict[str, object]:
-    """Return last and next execution metadata for one allow-listed timer."""
+    """Return last successful heartbeat and next execution metadata."""
     if unit_name not in _ALLOWED_TIMERS:
         return {}
 
@@ -112,20 +131,14 @@ def systemd_timer(unit_name: str) -> dict[str, object]:
         unit_name,
         ("LastTriggerUSec", "NextElapseUSecRealtime"),
     )
-    service_values = _systemctl_show(
-        unit_name.removesuffix(".timer") + ".service",
-        ("Result", "ExecMainStatus"),
-    )
 
-    last_run = _parse_systemd_datetime(timer_values.get("LastTriggerUSec", ""))
+    last_run = _last_success_from_heartbeat(unit_name)
+    if last_run is None:
+        last_run = _parse_systemd_datetime(timer_values.get("LastTriggerUSec", ""))
+
     next_run = _parse_systemd_datetime(timer_values.get("NextElapseUSecRealtime", ""))
-    last_successful = bool(
-        last_run
-        and service_values.get("Result") == "success"
-        and service_values.get("ExecMainStatus", "0") == "0"
-    )
+    payload: dict[str, object] = {"last_successful": bool(last_run)}
 
-    payload: dict[str, object] = {"last_successful": last_successful}
     if last_run:
         payload.update(
             {
