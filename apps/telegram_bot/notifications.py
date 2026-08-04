@@ -5,6 +5,8 @@ import logging
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.accounts.telegram_linking import resolve_linked_chat_id
+
 from .client import TelegramClient
 from .config import TelegramConfig
 from .models import TelegramDelivery, TelegramDeliveryStatus
@@ -12,14 +14,19 @@ from .models import TelegramDelivery, TelegramDeliveryStatus
 logger = logging.getLogger(__name__)
 
 
+def _target_chat_id(config: TelegramConfig) -> int | None:
+    return resolve_linked_chat_id(config.owner_email) or config.default_chat_id
+
+
 def send_notification(text: str, *, config: TelegramConfig | None = None) -> bool:
     config = config or TelegramConfig.from_env()
-    if not config.enabled or not config.notifications_enabled or config.default_chat_id is None:
+    chat_id = _target_chat_id(config)
+    if not config.enabled or not config.notifications_enabled or chat_id is None:
         return False
 
     client = TelegramClient(config.token)
     try:
-        client.send_message(config.default_chat_id, text)
+        client.send_message(chat_id, text)
         return True
     except Exception:
         logger.exception("Telegram notification delivery failed")
@@ -36,7 +43,8 @@ def send_notification_once(
     config: TelegramConfig | None = None,
 ) -> bool:
     config = config or TelegramConfig.from_env()
-    if not config.enabled or not config.notifications_enabled or config.default_chat_id is None:
+    chat_id = _target_chat_id(config)
+    if not config.enabled or not config.notifications_enabled or chat_id is None:
         return False
 
     try:
@@ -45,7 +53,7 @@ def send_notification_once(
                 event_key=event_key[:180],
                 defaults={
                     "event_type": event_type[:64],
-                    "chat_id": config.default_chat_id,
+                    "chat_id": chat_id,
                 },
             )
     except IntegrityError:
@@ -60,11 +68,12 @@ def send_notification_once(
     delivery.attempts += 1
     delivery.status = TelegramDeliveryStatus.PENDING
     delivery.error = ""
-    delivery.save(update_fields=["attempts", "status", "error"])
+    delivery.chat_id = chat_id
+    delivery.save(update_fields=["attempts", "status", "error", "chat_id"])
 
     client = TelegramClient(config.token)
     try:
-        client.send_message(config.default_chat_id, text)
+        client.send_message(chat_id, text)
     except Exception as error:
         delivery.status = TelegramDeliveryStatus.FAILED
         delivery.error = type(error).__name__[:120]
