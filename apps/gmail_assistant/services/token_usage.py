@@ -12,6 +12,14 @@ from django.utils import timezone
 from apps.gmail_assistant.usage_models import OpenAITokenUsage
 
 
+# Standard API prices in USD per 1M text tokens.
+# Environment variables remain available as a fallback for unknown models.
+_MODEL_PRICES: dict[str, tuple[Decimal, Decimal]] = {
+    "gpt-4.1-mini": (Decimal("0.40"), Decimal("1.60")),
+    "gpt-5.4-nano": (Decimal("0.20"), Decimal("1.25")),
+}
+
+
 @dataclass(frozen=True)
 class TokenUsageSummary:
     requests: int
@@ -35,11 +43,23 @@ def _price(name: str) -> Decimal | None:
         return None
 
 
-def _estimate_cost(input_tokens: int, output_tokens: int) -> Decimal | None:
+def _model_prices(model_name: str) -> tuple[Decimal, Decimal] | None:
+    normalized = (model_name or "").strip().lower()
+    if normalized in _MODEL_PRICES:
+        return _MODEL_PRICES[normalized]
+
     input_price = _price("OPENAI_INPUT_USD_PER_1M")
     output_price = _price("OPENAI_OUTPUT_USD_PER_1M")
     if input_price is None or output_price is None:
         return None
+    return input_price, output_price
+
+
+def _estimate_model_cost(model_name: str, input_tokens: int, output_tokens: int) -> Decimal | None:
+    prices = _model_prices(model_name)
+    if prices is None:
+        return None
+    input_price, output_price = prices
     million = Decimal(1_000_000)
     return ((Decimal(input_tokens) * input_price) + (Decimal(output_tokens) * output_price)) / million
 
@@ -84,15 +104,8 @@ def load_token_usage(*, user, days: int = 30) -> TokenUsageSummary:
         for row in raw_days
     )
 
-    model_rows = tuple(
-        {
-            "model": row["model_name"],
-            "requests": row["requests"],
-            "input_tokens": row["input_tokens"] or 0,
-            "output_tokens": row["output_tokens"] or 0,
-            "total_tokens": (row["input_tokens"] or 0) + (row["output_tokens"] or 0),
-        }
-        for row in queryset.values("model_name")
+    raw_models = list(
+        queryset.values("model_name")
         .annotate(
             requests=Count("id"),
             input_tokens=Sum("input_tokens"),
@@ -100,13 +113,31 @@ def load_token_usage(*, user, days: int = 30) -> TokenUsageSummary:
         )
         .order_by("model_name")
     )
+    model_rows = tuple(
+        {
+            "model": row["model_name"],
+            "requests": row["requests"],
+            "input_tokens": row["input_tokens"] or 0,
+            "output_tokens": row["output_tokens"] or 0,
+            "total_tokens": (row["input_tokens"] or 0) + (row["output_tokens"] or 0),
+            "estimated_cost_usd": _estimate_model_cost(
+                row["model_name"],
+                row["input_tokens"] or 0,
+                row["output_tokens"] or 0,
+            ),
+        }
+        for row in raw_models
+    )
+
+    model_costs = [row["estimated_cost_usd"] for row in model_rows]
+    estimated_cost = None if any(cost is None for cost in model_costs) else sum(model_costs, Decimal("0"))
 
     return TokenUsageSummary(
         requests=requests,
         input_tokens=input_total,
         output_tokens=output_total,
         total_tokens=input_total + output_total,
-        estimated_cost_usd=_estimate_cost(input_total, output_total),
+        estimated_cost_usd=estimated_cost,
         by_day=day_rows,
         by_model=model_rows,
     )
