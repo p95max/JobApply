@@ -69,7 +69,7 @@
     display: table !important;
     width: 100% !important;
     margin: 0 !important;
-    table-layout: auto !important;
+    table-layout: fixed !important;
     border-collapse: collapse !important;
     font-family: "Segoe UI", Arial, sans-serif !important;
     font-size: 8pt !important;
@@ -104,6 +104,15 @@
     font-weight: 700 !important;
   }
 
+  #print-area .col-num { width: 4% !important; }
+  #print-area .col-applied { width: 13% !important; }
+  #print-area .col-title { width: 18% !important; }
+  #print-area .col-company { width: 15% !important; }
+  #print-area .col-source { width: 10% !important; }
+  #print-area .col-location { width: 14% !important; }
+  #print-area .col-status { width: 10% !important; }
+  #print-area .col-notes { width: 16% !important; }
+
   #print-area .status-select {
     display: none !important;
   }
@@ -111,7 +120,8 @@
   #print-area .status-badge {
     --st-color: #000;
     display: inline-block !important;
-    padding: 1px 6px !important;
+    max-width: 100% !important;
+    padding: 1px 5px !important;
     border: 1px solid var(--st-color) !important;
     border-radius: 999px !important;
     color: #000 !important;
