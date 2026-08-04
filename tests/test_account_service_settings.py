@@ -134,5 +134,7 @@ def test_gmail_status_tab_hides_credentials(client, account):
     content = response.content.decode()
     assert "Gmail status" in content
     assert "Connected" in content
+    assert "cannot be disconnected separately" in content
+    assert "used to register and sign in to JobApply" in content
     assert "refresh_token" not in content
     assert "access_token" not in content
