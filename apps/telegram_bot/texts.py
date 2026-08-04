@@ -25,15 +25,25 @@ def help_text(environment: str) -> str:
 
 def status_text(environment: str, snapshot: StatusSnapshot) -> str:
     db_status = "OK" if snapshot.database_ok else "FAILED"
-    return (
-        f"<b>JobApply · {escape(environment)}</b>\n"
-        f"Commit: <code>{escape(snapshot.commit_sha)}</code>\n"
-        f"Database: <b>{db_status}</b>\n"
-        f"Applications: <b>{snapshot.total_applications}</b>\n"
-        f"Pending Gmail proposals: <b>{snapshot.pending_proposals}</b>\n"
-        f"Last Gmail sync: <b>{escape(_format_dt(snapshot.last_gmail_sync_at))}</b>\n"
-        f"Next Gmail check: <b>{escape(_format_dt(snapshot.next_gmail_check_at))}</b>"
-    )
+    lines = [
+        f"<b>JobApply · {escape(environment)}</b>",
+        f"Commit: <code>{escape(snapshot.commit_sha)}</code>",
+        f"Database: <b>{db_status}</b>",
+        f"Applications: <b>{snapshot.total_applications}</b>",
+        f"Pending Gmail proposals: <b>{snapshot.pending_proposals}</b>",
+        f"Last Gmail sync: <b>{escape(_format_dt(snapshot.last_gmail_sync_at))}</b>",
+        f"Next Gmail check: <b>{escape(_format_dt(snapshot.next_gmail_check_at))}</b>",
+    ]
+    if snapshot.worker_heartbeats:
+        lines.extend(["", "<b>Workers</b>"])
+        labels = {"gmail_worker": "Gmail worker", "telegram_bot": "Telegram Bot", "backup_worker": "Backup worker"}
+        for heartbeat in snapshot.worker_heartbeats:
+            state = "STALE" if heartbeat.is_stale else "OK"
+            lines.append(
+                f"{escape(labels.get(heartbeat.worker_name, heartbeat.worker_name))}: "
+                f"<b>{state}</b> · {escape(_format_dt(heartbeat.last_seen_at))}"
+            )
+    return "\n".join(lines)
 
 
 def _proposal_identity(proposal) -> tuple[str, str]:
