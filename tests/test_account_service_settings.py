@@ -82,24 +82,21 @@ def test_linked_ids_are_authorized_without_env_allowlist(account):
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")
-def test_settings_generates_hashed_telegram_link(client, account):
+def test_settings_generates_hashed_telegram_link_and_redirects_to_bot(client, account):
     user, profile = account
     client.force_login(user)
 
-    response = client.post(reverse("accounts:settings"), {"action": "telegram_link"}, follow=True)
+    page = client.get(reverse("accounts:settings"))
+    assert page.status_code == 200
+    assert 'method="post" target="_blank"' in page.content.decode()
 
-    assert response.status_code == 200
+    response = client.post(reverse("accounts:settings"), {"action": "telegram_link"})
+
+    assert response.status_code == 302
+    assert response.url.startswith("https://t.me/jobapply_test_bot?start=")
     profile.refresh_from_db()
     assert profile.telegram_link_token_hash
     assert len(profile.telegram_link_token_hash) == len(hashlib.sha256(b"x").hexdigest())
-    content = response.content.decode()
-    assert "🔴" in content
-    assert 'href="https://t.me/jobapply_test_bot"' in content
-    assert "@jobapply_test_bot" in content
-    assert "https://t.me/jobapply_test_bot?start=" in content
-    assert "/start " in content
-    assert "return to this page and refresh it" in content
-    assert "opening Telegram Web in your browser is recommended" in content
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")
