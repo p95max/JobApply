@@ -1,6 +1,9 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
+
+from apps.accounts.models import UserProfile
 
 
 def test_public_root_renders_landing_page(client):
@@ -24,6 +27,11 @@ def test_authenticated_root_redirects_to_dashboard(client):
         username="landing-user",
         email="landing-user@example.com",
         password="test-password",
+    )
+    UserProfile.objects.create(
+        user=user,
+        google_data_access_consent=True,
+        consent_accepted_at=timezone.now(),
     )
     client.force_login(user)
 
