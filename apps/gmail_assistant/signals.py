@@ -37,7 +37,7 @@ def notify_significant_gmail_proposal(
         f"{escape(company)} — {escape(position)}\n"
         "Review the pending proposal in JobApply."
     )
-    event_key = f"{delivery_type}:{instance.message_id}"
+    event_key = f"{delivery_type}:{instance.message.message_id}"
 
     transaction.on_commit(
         lambda: send_notification_once(
