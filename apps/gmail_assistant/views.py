@@ -46,6 +46,24 @@ def _event_tone(event_type: str) -> str:
     return "secondary"
 
 
+def _group_proposals_by_message(proposals):
+    grouped = []
+    groups_by_message_id = {}
+    for proposal in proposals:
+        group = groups_by_message_id.get(proposal.message_id)
+        if group is None:
+            group = {
+                "message": proposal.message,
+                "analysis": proposal.analysis,
+                "representative": proposal,
+                "proposals": [],
+            }
+            groups_by_message_id[proposal.message_id] = group
+            grouped.append(group)
+        group["proposals"].append(proposal)
+    return grouped
+
+
 @login_required
 def gmail_assistant(request):
     proposal_queryset = (
@@ -57,9 +75,10 @@ def gmail_assistant(request):
         selected_status = ProposalStatus(request.GET.get("status", ProposalStatus.PENDING))
     except ValueError:
         selected_status = ProposalStatus.PENDING
-    proposals = proposal_queryset.filter(status=selected_status.value)
+    proposals = list(proposal_queryset.filter(status=selected_status.value)[:150])
+    proposal_groups = _group_proposals_by_message(proposals)[:50]
     proposal_counts = {
-        proposal_status: proposal_queryset.filter(status=proposal_status).count()
+        proposal_status: proposal_queryset.filter(status=proposal_status).values("message_id").distinct().count()
         for proposal_status in ProposalStatus.values
     }
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
@@ -80,7 +99,7 @@ def gmail_assistant(request):
         request,
         "gmail_assistant/assistant.html",
         {
-            "proposals": proposals[:50],
+            "proposal_groups": proposal_groups,
             "selected_status": selected_status.value,
             "proposal_status_filters": [
                 {"value": value, "label": label, "count": proposal_counts[value]}
