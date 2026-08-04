@@ -9,7 +9,8 @@ User=jobapply
 Group=jobapply
 WorkingDirectory=/opt/jobapply
 EnvironmentFile=/opt/jobapply/.env
-ExecStart=/usr/local/bin/jobapply-backup-db.sh
+Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
+ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-backup /usr/local/bin/jobapply-backup-db.sh
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
