@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<main class="dashboard-page">
+  <section class="dashboard-shell">
+    <div class="dashboard-heading">
+      <div>
+        <span class="dashboard-eyebrow">{% trans "Overview" %}</span>
+        <h1>{% trans "Your job search at a glance" %}</h1>
+        <p>{% trans "Applications, interviews and Gmail Assistant updates in one place." %}</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'applications:create' %}">{% trans "+ Add application" %}</a>
+    </div>
+
+    <div class="dashboard-metrics">
+      <article class="dashboard-card dashboard-metric">
+        <span>{% trans "Active applications" %}</span>
+        <strong>{{ active_application_count }}</strong>
+        <small>+{{ applications_this_week }} {% trans "this week" %}</small>
+      </article>
+      <article class="dashboard-card dashboard-metric">
+        <span>{% trans "Upcoming interviews" %}</span>
+        <strong>{{ upcoming_interview_count }}</strong>
+        <small>
+          {% if next_interview %}
+            {% trans "Next" %}: {{ next_interview.starts_at|date:"d.m.Y H:i" }}
+          {% else %}
+            {% trans "Nothing scheduled" %}
+          {% endif %}
+        </small>
+      </article>
+      <article class="dashboard-card dashboard-metric">
+        <span>{% trans "Suggestions to review" %}</span>
+        <strong>{{ pending_proposal_count }}</strong>
+        <small>{% trans "From Gmail Assistant" %}</small>
+      </article>
+    </div>
+
+    <div class="dashboard-grid">
+      <section class="dashboard-card dashboard-assistant">
+        <div class="dashboard-card__header">
+          <div>
+            <span class="dashboard-section-icon">🤖</span>
+            <h2>{% trans "Gmail Assistant" %}</h2>
+          </div>
+          <span class="dashboard-status {% if gmail_assistant_active %}is-active{% endif %}">
+            {% if gmail_assistant_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+          </span>
+        </div>
+
+        {% if pending_proposals %}
+          <div class="dashboard-feed">
+            {% for proposal in pending_proposals %}
+              <article class="dashboard-feed__item">
+                <div class="dashboard-feed__icon" aria-hidden="true">
+                  {% if proposal.proposal_type == 'create_interview' or proposal.proposal_type == 'update_interview' %}📅{% elif proposal.proposal_type == 'action_required' %}⚡{% else %}✉️{% endif %}
+                </div>
+                <div class="dashboard-feed__body">
+                  <strong>{{ proposal.analysis.get_event_type_display }}</strong>
+                  <span>{{ proposal.message.subject|default:proposal.message.from_name|truncatechars:72 }}</span>
+                  {% if proposal.application %}<small>{{ proposal.application.company }} · {{ proposal.application.title }}</small>{% endif %}
+                </div>
+                <div class="dashboard-feed__actions">
+                  {% if proposal.match_score %}<span class="dashboard-score">{{ proposal.match_score }}%</span>{% endif %}
+                  <a class="btn btn-sm btn-outline-light" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Review" %}</a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="dashboard-empty">
+            <span>✓</span>
+            <div><strong>{% trans "You're all caught up" %}</strong><p>{% trans "No pending Gmail suggestions." %}</p></div>
+          </div>
+        {% endif %}
+
+        <div class="dashboard-card__footer">
+          <span>
+            {% if gmail_last_run_at %}{% trans "Last run" %}: {{ gmail_last_run_at|date:"d.m.Y H:i" }}{% else %}{% trans "No successful run yet" %}{% endif %}
+          </span>
+          <a href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Open Gmail Assistant" %} →</a>
+        </div>
+      </section>
+
+      <aside class="dashboard-card dashboard-next">
+        <div class="dashboard-card__header">
+          <h2>{% trans "Next interview" %}</h2>
+          <a href="/interviews/">{% trans "View all" %}</a>
+        </div>
+        {% if next_interview %}
+          <div class="dashboard-next__date">{{ next_interview.starts_at|date:"d" }}<span>{{ next_interview.starts_at|date:"M" }}</span></div>
+          <h3>{{ next_interview.application.company }}</h3>
+          <p>{{ next_interview.application.title }}</p>
+          <dl>
+            <div><dt>{% trans "Time" %}</dt><dd>{{ next_interview.starts_at|date:"H:i" }}</dd></div>
+            {% if next_interview.location %}<div><dt>{% trans "Location" %}</dt><dd>{{ next_interview.location }}</dd></div>{% endif %}
+          </dl>
+        {% else %}
+          <div class="dashboard-empty dashboard-empty--compact"><span>🗓️</span><div><strong>{% trans "No upcoming interviews" %}</strong><p>{% trans "Scheduled interviews will appear here." %}</p></div></div>
+        {% endif %}
+      </aside>
+    </div>
+
+    <section class="dashboard-card dashboard-recent">
+      <div class="dashboard-card__header">
+        <h2>{% trans "Recent applications" %}</h2>
+        <a href="/applications/">{% trans "View all" %}</a>
+      </div>
+      {% if recent_applications %}
+        <div class="dashboard-table-wrap">
+          <table class="table dashboard-table">
+            <thead><tr><th>{% trans "Company" %}</th><th>{% trans "Position" %}</th><th>{% trans "Status" %}</th><th>{% trans "Updated" %}</th></tr></thead>
+            <tbody>
+              {% for application in recent_applications %}
+                <tr>
+                  <td><strong>{{ application.company }}</strong></td>
+                  <td>{{ application.title }}</td>
+                  <td><span class="dashboard-pill">{{ application.get_status_display }}</span></td>
+                  <td>{{ application.updated_at|date:"d.m.Y" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="dashboard-empty"><span>📋</span><div><strong>{% trans "No applications yet" %}</strong><p>{% trans "Add your first application to start tracking it." %}</p></div></div>
+      {% endif %}
+    </section>
+  </section>
+</main>
+{% endblock %}
