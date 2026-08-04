@@ -54,8 +54,10 @@ class InterviewEventForm(forms.ModelForm):
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["application"].queryset = JobApplication.objects.filter(
-            user=user, status=ApplicationStatus.INTERVIEW
-        )
+            user=user
+        ).exclude(
+            status__in=[ApplicationStatus.REJECTED, ApplicationStatus.ARCHIVED]
+        ).order_by("-updated_at", "-created_at")
 
     def clean_location(self) -> str:
         value = (self.cleaned_data.get("location") or "").strip()
