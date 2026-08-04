@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import pytest
 
 from apps.telegram_bot.config import TelegramConfig, parse_id_set
