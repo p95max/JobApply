@@ -24,6 +24,14 @@ _INTERVIEW_EVENTS = {
     GmailEventType.INTERVIEW_CANCELLED,
 }
 _MANUAL_ASSIGNMENT_EVENTS = {GmailEventType.REJECTION}
+_OPTIONAL_NUDGE_SENDERS = {"indeed.com"}
+_OPTIONAL_NUDGE_PHRASES = (
+    "heben sie sich mit einer kurzen nachricht",
+    "mit einer kurzen nachricht ihr interesse bestätigen",
+    "senden sie eine kurze nachricht, um ihr interesse zu bestätigen",
+    "send a short message to confirm your interest",
+    "stand out with a short message",
+)
 
 
 def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[ApplicationUpdateProposal]:
@@ -37,7 +45,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     match_score = match.suggested.score if match.suggested else 0
     match_method = match.suggested.method if match.suggested else ""
     extracted = analysis.extracted_data
-    action_required = _is_action_required(analysis.event_type, extracted)
+    action_required = _is_action_required(message=message, event_type=analysis.event_type, extracted=extracted)
     proposals: list[ApplicationUpdateProposal] = []
 
     if not action_required:
@@ -141,10 +149,28 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     return proposals
 
 
-def _is_action_required(event_type: str, extracted: dict[str, Any]) -> bool:
+def _is_action_required(*, message: Any, event_type: str, extracted: dict[str, Any]) -> bool:
     if event_type in _ACTION_EVENTS:
         return True
+    if _is_optional_job_board_nudge(message=message, extracted=extracted):
+        return False
     return extracted.get("action_required") is True and _string_or_none(extracted.get("action_text")) is not None
+
+
+def _is_optional_job_board_nudge(*, message: Any, extracted: dict[str, Any]) -> bool:
+    sender = str(getattr(message, "from_email", "") or "").lower()
+    sender_domain = sender.rsplit("@", 1)[-1] if "@" in sender else sender
+    if sender_domain not in _OPTIONAL_NUDGE_SENDERS:
+        return False
+    combined = " ".join(
+        str(value or "").lower()
+        for value in (
+            getattr(message, "subject", ""),
+            extracted.get("summary"),
+            extracted.get("action_text"),
+        )
+    )
+    return any(phrase in combined for phrase in _OPTIONAL_NUDGE_PHRASES)
 
 
 def _action_changes(extracted: dict[str, Any]) -> dict[str, Any]:
