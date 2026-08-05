@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from .diagnostics import DoctorSnapshot, HealthSnapshot
 from .deployments import deploy_callback_data
-from .proposal_actions import ACCEPT_ACTION, REJECT_ACTION, callback_data
 from .selectors import ApplicationSummary, StatusSnapshot
 
 
@@ -72,29 +71,15 @@ def status_text(environment: str, snapshot: StatusSnapshot) -> str:
     return "\n".join(lines)
 
 
-def _proposal_identity(proposal) -> tuple[str, str]:
-    if proposal.application:
-        return proposal.application.company or "Unknown", proposal.application.title or "Unknown"
-
-    extracted = proposal.analysis.extracted_data if proposal.analysis_id else {}
-    application_changes = proposal.changes.get("application", {}) if isinstance(proposal.changes, dict) else {}
-    company = extracted.get("company") or application_changes.get("company") or "Unknown"
-    title = extracted.get("position_title") or application_changes.get("title") or "Unknown"
-    return str(company), str(title)
-
-
-def gmail_text(total: int, proposals: list) -> str:
-    lines = [f"📨 <b>Pending Gmail proposals: {total}</b>"]
-    for proposal in proposals:
-        company, title = _proposal_identity(proposal)
-        lines.append(
-            f"\n🔹 <b>{escape(proposal.get_proposal_type_display())}</b>\n"
-            f"🏢 {escape(company)}\n"
-            f"💼 {escape(title)}"
-        )
-    if not proposals:
-        lines.append("\n✅ No pending proposals.")
-    return "\n".join(lines)
+def gmail_text(total: int, *, assistant_url: str) -> str:
+    if not total:
+        return "📨 <b>Gmail Assistant</b>\n\n✅ No pending proposals."
+    return (
+        "📨 <b>Gmail Assistant</b>\n\n"
+        f"Pending proposals: <b>{total}</b>\n"
+        "Review the source emails and proposed changes in JobApply:\n"
+        f"{escape(assistant_url)}"
+    )
 
 
 def applications_text(summary: ApplicationSummary) -> str:
@@ -124,19 +109,6 @@ def applications_text(summary: ApplicationSummary) -> str:
             ]
         )
     return "\n".join(lines)
-
-
-def gmail_keyboard(proposals: list, *, detail_url) -> dict[str, list[list[dict[str, str]]]] | None:
-    rows: list[list[dict[str, str]]] = []
-    for proposal in proposals:
-        rows.append(
-            [
-                {"text": "🔎 Open", "url": detail_url(proposal.pk)},
-                {"text": "✅ Accept", "callback_data": callback_data(proposal.pk, ACCEPT_ACTION)},
-                {"text": "❌ Reject", "callback_data": callback_data(proposal.pk, REJECT_ACTION)},
-            ]
-        )
-    return {"inline_keyboard": rows} if rows else None
 
 
 def deploy_keyboard(request_id: int) -> dict[str, list[list[dict[str, str]]]]:

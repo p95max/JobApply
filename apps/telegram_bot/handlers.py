@@ -24,7 +24,6 @@ from .texts import (
     applications_text,
     deploy_keyboard,
     doctor_text,
-    gmail_keyboard,
     gmail_text,
     health_text,
     help_text,
@@ -76,10 +75,6 @@ def _jobapply_url(path: str = "/") -> str:
     else:
         base_url = f"https://{domain}"
     return f"{base_url}{path}"
-
-
-def _proposal_detail_url(proposal_id: int) -> str:
-    return _jobapply_url(f"/gmail_stats/gmail/assistant/proposals/{proposal_id}/")
 
 
 def _is_owner(user_id: int, chat_id: int, config: TelegramConfig) -> bool:
@@ -332,15 +327,11 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 else:
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
             elif text == "/gmail":
-                total, proposals = get_gmail_summary(data_owner_email)
-                reply = gmail_text(total, proposals)
-                reply_markup = gmail_keyboard(proposals, detail_url=_proposal_detail_url)
-                if reply_markup is None:
-                    reply_markup = {
-                        "inline_keyboard": [
-                            [{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]
-                        ]
-                    }
+                total, _proposals = get_gmail_summary(data_owner_email)
+                reply = gmail_text(
+                    total,
+                    assistant_url=_jobapply_url("/gmail_stats/gmail/assistant/"),
+                )
             elif text == "/applications":
                 reply = applications_text(get_application_summary(data_owner_email))
             elif text == "/health":

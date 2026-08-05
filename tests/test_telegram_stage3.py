@@ -162,7 +162,7 @@ def test_client_cannot_run_administrative_commands(command):
 
 
 @pytest.mark.django_db
-def test_gmail_command_includes_open_accept_and_reject_buttons(proposal):
+def test_gmail_command_links_to_the_web_review_without_action_buttons(proposal):
     client = FakeClient()
 
     handle_update(
@@ -171,9 +171,9 @@ def test_gmail_command_includes_open_accept_and_reject_buttons(proposal):
         config(),
     )
 
-    buttons = client.messages[0][2]["inline_keyboard"][0]
-    assert [button["text"] for button in buttons] == ["🔎 Open", "✅ Accept", "❌ Reject"]
-    assert buttons[1]["callback_data"] == f"proposal:{proposal.pk}:accept"
+    assert "Pending proposals: <b>1</b>" in client.messages[0][1]
+    assert "/gmail_stats/gmail/assistant/" in client.messages[0][1]
+    assert client.messages[0][2] is None
 
 
 @pytest.mark.django_db

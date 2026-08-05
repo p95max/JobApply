@@ -46,18 +46,22 @@ def test_jobapply_url_is_https_and_resolves():
     assert resolve(path).url_name == "gmail_assistant"
 
 
-def test_gmail_command_adds_open_button(monkeypatch):
+def test_gmail_command_includes_gmail_assistant_link_without_buttons(monkeypatch):
     client = FakeClient()
     monkeypatch.setattr("apps.telegram_bot.handlers.get_gmail_summary", lambda email: (0, []))
 
     handle_update(_update("/gmail"), client, _config())
 
-    _chat_id, _text, markup = client.calls[0]
-    button = markup["inline_keyboard"][0][0]
-    assert button["text"] == "Open in JobApply"
-    assert button["url"].endswith("/gmail_stats/gmail/assistant/")
-    assert button["url"].startswith("https://")
-    assert "callback_data" not in button
+    _chat_id, text, markup = client.calls[0]
+    assert "No pending proposals" in text
+    assert markup is None
+
+    monkeypatch.setattr("apps.telegram_bot.handlers.get_gmail_summary", lambda email: (2, []))
+    handle_update(_update("/gmail"), client, _config())
+
+    assert "Pending proposals: <b>2</b>" in client.calls[1][1]
+    assert "https://jobapply.p95max.dev/gmail_stats/gmail/assistant/" in client.calls[1][1]
+    assert client.calls[1][2] is None
 
 
 def test_disconnect_deep_link_returns_confirmation():
