@@ -12,6 +12,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaInMemoryUpload, MediaIoBaseDownload
 
+from .models import CloudBackupSettings
+
 try:
     from google.auth.exceptions import RefreshError
 except Exception:
@@ -72,13 +74,17 @@ class DriveFile:
 
 def get_drive_status(user) -> dict:
     def _do():
+        backup_settings = CloudBackupSettings.objects.filter(user=user).only("drive_connected").first()
+        if not backup_settings or not backup_settings.drive_connected:
+            return {"connected": False, "has_refresh_token": False}
+
         acc = SocialAccount.objects.filter(user=user, provider="google").first()
         if not acc:
             return {"connected": False, "has_refresh_token": False}
 
         tok = SocialToken.objects.filter(account=acc).first()
         if not tok:
-            return {"connected": True, "has_refresh_token": False}
+            return {"connected": False, "has_refresh_token": False}
 
         refresh = (tok.token_secret or "").strip()
         return {"connected": True, "has_refresh_token": bool(refresh)}
@@ -91,6 +97,10 @@ def get_drive_status(user) -> dict:
 
 
 def _credentials_from_allauth(user) -> Credentials:
+    backup_settings = CloudBackupSettings.objects.filter(user=user).only("drive_connected").first()
+    if not backup_settings or not backup_settings.drive_connected:
+        raise PermissionDenied("Google Drive is not connected.")
+
     acc = SocialAccount.objects.filter(user=user, provider="google").first()
     if not acc:
         raise PermissionDenied("Google account is not connected.")
@@ -218,10 +228,10 @@ def download_file(user, file_id: str) -> bytes:
 
 
 def disconnect_drive(user) -> None:
-    acc = SocialAccount.objects.filter(user=user, provider="google").first()
-    if not acc:
-        return
-    SocialToken.objects.filter(account=acc).delete()
+    settings_obj, _ = CloudBackupSettings.objects.get_or_create(user=user)
+    settings_obj.drive_connected = False
+    settings_obj.enabled = False
+    settings_obj.save(update_fields=["drive_connected", "enabled", "updated_at"])
 
 
 def _find_file_in_folder_by_name(service, folder_id: str, name: str) -> str | None:
