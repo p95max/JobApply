@@ -58,7 +58,12 @@ class TelegramCommandAudit(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=("user_id", "chat_id", "created_at"))]
+        indexes = [
+            models.Index(
+                fields=("user_id", "chat_id", "created_at"),
+                name="telegram_bo_user_id_5a738f_idx",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.command}: {self.result}"
@@ -91,7 +96,12 @@ class TelegramDeployRequest(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=("telegram_user_id", "chat_id", "status"))]
+        indexes = [
+            models.Index(
+                fields=("telegram_user_id", "chat_id", "status"),
+                name="telegram_bo_telegram_5b5bd0_idx",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"Deploy {self.pk}: {self.status}"
