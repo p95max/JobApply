@@ -181,7 +181,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
 
 
 @pytest.mark.django_db
-@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
 def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
     client.force_login(proposal.user)
 
@@ -190,7 +190,20 @@ def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
     assert response.status_code == 200
     assert b'devReanalyzeGmail' in response.content
     assert b'devReanalyzeDays' in response.content
-    assert b"Reanalyze saved" in response.content
+    assert b">Reanalyze<" in response.content
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
+def test_development_tools_are_hidden_from_non_owner(client, proposal, django_user_model):
+    other = django_user_model.objects.create_user("other", email="other@example.com")
+    client.force_login(other)
+
+    response = client.get(reverse("gmail_assistant:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"Development tools:" not in response.content
+    assert b"devReanalyzeGmail" not in response.content
 
 
 @pytest.mark.django_db
@@ -229,7 +242,7 @@ def test_write_endpoints_reject_get_requests(client, proposal):
 
 
 @pytest.mark.django_db
-@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
 def test_dev_reset_removes_only_current_users_gmail_assistant_data(client, proposal):
     GmailSyncState.objects.create(user=proposal.user, last_synced_at=timezone.now())
     client.force_login(proposal.user)
@@ -247,6 +260,17 @@ def test_dev_reset_removes_only_current_users_gmail_assistant_data(client, propo
 @override_settings(GMAIL_ASSISTANT_DEV_TOOLS=False)
 def test_dev_reset_endpoint_is_hidden_without_dev_tools(client, proposal):
     client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:reset_gmail_assistant"))
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
+def test_dev_reset_endpoint_is_hidden_from_non_owner(client, proposal, django_user_model):
+    other = django_user_model.objects.create_user("other", email="other@example.com")
+    client.force_login(other)
 
     response = client.post(reverse("gmail_assistant:reset_gmail_assistant"))
 

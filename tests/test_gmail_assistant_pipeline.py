@@ -4,6 +4,7 @@ import base64
 from datetime import datetime, timezone
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import UserProfile
@@ -365,6 +366,7 @@ def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_
 
 
 @pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="user@example.com")
 @pytest.mark.parametrize("days", [1, 7, 30, 90, 180])
 def test_sync_api_passes_selected_period_to_assistant(client, django_user_model, monkeypatch, days):
     user = django_user_model.objects.create_user("user", email="user@example.com")
@@ -395,6 +397,17 @@ def test_sync_api_passes_selected_period_to_assistant(client, django_user_model,
     assert synced[0]["days"] == days
     assert synced[0]["max_results_each"] == 500
     assert synced[0]["reanalyze_existing"] is True
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
+def test_sync_api_hides_reanalysis_from_non_owner(client, django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(reverse("gmail_stats:gmail_sync_api") + "?days=7&reanalyze=1")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

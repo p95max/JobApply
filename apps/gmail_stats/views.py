@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.gmail_assistant.models import GmailAnalysis, GmailEventType
+from apps.gmail_assistant.services.dev_tools import has_dev_tools_access
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 from apps.gmail_stats.models import GmailDirection, GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
@@ -74,6 +75,8 @@ def gmail_sync_api(request):
     if not 1 <= days <= 365:
         return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
     reanalyze_existing = request.GET.get("reanalyze", "0") == "1"
+    if reanalyze_existing and not has_dev_tools_access(user=request.user):
+        return JsonResponse({"error": "Not found"}, status=404)
 
     try:
         credentials = get_google_credentials_for_user(request.user)

@@ -23,6 +23,7 @@ from apps.gmail_assistant.models import (
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
+from apps.gmail_assistant.services.dev_tools import has_dev_tools_access
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ def gmail_assistant(request):
             },
             "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
             "next_automatic_check_at": next_automatic_check_at,
-            "dev_tools_enabled": django_settings.GMAIL_ASSISTANT_DEV_TOOLS,
+            "dev_tools_enabled": has_dev_tools_access(user=request.user),
             "ai_model_name": django_settings.OPENAI_EMAIL_MODEL,
             "ai_daily_limit": ai_policy.daily_limit,
             "ai_daily_used": ai_daily_used,
@@ -285,7 +286,7 @@ def gmail_assistant_settings(request):
 @login_required
 @require_POST
 def reset_gmail_assistant(request):
-    if not django_settings.GMAIL_ASSISTANT_DEV_TOOLS:
+    if not has_dev_tools_access(user=request.user):
         raise Http404
     result = reset_gmail_assistant_data(user=request.user)
     messages.success(
