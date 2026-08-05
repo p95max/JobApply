@@ -1,15 +1,13 @@
 from __future__ import annotations
 
+from allauth.socialaccount.models import SocialAccount
+from django.db.utils import ProgrammingError
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.db.utils import ProgrammingError
 
 
 class ConsentRequiredMiddleware:
-    """
-    Enforces mandatory consent acceptance after OAuth login.
-    If user is authenticated but has not accepted consent -> redirect to consent page.
-    """
+    """Require consent for authenticated users who signed in through Google OAuth."""
 
     EXEMPT_PATH_PREFIXES = (
         "/admin/",
@@ -27,15 +25,25 @@ class ConsentRequiredMiddleware:
     def __call__(self, request):
         path = request.path
 
-        if any(path.startswith(p) for p in self.EXEMPT_PATH_PREFIXES):
+        if any(path.startswith(prefix) for prefix in self.EXEMPT_PATH_PREFIXES):
             return self.get_response(request)
 
         if not request.user.is_authenticated:
             return self.get_response(request)
 
         consent_url = reverse("accounts:consent")
-
         if path == consent_url:
+            return self.get_response(request)
+
+        try:
+            uses_google_oauth = SocialAccount.objects.filter(
+                user=request.user,
+                provider="google",
+            ).exists()
+        except ProgrammingError:
+            return self.get_response(request)
+
+        if not uses_google_oauth:
             return self.get_response(request)
 
         from apps.accounts.views import ensure_profile
