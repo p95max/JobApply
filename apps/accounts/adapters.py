@@ -53,6 +53,13 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                     status=403,
                 )
             )
+
+        user = sociallogin.user
+        if getattr(user, "pk", None):
+            from apps.reports.models import CloudBackupSettings
+
+            CloudBackupSettings.objects.get_or_create(user=user)
+
         return super().pre_social_login(request, sociallogin)
 
     def get_connect_redirect_url(self, request, socialaccount):
