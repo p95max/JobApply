@@ -4,6 +4,8 @@ from html import escape
 
 from django.utils import timezone
 
+from .diagnostics import DoctorSnapshot, HealthSnapshot
+from .proposal_actions import ACCEPT_ACTION, REJECT_ACTION, callback_data
 from .selectors import ApplicationSummary, StatusSnapshot
 
 
@@ -20,6 +22,8 @@ def help_text(environment: str) -> str:
         "/status — service summary\n"
         "/gmail — pending Gmail proposals\n"
         "/applications — application statistics\n"
+        "/health — runtime health checks\n"
+        "/doctor — diagnostics (owner only)\n"
         "/deploy — queue production deploy (owner only)"
     )
 
@@ -91,4 +95,49 @@ def applications_text(summary: ApplicationSummary) -> str:
                 escape(_format_dt(interview.starts_at)),
             ]
         )
+    return "\n".join(lines)
+
+
+def gmail_keyboard(proposals: list, *, detail_url) -> dict[str, list[list[dict[str, str]]]] | None:
+    rows: list[list[dict[str, str]]] = []
+    for proposal in proposals:
+        rows.append(
+            [
+                {"text": "Open", "url": detail_url(proposal.pk)},
+                {"text": "Accept", "callback_data": callback_data(proposal.pk, ACCEPT_ACTION)},
+                {"text": "Reject", "callback_data": callback_data(proposal.pk, REJECT_ACTION)},
+            ]
+        )
+    return {"inline_keyboard": rows} if rows else None
+
+
+def health_text(environment: str, snapshot: HealthSnapshot) -> str:
+    database = "OK" if snapshot.database_ok else "FAILED"
+    lines = [
+        f"<b>Health · {escape(environment)}</b>",
+        f"Database: <b>{database}</b>",
+        f"Free disk: <b>{snapshot.free_disk_mb} MB</b>",
+        "",
+        "<b>Workers</b>",
+    ]
+    for heartbeat in snapshot.worker_heartbeats:
+        state = "STALE" if heartbeat.is_stale else "OK"
+        lines.append(f"{escape(heartbeat.worker_name)}: <b>{state}</b>")
+    return "\n".join(lines)
+
+
+def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
+    migration_status = "unknown" if snapshot.pending_migrations < 0 else str(snapshot.pending_migrations)
+    lines = [
+        f"<b>Doctor · {escape(environment)}</b>",
+        f"Branch: <code>{escape(snapshot.branch)}</code>",
+        f"Working tree: <b>{'DIRTY' if snapshot.is_dirty else 'clean'}</b>",
+        f"Pending migrations: <b>{migration_status}</b>",
+        "",
+        "<b>Systemd units</b>",
+    ]
+    lines.extend(f"{escape(unit)}: <b>{escape(state)}</b>" for unit, state in snapshot.unit_states)
+    if snapshot.worker_errors:
+        lines.extend(["", "<b>Recent worker errors</b>"])
+        lines.extend(escape(error) for error in snapshot.worker_errors)
     return "\n".join(lines)

@@ -28,8 +28,8 @@ def send_notification(text: str, *, config: TelegramConfig | None = None) -> boo
     try:
         client.send_message(chat_id, text)
         return True
-    except Exception:
-        logger.exception("Telegram notification delivery failed")
+    except Exception as error:
+        logger.warning("Telegram notification delivery failed: %s", type(error).__name__)
         return False
     finally:
         client.close()
@@ -78,7 +78,11 @@ def send_notification_once(
         delivery.status = TelegramDeliveryStatus.FAILED
         delivery.error = type(error).__name__[:120]
         delivery.save(update_fields=["status", "error"])
-        logger.exception("Telegram notification delivery failed", extra={"event_type": event_type})
+        logger.warning(
+            "Telegram notification delivery failed: %s",
+            type(error).__name__,
+            extra={"event_type": event_type},
+        )
         return False
     finally:
         client.close()

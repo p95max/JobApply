@@ -12,6 +12,9 @@ BOT_COMMANDS: tuple[dict[str, str], ...] = (
     {"command": "status", "description": "Show JobApply service status"},
     {"command": "gmail", "description": "Show pending Gmail proposals"},
     {"command": "applications", "description": "Show application statistics"},
+    {"command": "health", "description": "Run runtime health checks"},
+    {"command": "doctor", "description": "Run owner diagnostics"},
+    {"command": "deploy", "description": "Queue production deploy (owner only)"},
 )
 
 
@@ -60,6 +63,27 @@ class TelegramClient:
         response = self.session.post(
             f"{self.base_url}/sendMessage",
             json=payload,
+            timeout=10,
+        )
+        response.raise_for_status()
+
+    def answer_callback_query(self, callback_query_id: str, text: str) -> None:
+        response = self.session.post(
+            f"{self.base_url}/answerCallbackQuery",
+            json={"callback_query_id": callback_query_id, "text": text[:200]},
+            timeout=10,
+        )
+        response.raise_for_status()
+
+    def edit_message_text(self, chat_id: int, message_id: int, text: str) -> None:
+        response = self.session.post(
+            f"{self.base_url}/editMessageText",
+            json={
+                "chat_id": chat_id,
+                "message_id": message_id,
+                "text": text,
+                "parse_mode": "HTML",
+            },
             timeout=10,
         )
         response.raise_for_status()

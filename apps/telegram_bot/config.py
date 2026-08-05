@@ -28,6 +28,9 @@ class TelegramConfig:
     environment_label: str
     notifications_enabled: bool
     owner_user_id: int | None = None
+    callback_ttl_seconds: int = 900
+    rate_limit_count: int = 20
+    rate_limit_window_seconds: int = 60
 
     @classmethod
     def from_env(cls) -> "TelegramConfig":
@@ -42,6 +45,10 @@ class TelegramConfig:
         except ValueError as exc:
             raise ValueError("TELEGRAM_OWNER_USER_ID must be an integer") from exc
 
+        callback_ttl_seconds = _positive_int("TELEGRAM_CALLBACK_TTL_SECONDS", 900)
+        rate_limit_count = _non_negative_int("TELEGRAM_RATE_LIMIT_COUNT", 20)
+        rate_limit_window_seconds = _positive_int("TELEGRAM_RATE_LIMIT_WINDOW_SECONDS", 60)
+
         return cls(
             enabled=getenv("TELEGRAM_BOT_ENABLED", "0") == "1",
             token=getenv("TELEGRAM_BOT_TOKEN", "").strip(),
@@ -52,6 +59,9 @@ class TelegramConfig:
             environment_label=getenv("TELEGRAM_ENV_LABEL", "DEVELOPMENT").strip() or "DEVELOPMENT",
             notifications_enabled=getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "0") == "1",
             owner_user_id=owner_user_id,
+            callback_ttl_seconds=callback_ttl_seconds,
+            rate_limit_count=rate_limit_count,
+            rate_limit_window_seconds=rate_limit_window_seconds,
         )
 
     def validate_for_polling(self) -> None:
@@ -68,3 +78,23 @@ class TelegramConfig:
             missing.append("TELEGRAM_OWNER_EMAIL")
         if missing:
             raise ValueError("Missing Telegram settings: " + ", ".join(missing))
+
+
+def _positive_int(name: str, default: int) -> int:
+    value = _non_negative_int(name, default)
+    if value < 1:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
+def _non_negative_int(name: str, default: int) -> int:
+    raw = getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+    if value < 0:
+        raise ValueError(f"{name} must not be negative")
+    return value

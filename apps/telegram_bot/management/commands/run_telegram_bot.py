@@ -44,8 +44,8 @@ class Command(BaseCommand):
         try:
             client.set_commands()
             self.stdout.write(self.style.SUCCESS("Telegram command menu published."))
-        except (requests.RequestException, RuntimeError, ValueError):
-            logger.exception("Telegram command menu publication failed")
+        except (requests.RequestException, RuntimeError, ValueError) as error:
+            logger.warning("Telegram command menu publication failed: %s", type(error).__name__)
 
         self.stdout.write(self.style.SUCCESS("Telegram Bot polling started."))
 
@@ -60,7 +60,7 @@ class Command(BaseCommand):
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=True)
                 except (requests.RequestException, RuntimeError, ValueError) as error:
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=False, error=error)
-                    logger.exception("Telegram polling iteration failed")
+                    logger.warning("Telegram polling iteration failed: %s", type(error).__name__)
                     time.sleep(5)
         finally:
             client.close()

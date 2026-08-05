@@ -4,6 +4,7 @@ import logging
 import os
 import signal
 import subprocess
+import time
 from contextlib import contextmanager
 from typing import Any, Iterator
 
@@ -12,11 +13,22 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from apps.accounts.telegram_linking import bind_telegram_from_start
 
+from .audit import is_rate_limited, record_command_audit
 from .client import TelegramClient
 from .config import TelegramConfig
+from .diagnostics import get_doctor_snapshot, get_health_snapshot
 from .permissions import is_update_allowed
-from .selectors import get_application_summary, get_gmail_summary, get_status_snapshot
-from .texts import applications_text, gmail_text, help_text, status_text
+from .proposal_actions import apply_callback_action, parse_callback_data
+from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
+from .texts import (
+    applications_text,
+    doctor_text,
+    gmail_keyboard,
+    gmail_text,
+    health_text,
+    help_text,
+    status_text,
+)
 
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
@@ -48,6 +60,14 @@ def _chat_id(update: dict[str, Any]) -> int:
 
 def _user_id(update: dict[str, Any]) -> int:
     return int(update["message"]["from"]["id"])
+
+
+def _callback_user_id(update: dict[str, Any]) -> int:
+    return int(update["callback_query"]["from"]["id"])
+
+
+def _callback_chat_id(update: dict[str, Any]) -> int:
+    return int(update["callback_query"]["message"]["chat"]["id"])
 
 
 def _jobapply_url(path: str = "/") -> str:
@@ -99,6 +119,92 @@ def _queue_deploy(update: dict[str, Any], config: TelegramConfig) -> str:
     )
 
 
+def _proposal_detail_url(proposal_id: int) -> str:
+    return _jobapply_url(f"/gmail_stats/gmail/assistant/proposals/{proposal_id}/")
+
+
+def _is_owner(user_id: int, config: TelegramConfig) -> bool:
+    return config.owner_user_id is not None and user_id == config.owner_user_id
+
+
+def _handle_callback(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
+    callback = update.get("callback_query") or {}
+    callback_id = str(callback.get("id") or "")
+    parsed = parse_callback_data(callback.get("data"))
+    if parsed is None:
+        _answer_callback(client, callback_id, "This action is not available.")
+        return
+
+    user_id = _callback_user_id(update)
+    chat_id = _callback_chat_id(update)
+    started = time.monotonic()
+    if not _is_owner(user_id, config):
+        _record_audit(user_id, chat_id, "proposal_callback", "forbidden", started)
+        _answer_callback(client, callback_id, "This action is available only to the bot owner.")
+        return
+    if is_rate_limited(
+        user_id=user_id,
+        chat_id=chat_id,
+        limit=config.rate_limit_count,
+        window_seconds=config.rate_limit_window_seconds,
+    ):
+        _record_audit(user_id, chat_id, "proposal_callback", "rate_limited", started)
+        _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
+        return
+
+    proposal_id, action = parsed
+    try:
+        proposal_user = get_owner(config.owner_email)
+        result = apply_callback_action(
+            proposal_id=proposal_id,
+            action=action,
+            user=proposal_user,
+            ttl_seconds=config.callback_ttl_seconds,
+        )
+    except ObjectDoesNotExist:
+        result = None
+    except Exception as error:
+        logger.warning("Telegram proposal callback failed: %s", type(error).__name__)
+        result = None
+
+    if result is None:
+        _record_audit(user_id, chat_id, "proposal_callback", "failed", started)
+        _answer_callback(client, callback_id, "Action failed. Review it in JobApply.")
+        return
+
+    _record_audit(user_id, chat_id, "proposal_callback", result.outcome, started)
+    _answer_callback(client, callback_id, result.message)
+    message = callback.get("message") or {}
+    message_id = message.get("message_id")
+    if message_id is not None:
+        try:
+            client.edit_message_text(chat_id, int(message_id), result.message)
+        except Exception as error:
+            logger.warning("Could not update Telegram proposal message: %s", type(error).__name__)
+
+
+def _answer_callback(client: TelegramClient, callback_id: str, text: str) -> None:
+    if not callback_id:
+        return
+    try:
+        client.answer_callback_query(callback_id, text)
+    except Exception as error:
+        logger.warning("Could not answer Telegram callback: %s", type(error).__name__)
+
+
+def _record_audit(user_id: int, chat_id: int, command: str, result: str, started: float) -> None:
+    try:
+        record_command_audit(
+            user_id=user_id,
+            chat_id=chat_id,
+            command=command,
+            result=result,
+            duration_ms=int((time.monotonic() - started) * 1000),
+        )
+    except Exception as error:
+        logger.warning("Could not record Telegram command audit: %s", type(error).__name__)
+
+
 def handle_update(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
     message = update.get("message") or {}
     text_raw = str(message.get("text", "")).strip()
@@ -121,9 +227,25 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         logger.warning("Rejected unauthorized Telegram update")
         return
 
+    if update.get("callback_query"):
+        _handle_callback(update, client, config)
+        return
+
     text = text_raw.split(maxsplit=1)[0].split("@", 1)[0]
     chat_id = _chat_id(update)
+    user_id = _user_id(update)
+    started = time.monotonic()
+    if is_rate_limited(
+        user_id=user_id,
+        chat_id=chat_id,
+        limit=config.rate_limit_count,
+        window_seconds=config.rate_limit_window_seconds,
+    ):
+        _record_audit(user_id, chat_id, text or "unknown", "rate_limited", started)
+        client.send_message(chat_id, "Too many requests. Please wait a moment.")
+        return
     reply_markup = None
+    result = "ok"
 
     try:
         with _command_timeout():
@@ -134,11 +256,19 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             elif text == "/gmail":
                 total, proposals = get_gmail_summary(config.owner_email)
                 reply = gmail_text(total, proposals)
-                reply_markup = {
-                    "inline_keyboard": [[{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]]
-                }
+                reply_markup = gmail_keyboard(proposals, detail_url=_proposal_detail_url)
+                if reply_markup is None:
+                    reply_markup = {"inline_keyboard": [[{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]]}
             elif text == "/applications":
                 reply = applications_text(get_application_summary(config.owner_email))
+            elif text == "/health":
+                reply = health_text(config.environment_label, get_health_snapshot())
+            elif text == "/doctor":
+                if not _is_owner(user_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    reply = doctor_text(config.environment_label, get_doctor_snapshot())
             elif text == "/deploy":
                 reply = _queue_deploy(update, config)
             else:
@@ -147,13 +277,17 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         logger.warning("Telegram command timed out: %s", text)
         reply = "Command timed out. Try again later."
         reply_markup = None
+        result = "timeout"
     except ObjectDoesNotExist:
-        logger.exception("Telegram owner account was not found")
+        logger.warning("Telegram owner account was not found")
         reply = "JobApply owner account is not configured."
         reply_markup = None
-    except Exception:
-        logger.exception("Telegram command failed")
+        result = "not_found"
+    except Exception as error:
+        logger.warning("Telegram command failed: %s", type(error).__name__)
         reply = "Command failed. Check JobApply logs."
         reply_markup = None
+        result = "failed"
 
     client.send_message(chat_id, reply, reply_markup=reply_markup)
+    _record_audit(user_id, chat_id, text or "unknown", result, started)

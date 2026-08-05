@@ -44,3 +44,21 @@ class TelegramDelivery(models.Model):
 
     def __str__(self) -> str:
         return self.event_key
+
+
+class TelegramCommandAudit(models.Model):
+    """A minimal, secret-free audit trail for Telegram actions."""
+
+    user_id = models.BigIntegerField()
+    chat_id = models.BigIntegerField()
+    command = models.CharField(max_length=32)
+    result = models.CharField(max_length=32)
+    duration_ms = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("user_id", "chat_id", "created_at"))]
+
+    def __str__(self) -> str:
+        return f"{self.command}: {self.result}"
