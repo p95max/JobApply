@@ -54,8 +54,9 @@
           <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
           <small class="d-block text-muted mt-1">
             {% trans "Model" %}: <code>{{ ai_model_name }}</code>
-            · {% trans "Today" %}: {{ ai_daily_used }}/{{ ai_daily_limit }}
-            · {% trans "Remaining" %}: {{ ai_daily_remaining }}
+            · {% trans "Daily AI email limit (per user)" %}: {{ ai_daily_limit }} {% trans "emails" %}
+            · {% trans "Used today" %}: {{ ai_daily_used }}
+            · {% trans "Remaining today" %}: {{ ai_daily_remaining }}
             · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
           </small>
         </div>
