@@ -134,7 +134,7 @@ def test_settings_generates_one_time_telegram_command_without_redirecting_to_bot
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")
-def test_disconnect_clears_binding_and_redirects_to_bot(client, account):
+def test_disconnect_clears_binding_and_returns_to_settings(client, account):
     user, profile = account
     profile.telegram_user_id = 200
     profile.telegram_chat_id = 100
@@ -145,7 +145,7 @@ def test_disconnect_clears_binding_and_redirects_to_bot(client, account):
     response = client.post(reverse("accounts:settings"), {"action": "telegram_disconnect"})
 
     assert response.status_code == 302
-    assert response.url == "https://t.me/jobapply_test_bot?start=disconnected"
+    assert response.url == reverse("accounts:settings")
     profile.refresh_from_db()
     assert profile.telegram_user_id is None
     assert profile.telegram_chat_id is None
