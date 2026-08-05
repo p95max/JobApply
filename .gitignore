@@ -8,6 +8,7 @@
 __pycache__/
 *.py[cod]
 *.log
+*.mo
 *.sqlite3
 
 # Django static
@@ -39,3 +40,5 @@ TODO.md
 /.config/
 /.local/
 /poetry.toml
+/.lesshst
+/pending_applications.json
