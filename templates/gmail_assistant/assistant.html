@@ -35,7 +35,7 @@
       <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
       <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
         <div class="d-flex align-items-center gap-2">
-          <label class="small text-nowrap" for="devReanalyzeDays">{% trans "Reanalyze" %}</label>
+          <label class="small text-nowrap" for="devReanalyzeDays">{% trans "Period" %}</label>
           <select id="devReanalyzeDays" class="form-select form-select-sm">
             <option value="1">{% trans "1 day" %}</option>
             <option value="7" selected>{% trans "1 week" %}</option>
@@ -43,11 +43,11 @@
             <option value="90">{% trans "3 months" %}</option>
             <option value="180">{% trans "6 months" %}</option>
           </select>
-          <button id="devReanalyzeGmail" type="button" class="btn btn-outline-warning btn-sm text-nowrap">{% trans "Reanalyze saved" %}</button>
+          <button id="devReanalyzeGmail" type="button" class="btn btn-outline-warning btn-sm text-nowrap">{% trans "Reanalyze" %}</button>
         </div>
         <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
           {% csrf_token %}
-          <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
+          <button class="btn btn-outline-danger btn-sm">{% trans "Reset all data" %}</button>
         </form>
       </div>
     </div>
