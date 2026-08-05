@@ -228,7 +228,7 @@ ALLOWED_ACCOUNT_EMAILS=your-exact-google-email@example.com
 
 ### Standard production update
 
-Production deploys only from `agent/vps-no-docker-deploy`. The `master` branch is not a production source.
+Production deploys only from `master`.
 
 Check the branch and local changes first:
 
@@ -241,7 +241,7 @@ git status --short
 Then update and validate:
 
 ```bash
-sudo -u jobapply git -C /opt/jobapply pull --ff-only origin agent/vps-no-docker-deploy
+sudo -u jobapply git -C /opt/jobapply pull --ff-only origin master
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py check
 sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput

@@ -40,7 +40,7 @@ def config(**overrides):
         "notifications_enabled": False,
         "deploy_enabled": True,
         "deploy_confirmation_ttl_seconds": 300,
-        "production_branch": "agent/vps-no-docker-deploy",
+        "production_branch": "master",
     }
     values.update(overrides)
     return TelegramConfig(**values)
@@ -112,7 +112,7 @@ def test_confirmed_deploy_is_one_time_and_owner_bound(monkeypatch):
     prepared = prepare_deploy_request(
         telegram_user_id=200,
         chat_id=100,
-        branch="agent/vps-no-docker-deploy",
+        branch="master",
         ttl_seconds=300,
     )
     assert prepared.request is not None

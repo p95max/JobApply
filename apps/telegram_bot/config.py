@@ -33,7 +33,7 @@ class TelegramConfig:
     rate_limit_window_seconds: int = 60
     deploy_enabled: bool = False
     deploy_confirmation_ttl_seconds: int = 300
-    production_branch: str = "agent/vps-no-docker-deploy"
+    production_branch: str = "master"
 
     @classmethod
     def from_env(cls) -> "TelegramConfig":
@@ -52,7 +52,7 @@ class TelegramConfig:
         rate_limit_count = _non_negative_int("TELEGRAM_RATE_LIMIT_COUNT", 20)
         rate_limit_window_seconds = _positive_int("TELEGRAM_RATE_LIMIT_WINDOW_SECONDS", 60)
         deploy_confirmation_ttl_seconds = _positive_int("TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS", 300)
-        production_branch = getenv("JOBAPPLY_PRODUCTION_BRANCH", "agent/vps-no-docker-deploy").strip()
+        production_branch = getenv("JOBAPPLY_PRODUCTION_BRANCH", "master").strip()
         if not production_branch or any(char.isspace() for char in production_branch):
             raise ValueError("JOBAPPLY_PRODUCTION_BRANCH must be a branch name")
 

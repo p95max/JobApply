@@ -151,7 +151,7 @@ def test_health_and_doctor_do_not_expose_configuration(monkeypatch, django_user_
     django_user_model.objects.create_user("owner", email="owner@example.com")
     client = FakeClient()
     health = HealthSnapshot(True, 512, (HeartbeatStatus("gmail_worker", None, False, ""),))
-    doctor = DoctorSnapshot(health, "agent/vps-no-docker-deploy", False, 0, (), (("jobapply-web.service", "active"),))
+    doctor = DoctorSnapshot(health, "master", False, 0, (), (("jobapply-web.service", "active"),))
     monkeypatch.setattr("apps.telegram_bot.handlers.get_health_snapshot", lambda: health)
     monkeypatch.setattr("apps.telegram_bot.handlers.get_doctor_snapshot", lambda: doctor)
 

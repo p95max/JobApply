@@ -47,7 +47,7 @@ Restart PostgreSQL afterwards.
 ```bash
 sudo -u jobapply git clone https://github.com/p95max/JobApply.git /opt/jobapply
 cd /opt/jobapply
-sudo -u jobapply git checkout agent/vps-no-docker-deploy
+sudo -u jobapply git checkout master
 sudo -u jobapply poetry config virtualenvs.in-project true
 sudo -u jobapply poetry env use "$(sudo -u jobapply -H uv python find 3.13)"
 sudo -u jobapply poetry install --only main --no-interaction
@@ -144,7 +144,7 @@ the scheduled `jobapply-backup.service` remains unchanged.
 
 ## Deployment update
 
-Deploys are always taken from `agent/vps-no-docker-deploy`. The deploy script refuses a different checked-out branch, local changes or a non-fast-forward update. It runs tests, Django checks, migrations, static collection, service restart and a local HTTP health check.
+Deploys are always taken from `master`. The deploy script refuses a different checked-out branch, local changes or a non-fast-forward update. It runs tests, Django checks, migrations, static collection, service restart and a local HTTP health check.
 
 Manual emergency deploy remains available and uses the same fixed script:
 
@@ -157,7 +157,7 @@ To enable the owner-only Telegram entry point after the manual command is proven
 ```text
 TELEGRAM_DEPLOY_ENABLED=1
 TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS=300
-JOBAPPLY_PRODUCTION_BRANCH=agent/vps-no-docker-deploy
+JOBAPPLY_PRODUCTION_BRANCH=master
 ```
 
 `/deploy` shows the current and target commit, then requires a one-time inline confirmation. The bot may start only `jobapply-deploy.service`; the installed sudoers rule allows no shell, Git or arbitrary `systemctl` command.
