@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from apps.telegram_bot import deployments
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.deployments import DeployPreparation, apply_deploy_callback, prepare_deploy_request
 from apps.telegram_bot.handlers import handle_update
@@ -63,6 +64,20 @@ def test_deploy_is_disabled_by_default():
     handle_update(deploy_command(), client, config(deploy_enabled=False))
 
     assert client.messages[0][1] == "Deploy is disabled by configuration."
+
+
+def test_deploy_marker_uses_a_runtime_directory_outside_private_tmp(monkeypatch, tmp_path):
+    marker = tmp_path / "jobapply" / "deploy.requested"
+    marker.parent.mkdir()
+    monkeypatch.setattr(deployments, "DEPLOY_REQUEST_MARKER", marker)
+
+    assert str(deployments.DEPLOY_REQUEST_MARKER).startswith(str(tmp_path))
+    assert deployments._claim_deploy_request() is True
+    assert marker.exists()
+
+    deployments._release_deploy_request()
+
+    assert not marker.exists()
 
 
 @pytest.mark.django_db

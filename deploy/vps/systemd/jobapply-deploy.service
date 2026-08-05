@@ -9,7 +9,7 @@ Type=oneshot
 WorkingDirectory=/opt/jobapply
 EnvironmentFile=/opt/jobapply/.env
 Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
-Environment=JOBAPPLY_DEPLOY_REQUEST_MARKER=/var/tmp/jobapply-deploy.requested
+Environment=JOBAPPLY_DEPLOY_REQUEST_MARKER=/run/jobapply/deploy.requested
 TimeoutStartSec=45min
 ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-deploy /usr/local/bin/jobapply-deploy-notify.sh
-ExecStopPost=/usr/bin/rm -f /var/tmp/jobapply-deploy.requested
+ExecStopPost=/usr/bin/rm -f /run/jobapply/deploy.requested

@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 DEPLOY_COMMAND="${JOBAPPLY_DEPLOY_COMMAND:-/usr/local/sbin/jobapply-deploy}"
-REQUEST_MARKER="${JOBAPPLY_DEPLOY_REQUEST_MARKER:-/var/tmp/jobapply-deploy.requested}"
+REQUEST_MARKER="${JOBAPPLY_DEPLOY_REQUEST_MARKER:-/run/jobapply/deploy.requested}"
 ENV_LABEL="${TELEGRAM_ENV_LABEL:-PRODUCTION}"
 TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 CHAT_ID="${TELEGRAM_DEFAULT_CHAT_ID:-}"

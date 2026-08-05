@@ -9,6 +9,9 @@ User=jobapply
 Group=jobapply
 WorkingDirectory=/opt/jobapply
 EnvironmentFile=/opt/jobapply/.env
+Environment=JOBAPPLY_DEPLOY_REQUEST_MARKER=/run/jobapply/deploy.requested
+RuntimeDirectory=jobapply
+RuntimeDirectoryMode=0750
 ExecStart=/opt/jobapply/.venv/bin/python manage.py run_telegram_bot
 Restart=always
 RestartSec=5

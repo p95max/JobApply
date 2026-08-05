@@ -14,7 +14,7 @@ from .models import TelegramDeployRequest, TelegramDeployRequestStatus
 
 
 DEPLOY_SERVICE = "jobapply-deploy.service"
-DEPLOY_REQUEST_MARKER = Path("/var/tmp/jobapply-deploy.requested")
+DEPLOY_REQUEST_MARKER = Path(os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/run/jobapply/deploy.requested"))
 QUEUE_STATUS_FILE = Path("/var/tmp/jobapply-background-job.status")
 
 
