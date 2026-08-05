@@ -53,7 +53,7 @@ def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
     client = Client()
     update = {
         "message": {
-            "text": "/start",
+            "text": "hello",
             "chat": {"id": 999, "type": "private"},
             "from": {"id": 999},
         }
@@ -62,7 +62,11 @@ def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
     handle_update(update, client, _config())
 
     assert client.calls == [
-        (999, "To connect Telegram, generate a one-time code in JobApply Settings → Telegram and send /link <code> here.", None)
+        (
+            999,
+            "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send /link <code> or paste the code here.",
+            None,
+        )
     ]
 
 

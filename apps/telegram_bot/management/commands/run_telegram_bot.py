@@ -60,7 +60,10 @@ class Command(BaseCommand):
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=True)
                 except (requests.RequestException, RuntimeError, ValueError) as error:
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=False, error=error)
-                    logger.warning("Telegram polling iteration failed: %s", type(error).__name__)
+                    error_kind = type(error).__name__
+                    if isinstance(error, requests.HTTPError) and error.response is not None:
+                        error_kind = f"HTTP {error.response.status_code}"
+                    logger.warning("Telegram polling iteration failed: %s", error_kind)
                     time.sleep(5)
         finally:
             client.close()

@@ -64,6 +64,19 @@ def test_one_time_token_binds_private_telegram_chat_from_link_command(account):
     assert profile.telegram_chat_id == 100
 
 
+def test_one_time_token_binds_private_telegram_chat_from_raw_code(account):
+    _user, profile = account
+    token = profile.create_telegram_link_token()
+    update = _update(token)
+    update["message"]["text"] = token
+
+    linked = bind_telegram_from_start(update)
+
+    assert linked is not None
+    profile.refresh_from_db()
+    assert profile.telegram_chat_id == 100
+
+
 def test_invalid_link_token_does_not_bind(account):
     _user, profile = account
     profile.create_telegram_link_token()

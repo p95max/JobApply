@@ -17,10 +17,16 @@ def bind_telegram_from_start(update: dict[str, Any]) -> UserProfile | None:
 
     command, separator, token = text.partition(" ")
     command = command.split("@", 1)[0]
-    if chat.get("type") != "private" or command not in {"/start", "/link"} or not separator:
+    if command in {"/start", "/link"} and separator:
+        token = token.strip()
+    elif " " not in text and not text.startswith("/") and len(text) >= 24:
+        token = text
+    else:
+        token = ""
+
+    if chat.get("type") != "private":
         return None
 
-    token = token.strip()
     if not token:
         return None
 

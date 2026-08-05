@@ -265,7 +265,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         client.send_message(_chat_id(update), "Telegram disconnected from JobApply.")
         return
 
-    if text_raw.startswith(("/start ", "/link ")):
+    if text_raw:
         try:
             profile = bind_telegram_from_start(update)
         except Exception:
@@ -276,11 +276,10 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             return
 
     if not is_update_allowed(update, config):
-        command = text_raw.split(maxsplit=1)[0].split("@", 1)[0]
-        if command in {"/start", "/link"}:
+        if (message.get("chat") or {}).get("type") == "private":
             client.send_message(
                 _chat_id(update),
-                "To connect Telegram, generate a one-time code in JobApply Settings → Telegram and send /link <code> here.",
+                "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send /link <code> or paste the code here.",
             )
             return
         logger.warning("Rejected unauthorized Telegram update")
