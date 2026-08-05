@@ -10,29 +10,31 @@
 {% endblock %}
 
 {% block content %}
-<div class="landing-shell">
-  <header class="landing-header container">
-    <a class="landing-brand" href="/" aria-label="JobApply home">
-      <img src="{% static 'img/jobapply-mark.svg' %}" alt="" aria-hidden="true">
-      <span>JobApply</span>
-      <span class="landing-demo-badge">{% trans "DEMO" %}</span>
-    </a>
-    <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
-      <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
-      <form action="{% url 'set_language' %}" method="post" class="app-language-form">
-        {% csrf_token %}
-        <input name="next" type="hidden" value="{{ request.get_full_path }}">
-        <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
-          {% if LANGUAGE_CODE == 'de' %}
-            <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="">
-          {% else %}
-            <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1e9-1f1ea.svg" alt="">
-          {% endif %}
-        </button>
-      </form>
-      <a class="btn btn-outline-light btn-sm" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Sign in" %}</a>
-    </nav>
-  </header>
+<div id="top" class="landing-shell">
+  <div class="landing-header-bar">
+    <header class="landing-header container">
+      <a class="landing-brand" href="/" aria-label="JobApply home">
+        <img src="{% static 'img/jobapply-mark.svg' %}" alt="" aria-hidden="true">
+        <span>JobApply</span>
+        <span class="landing-demo-badge">{% trans "DEMO" %}</span>
+      </a>
+      <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
+        <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
+        <form action="{% url 'set_language' %}" method="post" class="app-language-form">
+          {% csrf_token %}
+          <input name="next" type="hidden" value="{{ request.get_full_path }}">
+          <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
+            {% if LANGUAGE_CODE == 'de' %}
+              <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="">
+            {% else %}
+              <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1e9-1f1ea.svg" alt="">
+            {% endif %}
+          </button>
+        </form>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Sign in" %}</a>
+      </nav>
+    </header>
+  </div>
 
   <main>
     <section class="landing-hero container">
@@ -149,6 +151,8 @@
     </nav>
   </footer>
 </div>
+
+<a class="landing-back-to-top" href="#top" aria-label="{% trans 'Back to top' %}">↑</a>
 
 <div class="modal fade" id="cookieConsentModal" data-cookie-consent-modal tabindex="-1" aria-labelledby="cookieConsentTitle" aria-describedby="cookieConsentDescription" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered modal-lg">
