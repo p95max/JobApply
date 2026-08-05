@@ -210,8 +210,8 @@
   const syncButton = document.getElementById("aiAnalysisSync");
   const syncDays = document.getElementById("gmailSyncDays");
   const syncNewButton = document.getElementById("syncNewGmail");
-  const devReanalyzeDays = document.getElementById("devReanalyzeDays");
-  const devReanalyzeButton = document.getElementById("devReanalyzeGmail");
+  const optionalReanalysisDays = document.querySelector("[data-dev-reanalysis-days]");
+  const optionalReanalysisButton = document.querySelector("[data-dev-reanalysis-button]");
 
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
@@ -226,8 +226,8 @@
     syncButton.disabled = true;
     syncDays.disabled = true;
     syncNewButton.disabled = true;
-    if (devReanalyzeDays) devReanalyzeDays.disabled = true;
-    if (devReanalyzeButton) devReanalyzeButton.disabled = true;
+    if (optionalReanalysisDays) optionalReanalysisDays.disabled = true;
+    if (optionalReanalysisButton) optionalReanalysisButton.disabled = true;
     try {
       const params = new URLSearchParams({days});
       if (reanalyze) params.set("reanalyze", "1");
@@ -245,15 +245,15 @@
       syncButton.disabled = false;
       syncDays.disabled = false;
       syncNewButton.disabled = false;
-      if (devReanalyzeDays) devReanalyzeDays.disabled = false;
-      if (devReanalyzeButton) devReanalyzeButton.disabled = false;
+      if (optionalReanalysisDays) optionalReanalysisDays.disabled = false;
+      if (optionalReanalysisButton) optionalReanalysisButton.disabled = false;
     }
   }
 
   syncNewButton.addEventListener("click", () => syncGmail(syncDays.value));
-  devReanalyzeButton?.addEventListener("click", () => {
+  optionalReanalysisButton?.addEventListener("click", () => {
     if (window.confirm("{% trans 'Reanalyze saved messages for the selected period? This can consume your daily AI email limit.' %}")) {
-      syncGmail(devReanalyzeDays.value, true);
+      syncGmail(optionalReanalysisDays.value, true);
     }
   });
 
