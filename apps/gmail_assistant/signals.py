@@ -27,15 +27,18 @@ def notify_significant_gmail_proposal(
     company, position = _proposal_identity(instance)
     if event_type == GmailEventType.REJECTION:
         title = "Application rejected"
+        icon = "❌"
         delivery_type = "gmail_rejection"
     else:
         title = "Interview invitation"
+        icon = "📅"
         delivery_type = "gmail_interview_invitation"
 
     text = (
-        f"<b>{escape(title)}</b>\n"
-        f"{escape(company)} — {escape(position)}\n"
-        "Review the pending proposal in JobApply."
+        f"{icon} <b>{escape(title)}</b>\n\n"
+        f"🏢 Company: <b>{escape(company)}</b>\n"
+        f"💼 Position: <b>{escape(position)}</b>\n\n"
+        "🔎 Review the pending proposal in JobApply."
     )
     event_key = f"{delivery_type}:{instance.message.message_id}"
 
