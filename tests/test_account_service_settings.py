@@ -83,21 +83,30 @@ def test_linked_ids_are_authorized_without_env_allowlist(account):
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")
-def test_settings_generates_hashed_telegram_link_and_redirects_to_bot(client, account):
+def test_settings_generates_one_time_telegram_command_without_redirecting_to_bot(client, account):
     user, profile = account
     client.force_login(user)
 
     page = client.get(reverse("accounts:settings"))
     assert page.status_code == 200
-    assert 'method="post" target="_blank"' in page.content.decode()
+    assert 'name="action" value="telegram_link"' in page.content.decode()
 
     response = client.post(reverse("accounts:settings"), {"action": "telegram_link"})
 
     assert response.status_code == 302
-    assert response.url.startswith("https://t.me/jobapply_test_bot?start=")
+    assert response.url == reverse("accounts:settings")
     profile.refresh_from_db()
     assert profile.telegram_link_token_hash
     assert len(profile.telegram_link_token_hash) == len(hashlib.sha256(b"x").hexdigest())
+
+    page = client.get(reverse("accounts:settings"))
+    content = page.content.decode()
+    assert "One-time connection code" in content
+    assert "/start " in content
+    assert "Connect automatically instead" in content
+
+    page = client.get(reverse("accounts:settings"))
+    assert "/start " in page.content.decode()
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")

@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
@@ -74,8 +75,14 @@ def consent(request):
 @login_required
 def settings_view(request):
     profile = ensure_profile(request.user)
-    link_command = request.session.pop("telegram_link_command", "")
-    telegram_link_url = request.session.pop("telegram_link_url", "")
+    link_command = ""
+    telegram_link_url = ""
+    if profile.telegram_link_token_expires_at and profile.telegram_link_token_expires_at > timezone.now():
+        link_command = request.session.get("telegram_link_command", "")
+        telegram_link_url = request.session.get("telegram_link_url", "")
+    else:
+        request.session.pop("telegram_link_command", None)
+        request.session.pop("telegram_link_url", None)
     bot_username = str(getattr(settings, "TELEGRAM_BOT_USERNAME", "")).strip().lstrip("@")
     telegram_bot_url = f"https://t.me/{bot_username}" if bot_username else ""
 
@@ -85,9 +92,8 @@ def settings_view(request):
             token = profile.create_telegram_link_token()
             link_command = f"/start {token}"
             telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
-            if telegram_link_url:
-                return redirect(telegram_link_url)
             request.session["telegram_link_command"] = link_command
+            request.session["telegram_link_url"] = telegram_link_url
             messages.info(request, "Telegram link is valid for 15 minutes.")
             return redirect("accounts:settings")
         if action == "telegram_disconnect":

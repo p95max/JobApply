@@ -18,6 +18,14 @@
     {% include "includes/apps_list_header.html" %}
 
     {% if items %}
+      {% include 'includes/apps_list_cards.html' %}
+
+      <div id="print-area" class="d-none d-md-block dashboard-card applications-table-card">
+        <div class="table-responsive">
+          {% include 'includes/apps_list_table.html' %}
+        </div>
+      </div>
+
       <div class="applications-selection no-print">
         <div class="small text-body-secondary">
           {% trans "Selected:" %} <span class="js-selected-count">0</span>
@@ -25,14 +33,6 @@
         <button class="btn btn-sm btn-outline-danger js-bulk-delete" type="button" disabled>
           🗑️ {% trans "Delete selected" %}
         </button>
-      </div>
-
-      {% include 'includes/apps_list_cards.html' %}
-
-      <div id="print-area" class="d-none d-md-block dashboard-card applications-table-card">
-        <div class="table-responsive">
-          {% include 'includes/apps_list_table.html' %}
-        </div>
       </div>
 
       {% include 'includes/paginator.html' %}
