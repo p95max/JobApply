@@ -8,13 +8,11 @@
       <h1 class="h4 mb-2">{% trans "Consent" %}</h1>
 
       <p class="text-body-secondary">
-        {% blocktrans %}
-        - To use JobApply, you must confirm that you agree to grant access to your Google account for authentication and, only when you enable them, selected Google services (e.g., Google Drive backups, Google Sheets, Google Calendar) to provide the requested features;
+        {% trans "JobApply uses your Google account for sign-in. During Google authorization it requests profile and email data, Gmail read-only access for the Gmail Assistant, and Google Drive file access for backups." %}
         <br>
-        - Google Drive access is optional and is only requested/used if you enable Cloud Backups to upload your backups to your own Drive;
+        {% trans "Gmail messages are read when you start a Gmail sync or enable automatic Gmail checks. AI analysis is optional; if enabled, only sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}
         <br>
-        - The administration is not responsible for the storage and protection of your personal data.
-        {% endblocktrans %}
+        {% trans "Please read the" %} <a href="{% url 'legal:privacy' %}">{% trans "privacy policy" %}</a> {% trans "before continuing." %}
       </p>
 
       <form method="post">
@@ -23,7 +21,7 @@
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" value="1" id="consent" name="consent" required>
           <label class="form-check-label" for="consent">
-            {% trans "I agree" %}
+            {% trans "I have read the privacy policy and agree to use JobApply with my own Google account." %}
           </label>
         </div>
 

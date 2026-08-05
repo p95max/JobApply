@@ -177,4 +177,13 @@ GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED = getenv("GMAIL_ASSISTANT_RULES_FALLBACK_
 
 TELEGRAM_BOT_USERNAME = getenv("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
 
+LEGAL_PROVIDER_NAME = getenv("LEGAL_PROVIDER_NAME", "[Bitte Namen der verantwortlichen Person eintragen]").strip()
+LEGAL_PROVIDER_ADDRESS = getenv("LEGAL_PROVIDER_ADDRESS", "[Bitte ladungsfähige Anschrift eintragen]").strip()
+LEGAL_CONTACT_EMAIL = getenv("LEGAL_CONTACT_EMAIL", "[Bitte Kontakt-E-Mail eintragen]").strip()
+LEGAL_PRIVACY_CONTACT_EMAIL = getenv("LEGAL_PRIVACY_CONTACT_EMAIL", LEGAL_CONTACT_EMAIL).strip()
+LEGAL_SUPERVISORY_AUTHORITY = getenv(
+    "LEGAL_SUPERVISORY_AUTHORITY", "[Bitte zuständige Datenschutz-Aufsichtsbehörde eintragen]"
+).strip()
+LEGAL_LOG_RETENTION = getenv("LEGAL_LOG_RETENTION", "[Bitte Aufbewahrungsdauer für Server-Logs eintragen]").strip()
+
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")

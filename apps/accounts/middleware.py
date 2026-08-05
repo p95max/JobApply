@@ -16,6 +16,9 @@ class ConsentRequiredMiddleware:
         "/accounts/",
         "/static/",
         "/media/",
+        "/impressum/",
+        "/datenschutz/",
+        "/nutzungsbedingungen/",
     )
 
     def __init__(self, get_response):

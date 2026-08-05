@@ -19,6 +19,8 @@ def test_public_root_renders_landing_page(client):
     assert "Telegram bot notifications" in content
     assert "Google Drive backup integration" in content
     assert "control token usage" in content
+    assert "DEMO" in content
+    assert reverse("legal:privacy") in content
 
 
 @pytest.mark.django_db

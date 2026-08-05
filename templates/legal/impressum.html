@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Impressum · JobApply{% endblock %}
+
+{% block content %}
+<main class="container legal-page py-5">
+  <h1>Impressum</h1>
+  <p class="text-body-secondary">Angaben gemäß § 5 DDG</p>
+
+  {% if legal_placeholders_present %}
+    <div class="alert legal-placeholder" role="alert">
+      <strong>Demo-Placeholder:</strong> Die markierten Angaben müssen vor einer öffentlichen Veröffentlichung durch echte, vollständige Angaben ersetzt werden.
+    </div>
+  {% endif %}
+
+  <dl class="legal-meta mt-4">
+    <dt>Verantwortlich für diese Website</dt>
+    <dd>{{ provider_name }}</dd>
+    <dt>Anschrift</dt>
+    <dd>{{ provider_address }}</dd>
+    <dt>Kontakt</dt>
+    <dd><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></dd>
+  </dl>
+
+  <h2>Haftung für Inhalte</h2>
+  <p>Die Inhalte dieser Demo wurden mit Sorgfalt erstellt. Eine Gewähr für Aktualität, Vollständigkeit und Richtigkeit wird nicht übernommen.</p>
+
+  <h2>Hinweis zur Demo</h2>
+  <p>JobApply wird als Portfolio-Demo bereitgestellt. Funktionen und Oberflächen können sich jederzeit ändern. Bitte verwende den Dienst nur mit einem eigenen Google-Konto und überprüfe alle vorgeschlagenen Änderungen selbst.</p>
+</main>
+{% endblock %}

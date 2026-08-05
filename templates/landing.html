@@ -3,6 +3,7 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block page_css %}
 <link rel="stylesheet" href="{% static 'css/landing_carousel.css' %}?v=1">
@@ -14,6 +15,7 @@
     <a class="landing-brand" href="/" aria-label="JobApply home">
       <img src="{% static 'img/jobapply-mark.svg' %}" alt="" aria-hidden="true">
       <span>JobApply</span>
+      <span class="landing-demo-badge">{% trans "DEMO" %}</span>
     </a>
     <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
       <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
@@ -133,7 +135,14 @@
     <section class="landing-cta container"><div><div class="landing-eyebrow">{% trans "Ready to organize your search?" %}</div><h2>{% trans "Start with one clear dashboard." %}</h2></div><a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a></section>
   </main>
 
-  <footer class="landing-footer container"><span>© 2026 JobApply</span><span>{% trans "Application tracking with review-first automation" %}</span></footer>
+  <footer class="landing-footer container">
+    <span>© 2026 JobApply · {% trans "Demo" %}</span>
+    <nav class="landing-footer__links" aria-label="{% trans 'Legal navigation' %}">
+      <a href="{% url 'legal:impressum' %}">{% trans "Impressum" %}</a>
+      <a href="{% url 'legal:privacy' %}">{% trans "Privacy policy" %}</a>
+      <a href="{% url 'legal:terms' %}">{% trans "Terms of use" %}</a>
+    </nav>
+  </footer>
 </div>
 {% endblock %}
 

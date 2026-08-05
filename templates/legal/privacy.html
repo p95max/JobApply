@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Datenschutzerklärung · JobApply{% endblock %}
+
+{% block content %}
+<main class="container legal-page py-5">
+  <h1>Datenschutzerklärung</h1>
+  <p class="text-body-secondary">Stand: 5. August 2026</p>
+
+  {% if legal_placeholders_present %}
+    <div class="alert legal-placeholder" role="alert">
+      <strong>Demo-Placeholder:</strong> Diese Vorlage ist noch nicht veröffentlichungsfertig. Verantwortliche Person, Anschrift, Kontakt, Log-Aufbewahrung und Aufsichtsbehörde müssen ergänzt und rechtlich geprüft werden.
+    </div>
+  {% endif %}
+
+  <h2>1. Verantwortliche Stelle</h2>
+  <dl class="legal-meta">
+    <dt>Name</dt><dd>{{ provider_name }}</dd>
+    <dt>Anschrift</dt><dd>{{ provider_address }}</dd>
+    <dt>Datenschutzkontakt</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd>
+  </dl>
+
+  <h2>2. Zweck und verarbeitete Daten</h2>
+  <p>JobApply hilft Nutzerinnen und Nutzern, die eigene Jobsuche zu organisieren. Dafür verarbeitet der Dienst insbesondere Kontodaten aus Google OAuth (z. B. Name, E-Mail-Adresse und technische Konto-ID), Bewerbungs-, Interview- und Notizdaten, sowie technische Protokolldaten.</p>
+  <p>Wenn ein Nutzer Gmail verbindet, verarbeitet JobApply nur die Daten des verbundenen Google-Kontos. Je nach verwendeter Funktion können Absender, Empfänger, Betreff, Zeitpunkt, Textauszüge und Textinhalte von E-Mails verarbeitet und gespeichert werden. Das Lesen erfolgt durch einen manuellen Sync oder bei aktivierter automatischer Prüfung. Anhänge werden nicht an die AI-Analyse übertragen.</p>
+
+  <h2>3. Google OAuth und Gmail</h2>
+  <p>Die Anmeldung erfolgt über Google OAuth. Bei der Autorisierung werden Profil- und E-Mail-Daten sowie die Berechtigungen <code>gmail.readonly</code> und <code>drive.file</code> angefordert. Die Berechtigung <code>gmail.readonly</code> wird ausschließlich verwendet, um vom Nutzer ausgelöste Funktionen zur Auswertung eigener Gmail-Nachrichten bereitzustellen. Der Zugriff kann über die Google-Kontoeinstellungen widerrufen werden.</p>
+  <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
+  <p>Google-Nutzerdaten werden nicht verkauft, nicht für Werbung verwendet und nicht zum Training allgemeiner Modelle genutzt.</p>
+
+  <h2>4. Optionale AI-Analyse</h2>
+  <p>Die AI-Analyse ist optional und wird erst nach Aktivierung durch den Nutzer eingesetzt. Dabei können bereinigter Betreff und E-Mail-Text an den konfigurierten AI-Anbieter (derzeit OpenAI) übermittelt werden. Anhänge werden nicht übermittelt. Die Analyse erzeugt nur Vorschläge; Änderungen an Bewerbungen werden erst nach einer Bestätigung durch den Nutzer vorgenommen.</p>
+
+  <h2>5. Empfänger und Drittlandübermittlungen</h2>
+  <p>Zur technischen Bereitstellung können Hosting-Anbieter, Google (OAuth, Gmail und Drive), der optionale AI-Anbieter sowie – wenn vom Nutzer aktiviert – Telegram eingebunden sein. Bei einer Verarbeitung außerhalb der EU/des EWR können zusätzliche Garantien erforderlich sein. Details sind vor dem Produktivbetrieb anhand der tatsächlich eingesetzten Anbieter und Verträge zu ergänzen.</p>
+
+  <h2>6. Rechtsgrundlagen</h2>
+  <p>Die Verarbeitung erfolgt, soweit erforderlich, zur Bereitstellung des vom Nutzer angeforderten Dienstes (Art. 6 Abs. 1 lit. b DSGVO), auf Grundlage einer Einwilligung für optionale Funktionen wie AI-Analyse (Art. 6 Abs. 1 lit. a DSGVO) sowie für Sicherheit und Fehleranalyse auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO).</p>
+
+  <h2>7. Speicherdauer</h2>
+  <p>Bewerbungs- und Gmail-Daten werden gespeichert, solange das Nutzerkonto bzw. die Verbindung besteht oder bis eine Löschung verlangt wird, sofern keine gesetzlichen Pflichten entgegenstehen. Server-Logs werden für {{ log_retention }} gespeichert.</p>
+
+  <h2>8. Cookies</h2>
+  <p>JobApply verwendet technisch erforderliche Session- und Sicherheits-Cookies für Anmeldung und Schutz vor missbräuchlichen Anfragen. Es werden keine Analyse- oder Werbe-Cookies eingesetzt, solange solche Dienste nicht ausdrücklich ergänzt werden.</p>
+
+  <h2>9. Rechte betroffener Personen</h2>
+  <p>Du hast insbesondere Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Eine erteilte Einwilligung kann jederzeit mit Wirkung für die Zukunft widerrufen werden. Wende dich hierfür an <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
+  <p>Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren. Zuständig ist in der Regel die Aufsichtsbehörde deines gewöhnlichen Aufenthaltsorts, Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für die verantwortliche Stelle: {{ supervisory_authority }}.</p>
+</main>
+{% endblock %}
