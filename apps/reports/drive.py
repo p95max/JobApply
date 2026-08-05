@@ -75,7 +75,7 @@ class DriveFile:
 def get_drive_status(user) -> dict:
     def _do():
         backup_settings = CloudBackupSettings.objects.filter(user=user).only("drive_connected").first()
-        if not backup_settings or not backup_settings.drive_connected:
+        if backup_settings is not None and not backup_settings.drive_connected:
             return {"connected": False, "has_refresh_token": False}
 
         acc = SocialAccount.objects.filter(user=user, provider="google").first()
@@ -84,7 +84,7 @@ def get_drive_status(user) -> dict:
 
         tok = SocialToken.objects.filter(account=acc).first()
         if not tok:
-            return {"connected": False, "has_refresh_token": False}
+            return {"connected": True, "has_refresh_token": False}
 
         refresh = (tok.token_secret or "").strip()
         return {"connected": True, "has_refresh_token": bool(refresh)}
@@ -98,7 +98,7 @@ def get_drive_status(user) -> dict:
 
 def _credentials_from_allauth(user) -> Credentials:
     backup_settings = CloudBackupSettings.objects.filter(user=user).only("drive_connected").first()
-    if not backup_settings or not backup_settings.drive_connected:
+    if backup_settings is not None and not backup_settings.drive_connected:
         raise PermissionDenied("Google Drive is not connected.")
 
     acc = SocialAccount.objects.filter(user=user, provider="google").first()
