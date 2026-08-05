@@ -61,7 +61,7 @@ current_branch="$(sudo -u "$APP_USER" git -C "$APP_DIR" branch --show-current)"
   exit 1
 }
 
-[[ -z "$(sudo -u "$APP_USER" git -C "$APP_DIR" status --porcelain)" ]] || {
+[[ -z "$(sudo -u "$APP_USER" git -C "$APP_DIR" status --porcelain --untracked-files=all)" ]] || {
   echo "Refusing deploy: production working tree has local changes." >&2
   exit 1
 }
