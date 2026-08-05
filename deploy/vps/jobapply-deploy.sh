@@ -79,6 +79,14 @@ sudo -u "$APP_USER" git -C "$APP_DIR" merge-base --is-ancestor HEAD "origin/$BRA
 }
 sudo -u "$APP_USER" git -C "$APP_DIR" merge --ff-only "origin/$BRANCH"
 
+echo "==> Synchronizing deploy operations scripts"
+install -o root -g jobapply -m 0750 \
+  "$APP_DIR/deploy/vps/jobapply-deploy-notify.sh" \
+  /usr/local/bin/jobapply-deploy-notify.sh
+install -o root -g jobapply -m 0750 \
+  "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
+  /usr/local/sbin/jobapply-deploy
+
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
 if command -v poetry >/dev/null 2>&1; then
