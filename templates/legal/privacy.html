@@ -1,53 +1,75 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}Datenschutzerklärung · JobApply{% endblock %}
+{% block title %}{% if LANGUAGE_CODE == "de" %}Datenschutzerklärung{% else %}Privacy Policy{% endif %} · JobApply{% endblock %}
 
 {% block content %}
+{% if LANGUAGE_CODE == "de" %}
 <main class="container legal-page py-5">
   <h1>Datenschutzerklärung</h1>
   <p class="text-body-secondary">Stand: 5. August 2026</p>
 
   {% if legal_placeholders_present %}
-    <div class="alert legal-placeholder" role="alert">
-      <strong>Demo-Placeholder:</strong> Diese Vorlage ist noch nicht veröffentlichungsfertig. Verantwortliche Person, Anschrift, Kontakt, Log-Aufbewahrung und Aufsichtsbehörde müssen ergänzt und rechtlich geprüft werden.
-    </div>
+    <div class="alert legal-placeholder" role="alert"><strong>Demo-Placeholder:</strong> Diese Vorlage ist noch nicht veröffentlichungsfertig. Verantwortliche Person, Anschrift, Kontakt, Log-Aufbewahrung und Aufsichtsbehörde müssen ergänzt und rechtlich geprüft werden.</div>
   {% endif %}
 
   <h2>1. Verantwortliche Stelle</h2>
-  <dl class="legal-meta">
-    <dt>Name</dt><dd>{{ provider_name }}</dd>
-    <dt>Anschrift</dt><dd>{{ provider_address }}</dd>
-    <dt>Datenschutzkontakt</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd>
-  </dl>
-
+  <dl class="legal-meta"><dt>Name</dt><dd>{{ provider_name }}</dd><dt>Anschrift</dt><dd>{{ provider_address }}</dd><dt>Datenschutzkontakt</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd></dl>
   <h2>2. Zweck und verarbeitete Daten</h2>
-  <p>JobApply hilft Nutzerinnen und Nutzern, die eigene Jobsuche zu organisieren. Dafür verarbeitet der Dienst insbesondere Kontodaten aus Google OAuth (z. B. Name, E-Mail-Adresse und technische Konto-ID), Bewerbungs-, Interview- und Notizdaten, sowie technische Protokolldaten.</p>
+  <p>JobApply hilft Nutzerinnen und Nutzern, die eigene Jobsuche zu organisieren. Dafür verarbeitet der Dienst insbesondere Kontodaten aus Google OAuth (z. B. Name, E-Mail-Adresse und technische Konto-ID), Bewerbungs-, Interview- und Notizdaten sowie technische Protokolldaten.</p>
   <p>Wenn ein Nutzer Gmail verbindet, verarbeitet JobApply nur die Daten des verbundenen Google-Kontos. Je nach verwendeter Funktion können Absender, Empfänger, Betreff, Zeitpunkt, Textauszüge und Textinhalte von E-Mails verarbeitet und gespeichert werden. Das Lesen erfolgt durch einen manuellen Sync oder bei aktivierter automatischer Prüfung. Anhänge werden nicht an die AI-Analyse übertragen.</p>
-
   <h2>3. Google OAuth, Gmail und Drive</h2>
   <p>Die Anmeldung erfolgt über Google OAuth. Mit deiner Einwilligung zur Nutzung von JobApply mit deinem Google-Konto und bei der Google-Autorisierung werden Profil- und E-Mail-Daten sowie die Berechtigungen <code>gmail.readonly</code> und <code>drive.file</code> angefordert.</p>
   <p>Die Berechtigung <code>gmail.readonly</code> wird ausschließlich verwendet, um vom Nutzer ausgelöste Funktionen zur Auswertung eigener Gmail-Nachrichten bereitzustellen. Die Berechtigung <code>drive.file</code> wird ausschließlich für die vom Nutzer aktivierten Google-Drive-Backups verwendet: JobApply erstellt, listet, aktualisiert und löscht dabei nur die von JobApply erzeugten Sicherungsdateien und greift nicht auf andere Drive-Inhalte zu. Der Zugriff kann über die Google-Kontoeinstellungen widerrufen werden.</p>
   <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
   <p>Google-Nutzerdaten werden nicht verkauft, nicht für Werbung verwendet und nicht zum Training allgemeiner Modelle genutzt.</p>
-
   <h2>4. Optionale AI-Analyse</h2>
   <p>Die AI-Analyse ist optional und wird erst nach Aktivierung durch den Nutzer eingesetzt. Dabei können bereinigter Betreff und E-Mail-Text an den konfigurierten AI-Anbieter (derzeit OpenAI) übermittelt werden. Anhänge werden nicht übermittelt. Die Analyse erzeugt nur Vorschläge; Änderungen an Bewerbungen werden erst nach einer Bestätigung durch den Nutzer vorgenommen.</p>
-
   <h2>5. Empfänger und Drittlandübermittlungen</h2>
   <p>Zur technischen Bereitstellung können Hosting-Anbieter, Google (OAuth, Gmail und Drive), der optionale AI-Anbieter sowie – wenn vom Nutzer aktiviert – Telegram eingebunden sein. Bei einer Verarbeitung außerhalb der EU/des EWR können zusätzliche Garantien erforderlich sein. Details sind vor dem Produktivbetrieb anhand der tatsächlich eingesetzten Anbieter und Verträge zu ergänzen.</p>
-
   <h2>6. Rechtsgrundlagen</h2>
   <p>Die Verarbeitung erfolgt, soweit erforderlich, zur Bereitstellung des vom Nutzer angeforderten Dienstes (Art. 6 Abs. 1 lit. b DSGVO), auf Grundlage einer Einwilligung für optionale Funktionen wie AI-Analyse (Art. 6 Abs. 1 lit. a DSGVO) sowie für Sicherheit und Fehleranalyse auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO).</p>
-
   <h2>7. Speicherdauer</h2>
   <p>Bewerbungs- und Gmail-Daten werden gespeichert, solange das Nutzerkonto bzw. die Verbindung besteht oder bis eine Löschung verlangt wird, sofern keine gesetzlichen Pflichten entgegenstehen. Server-Logs werden für {{ log_retention }} gespeichert.</p>
-
   <h2>8. Cookies</h2>
   <p>JobApply verwendet technisch erforderliche Session- und Sicherheits-Cookies für Anmeldung und Schutz vor missbräuchlichen Anfragen. Es werden keine Analyse- oder Werbe-Cookies eingesetzt, solange solche Dienste nicht ausdrücklich ergänzt werden.</p>
-
   <h2>9. Rechte betroffener Personen</h2>
   <p>Du hast insbesondere Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Eine erteilte Einwilligung kann jederzeit mit Wirkung für die Zukunft widerrufen werden. Wende dich hierfür an <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
   <p>Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren. Zuständig ist in der Regel die Aufsichtsbehörde deines gewöhnlichen Aufenthaltsorts, Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für die verantwortliche Stelle: {{ supervisory_authority }}.</p>
 </main>
+{% else %}
+<main class="container legal-page py-5">
+  <h1>Privacy Policy</h1>
+  <p class="text-body-secondary">Last updated: August 5, 2026</p>
+
+  {% if legal_placeholders_present %}
+    <div class="alert legal-placeholder" role="alert"><strong>Demo placeholder:</strong> This template is not ready for publication. The responsible person, address, contact details, log retention and supervisory authority must be completed and legally reviewed.</div>
+  {% endif %}
+
+  <h2>1. Controller</h2>
+  <dl class="legal-meta"><dt>Name</dt><dd>{{ provider_name }}</dd><dt>Address</dt><dd>{{ provider_address }}</dd><dt>Privacy contact</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd></dl>
+  <h2>2. Purpose and data processed</h2>
+  <p>JobApply helps users organise their job search. For this purpose, the service processes Google OAuth account data (such as name, email address and technical account ID), application, interview and note data, and technical log data.</p>
+  <p>When a user connects Gmail, JobApply processes only data from that connected Google account. Depending on the feature used, this may include email sender, recipient, subject, time, excerpts and text content. Messages are read through a manual sync or when automatic checks are enabled. Attachments are never sent to AI analysis.</p>
+  <h2>3. Google OAuth, Gmail and Drive</h2>
+  <p>Sign-in uses Google OAuth. By consenting to use JobApply with your Google account and during Google authorisation, profile and email data plus the <code>gmail.readonly</code> and <code>drive.file</code> permissions are requested.</p>
+  <p>The <code>gmail.readonly</code> permission is used solely to provide user-triggered features for reviewing the user’s Gmail messages. The <code>drive.file</code> permission is used solely for Google Drive backups enabled by the user: JobApply creates, lists, updates and deletes only backup files created by JobApply and does not access other Drive content. Access can be revoked in Google Account settings.</p>
+  <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
+  <p>Google user data is not sold, used for advertising, or used to train general-purpose models.</p>
+  <h2>4. Optional AI analysis</h2>
+  <p>AI analysis is optional and is used only after the user enables it. Sanitised email subject and text may be sent to the configured AI provider (currently OpenAI). Attachments are not sent. Analysis produces suggestions only; application changes require user confirmation.</p>
+  <h2>5. Recipients and international transfers</h2>
+  <p>Hosting providers, Google (OAuth, Gmail and Drive), the optional AI provider and, when enabled by the user, Telegram may be involved in providing the service. Processing outside the EU/EEA may require additional safeguards. Before production use, details must be completed based on the actual providers and agreements used.</p>
+  <h2>6. Legal bases</h2>
+  <p>Where necessary, processing is carried out to provide the service requested by the user (Art. 6(1)(b) GDPR), based on consent for optional features such as AI analysis (Art. 6(1)(a) GDPR), and for security and error analysis based on legitimate interests (Art. 6(1)(f) GDPR).</p>
+  <h2>7. Retention</h2>
+  <p>Application and Gmail data is kept while the user account or connection exists, or until deletion is requested, unless legal obligations require otherwise. Server logs are retained for {{ log_retention }}.</p>
+  <h2>8. Cookies</h2>
+  <p>JobApply uses technically necessary session and security cookies for sign-in and protection against abusive requests. No analytics or advertising cookies are used unless such services are expressly added.</p>
+  <h2>9. Your rights</h2>
+  <p>You may have rights of access, rectification, erasure, restriction of processing, data portability and objection. Consent can be withdrawn at any time with effect for the future. Contact <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
+  <p>You may also lodge a complaint with a data protection supervisory authority. The responsible authority is usually the authority where you live or work, or where the alleged infringement took place. Controller’s authority: {{ supervisory_authority }}.</p>
+</main>
+{% endif %}
 {% endblock %}

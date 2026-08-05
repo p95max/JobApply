@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
@@ -17,6 +18,8 @@ from apps.accounts.models import UserProfile
     ],
 )
 def test_legal_pages_are_public(client, url_name, expected):
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = "de"
+
     response = client.get(reverse(url_name))
 
     assert response.status_code == 200
@@ -33,6 +36,8 @@ def test_legal_pages_are_public(client, url_name, expected):
     LEGAL_LOG_RETENTION="14 Tage",
 )
 def test_privacy_page_uses_configured_legal_details(client):
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = "de"
+
     response = client.get(reverse("legal:privacy"))
 
     assert response.status_code == 200
@@ -53,3 +58,16 @@ def test_legal_pages_are_available_before_consent(client):
     response = client.get(reverse("legal:privacy"))
 
     assert response.status_code == 200
+
+
+def test_legal_pages_use_english_when_english_is_selected(client):
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = "en"
+
+    privacy = client.get(reverse("legal:privacy"))
+    impressum = client.get(reverse("legal:impressum"))
+    terms = client.get(reverse("legal:terms"))
+
+    assert b"Privacy Policy" in privacy.content
+    assert b"Google Drive backups" in privacy.content
+    assert b"Legal notice" in impressum.content
+    assert b"Terms of Use" in terms.content

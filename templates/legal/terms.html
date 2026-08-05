@@ -1,32 +1,31 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}Nutzungsbedingungen · JobApply{% endblock %}
+{% block title %}{% if LANGUAGE_CODE == "de" %}Nutzungsbedingungen{% else %}Terms of Use{% endif %} · JobApply{% endblock %}
 
 {% block content %}
+{% if LANGUAGE_CODE == "de" %}
 <main class="container legal-page py-5">
   <h1>Nutzungsbedingungen</h1>
   <p class="text-body-secondary">Stand: 5. August 2026</p>
-
-  {% if legal_placeholders_present %}
-    <div class="alert legal-placeholder" role="alert">
-      <strong>Demo-Placeholder:</strong> Diese Nutzungsbedingungen sind eine Vorlage und müssen vor einem regulären öffentlichen Betrieb rechtlich geprüft und ergänzt werden.
-    </div>
-  {% endif %}
-
-  <h2>1. Zweck des Dienstes</h2>
-  <p>JobApply ist eine Portfolio-Demo zur persönlichen Organisation einer Jobsuche. Der Dienst unterstützt beim Erfassen von Bewerbungen, Auswerten eigener Gmail-Nachrichten und Prüfen von Vorschlägen.</p>
-
-  <h2>2. Eigenverantwortliche Nutzung</h2>
-  <p>Alle Vorschläge, Klassifizierungen und AI-Auswertungen sind unverbindlich. Nutzer prüfen Angaben, Fristen, Statusänderungen und Entscheidungen selbst. JobApply ersetzt keine Rechts-, Karriere- oder Personalberatung und versendet keine Bewerbungen automatisch.</p>
-
-  <h2>3. Google-Konto und Daten</h2>
-  <p>Du darfst nur ein Google-Konto verbinden, zu dessen Nutzung du berechtigt bist. Du darfst keine fremden Zugänge verwenden und keine Daten Dritter ohne ausreichende Rechtsgrundlage in den Dienst übertragen.</p>
-
-  <h2>4. Verfügbarkeit und Änderungen</h2>
-  <p>Als Demo kann der Dienst eingeschränkt, geändert oder beendet werden. Es besteht kein Anspruch auf eine bestimmte Verfügbarkeit, Datensicherung oder dauerhafte Speicherung.</p>
-
-  <h2>5. Kontakt</h2>
-  <p>Fragen zum Dienst oder zu diesen Bedingungen: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+  {% if legal_placeholders_present %}<div class="alert legal-placeholder" role="alert"><strong>Demo-Placeholder:</strong> Diese Nutzungsbedingungen sind eine Vorlage und müssen vor einem regulären öffentlichen Betrieb rechtlich geprüft und ergänzt werden.</div>{% endif %}
+  <h2>1. Zweck des Dienstes</h2><p>JobApply ist eine Portfolio-Demo zur persönlichen Organisation einer Jobsuche. Der Dienst unterstützt beim Erfassen von Bewerbungen, Auswerten eigener Gmail-Nachrichten und Prüfen von Vorschlägen.</p>
+  <h2>2. Eigenverantwortliche Nutzung</h2><p>Alle Vorschläge, Klassifizierungen und AI-Auswertungen sind unverbindlich. Nutzer prüfen Angaben, Fristen, Statusänderungen und Entscheidungen selbst. JobApply ersetzt keine Rechts-, Karriere- oder Personalberatung und versendet keine Bewerbungen automatisch.</p>
+  <h2>3. Google-Konto und Daten</h2><p>Du darfst nur ein Google-Konto verbinden, zu dessen Nutzung du berechtigt bist. Du darfst keine fremden Zugänge verwenden und keine Daten Dritter ohne ausreichende Rechtsgrundlage in den Dienst übertragen.</p>
+  <h2>4. Verfügbarkeit und Änderungen</h2><p>Als Demo kann der Dienst eingeschränkt, geändert oder beendet werden. Es besteht kein Anspruch auf eine bestimmte Verfügbarkeit, Datensicherung oder dauerhafte Speicherung.</p>
+  <h2>5. Kontakt</h2><p>Fragen zum Dienst oder zu diesen Bedingungen: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
 </main>
+{% else %}
+<main class="container legal-page py-5">
+  <h1>Terms of Use</h1>
+  <p class="text-body-secondary">Last updated: August 5, 2026</p>
+  {% if legal_placeholders_present %}<div class="alert legal-placeholder" role="alert"><strong>Demo placeholder:</strong> These terms are a template and must be legally reviewed and completed before regular public operation.</div>{% endif %}
+  <h2>1. Purpose of the service</h2><p>JobApply is a portfolio demo for organising a personal job search. The service supports recording applications, reviewing the user’s Gmail messages and reviewing suggestions.</p>
+  <h2>2. Responsible use</h2><p>All suggestions, classifications and AI analyses are non-binding. Users must verify information, deadlines, status changes and decisions themselves. JobApply does not replace legal, career or recruitment advice and does not send applications automatically.</p>
+  <h2>3. Google account and data</h2><p>You may connect only a Google account you are authorised to use. Do not use another person’s access or transfer third-party data to the service without a sufficient legal basis.</p>
+  <h2>4. Availability and changes</h2><p>As a demo, the service may be restricted, changed or discontinued. There is no entitlement to a particular availability, backup or permanent retention.</p>
+  <h2>5. Contact</h2><p>Questions about the service or these terms: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+</main>
+{% endif %}
 {% endblock %}

@@ -1,32 +1,27 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}Impressum · JobApply{% endblock %}
+{% block title %}{% if LANGUAGE_CODE == "de" %}Impressum{% else %}Legal notice{% endif %} · JobApply{% endblock %}
 
 {% block content %}
+{% if LANGUAGE_CODE == "de" %}
 <main class="container legal-page py-5">
   <h1>Impressum</h1>
   <p class="text-body-secondary">Angaben gemäß § 5 DDG</p>
-
-  {% if legal_placeholders_present %}
-    <div class="alert legal-placeholder" role="alert">
-      <strong>Demo-Placeholder:</strong> Die markierten Angaben müssen vor einer öffentlichen Veröffentlichung durch echte, vollständige Angaben ersetzt werden.
-    </div>
-  {% endif %}
-
-  <dl class="legal-meta mt-4">
-    <dt>Verantwortlich für diese Website</dt>
-    <dd>{{ provider_name }}</dd>
-    <dt>Anschrift</dt>
-    <dd>{{ provider_address }}</dd>
-    <dt>Kontakt</dt>
-    <dd><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></dd>
-  </dl>
-
-  <h2>Haftung für Inhalte</h2>
-  <p>Die Inhalte dieser Demo wurden mit Sorgfalt erstellt. Eine Gewähr für Aktualität, Vollständigkeit und Richtigkeit wird nicht übernommen.</p>
-
-  <h2>Hinweis zur Demo</h2>
-  <p>JobApply wird als Portfolio-Demo bereitgestellt. Funktionen und Oberflächen können sich jederzeit ändern. Bitte verwende den Dienst nur mit einem eigenen Google-Konto und überprüfe alle vorgeschlagenen Änderungen selbst.</p>
+  {% if legal_placeholders_present %}<div class="alert legal-placeholder" role="alert"><strong>Demo-Placeholder:</strong> Die markierten Angaben müssen vor einer öffentlichen Veröffentlichung durch echte, vollständige Angaben ersetzt werden.</div>{% endif %}
+  <dl class="legal-meta mt-4"><dt>Verantwortlich für diese Website</dt><dd>{{ provider_name }}</dd><dt>Anschrift</dt><dd>{{ provider_address }}</dd><dt>Kontakt</dt><dd><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></dd></dl>
+  <h2>Haftung für Inhalte</h2><p>Die Inhalte dieser Demo wurden mit Sorgfalt erstellt. Eine Gewähr für Aktualität, Vollständigkeit und Richtigkeit wird nicht übernommen.</p>
+  <h2>Hinweis zur Demo</h2><p>JobApply wird als Portfolio-Demo bereitgestellt. Funktionen und Oberflächen können sich jederzeit ändern. Bitte verwende den Dienst nur mit einem eigenen Google-Konto und überprüfe alle vorgeschlagenen Änderungen selbst.</p>
 </main>
+{% else %}
+<main class="container legal-page py-5">
+  <h1>Legal notice</h1>
+  <p class="text-body-secondary">Information pursuant to Section 5 of the German Digital Services Act (DDG)</p>
+  {% if legal_placeholders_present %}<div class="alert legal-placeholder" role="alert"><strong>Demo placeholder:</strong> The marked information must be replaced with real, complete details before public publication.</div>{% endif %}
+  <dl class="legal-meta mt-4"><dt>Responsible for this website</dt><dd>{{ provider_name }}</dd><dt>Address</dt><dd>{{ provider_address }}</dd><dt>Contact</dt><dd><a href="mailto:{{ contact_email }}">{{ contact_email }}</a></dd></dl>
+  <h2>Liability for content</h2><p>The content of this demo was prepared with care. No guarantee is given for its topicality, completeness or accuracy.</p>
+  <h2>Demo notice</h2><p>JobApply is provided as a portfolio demo. Features and interfaces may change at any time. Use the service only with your own Google account and review every proposed change yourself.</p>
+</main>
+{% endif %}
 {% endblock %}
