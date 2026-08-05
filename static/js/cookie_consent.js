@@ -23,7 +23,10 @@
     if (!element || !window.bootstrap) return;
 
     const modal = window.bootstrap.Modal.getOrCreateInstance(element);
-    const openSettings = () => modal.show();
+    const openSettings = (event) => {
+      event?.preventDefault();
+      modal.show();
+    };
 
     document.querySelectorAll("[data-open-cookie-settings]").forEach((button) => {
       button.addEventListener("click", openSettings);

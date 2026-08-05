@@ -142,9 +142,9 @@
       <a href="{% url 'legal:privacy' %}">{% trans "Privacy policy" %}</a>
       <a href="{% url 'legal:terms' %}">{% trans "Terms of use" %}</a>
       {% if LANGUAGE_CODE == 'de' %}
-        <button class="landing-footer__link-button" type="button" data-open-cookie-settings>Cookie-Einstellungen</button>
+        <a href="#cookie-settings" data-open-cookie-settings>Cookie-Einstellungen</a>
       {% else %}
-        <button class="landing-footer__link-button" type="button" data-open-cookie-settings>Cookie settings</button>
+        <a href="#cookie-settings" data-open-cookie-settings>Cookie settings</a>
       {% endif %}
     </nav>
   </footer>
