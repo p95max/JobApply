@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from django.db import DatabaseError, transaction
@@ -240,7 +240,16 @@ def sync_gmail_messages_for_user(
         "unmatched": 0,
     }
 
-    message_ids = ids if reanalyze_existing else ids - existing
+    if reanalyze_existing:
+        cached_message_ids = set(
+            GmailMessage.objects.filter(
+                user=user,
+                received_at__gte=datetime.now(timezone.utc) - timedelta(days=days),
+            ).values_list("message_id", flat=True)
+        )
+        message_ids = ids | cached_message_ids
+    else:
+        message_ids = ids - existing
     for message_id in message_ids:
         try:
             raw = gmail_client.get_message_full(message_id)

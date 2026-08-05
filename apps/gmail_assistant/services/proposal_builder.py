@@ -54,15 +54,22 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
         raise ValueError("message and analysis must belong to the same user")
 
     _normalize_known_event_type(message=message, analysis=analysis)
-    if analysis.event_type in {GmailEventType.NOISE, GmailEventType.UNKNOWN}:
-        return []
-
     application = match.suggested.application if match.suggested else None
     match_score = match.suggested.score if match.suggested else 0
     match_method = match.suggested.method if match.suggested else ""
     extracted = analysis.extracted_data
     action_required = _is_action_required(message=message, event_type=analysis.event_type, extracted=extracted)
     proposals: list[ApplicationUpdateProposal] = []
+
+    if application is not None or analysis.event_type not in _CREATE_APPLICATION_EVENTS:
+        ApplicationUpdateProposal.objects.filter(
+            message=message,
+            analysis=analysis,
+            proposal_type=ProposalType.CREATE_APPLICATION,
+            status=ProposalStatus.PENDING,
+        ).delete()
+    if analysis.event_type in {GmailEventType.NOISE, GmailEventType.UNKNOWN}:
+        return proposals
 
     if not action_required:
         ApplicationUpdateProposal.objects.filter(

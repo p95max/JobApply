@@ -9,10 +9,13 @@ from django.urls import reverse
 from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
 from apps.gmail_assistant.models import (
+    ApplicationUpdateProposal,
     AnalysisClassifier,
     GmailAnalysis,
     GmailAssistantSettings,
+    GmailEventType,
     ProposalStatus,
+    ProposalType,
 )
 from apps.gmail_assistant.services.ai_analyzer import (
     AIAnalysisContext,
@@ -22,7 +25,7 @@ from apps.gmail_assistant.services.ai_analyzer import (
     InterviewExtraction,
 )
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.models import GmailProcessingStatus
+from apps.gmail_stats.models import GmailMessage, GmailProcessingStatus, GmailSyncState
 
 
 def _body(value: str) -> str:
@@ -211,6 +214,56 @@ def test_first_ai_opt_in_reanalyzes_previously_synced_messages(django_user_model
     assert result["skipped_existing"] == 0
     assert len(analyzer.calls) == 1
     assert analysis.classifier == AnalysisClassifier.AI
+
+
+@pytest.mark.django_db
+def test_manual_reanalysis_includes_cached_messages_outside_incremental_window(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    old_message = GmailMessage.objects.create(
+        user=user,
+        message_id="old-message",
+        thread_id="old-thread",
+        received_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+        subject="Application received",
+    )
+    old_analysis = GmailAnalysis.objects.create(
+        user=user,
+        message=old_message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        is_job_related=True,
+        extracted_data={"company": "Stepstone", "position_title": "Python Software Engineer"},
+    )
+    ApplicationUpdateProposal.objects.create(
+        user=user,
+        message=old_message,
+        analysis=old_analysis,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        changes={"application": {"company": "Stepstone", "title": "Python Software Engineer"}},
+    )
+    GmailSyncState.objects.create(user=user, last_synced_at=datetime.now(timezone.utc))
+
+    class EmptyListingClient(FakeGmailClient):
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            return []
+
+    client = EmptyListingClient(
+        {
+            "old-message": message(
+                sender="no-reply@stepstone.de",
+                subject="Application received",
+                text="We received your application.",
+            )
+        }
+    )
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, reanalyze_existing=True)
+
+    assert not ApplicationUpdateProposal.objects.filter(
+        user=user,
+        message=old_message,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).exists()
 
 
 @pytest.mark.django_db

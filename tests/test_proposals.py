@@ -170,6 +170,30 @@ def test_reanalysis_removes_an_existing_job_board_create_proposal(proposal_conte
 
 
 @pytest.mark.django_db
+def test_reanalysis_removes_stale_create_when_event_is_no_longer_an_application(proposal_context):
+    user, _, message = proposal_context
+    record = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "Real Company", "position_title": "Python Software Engineer"},
+    )
+    build_proposals(message=message, analysis=record, match=ApplicationMatch(suggested=None, ambiguous=()))
+    record.event_type = GmailEventType.GENERAL_UPDATE
+    record.save(update_fields=["event_type"])
+
+    result = build_proposals(message=message, analysis=record, match=ApplicationMatch(suggested=None, ambiguous=()))
+
+    assert result == []
+    assert not ApplicationUpdateProposal.objects.filter(
+        message=message,
+        analysis=record,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).exists()
+
+
+@pytest.mark.django_db
 def test_matching_pending_create_intent_does_not_create_a_second_application_proposal(proposal_context):
     user, _, message = proposal_context
     first = build_proposals(
