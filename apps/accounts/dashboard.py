@@ -13,6 +13,10 @@ from apps.gmail_assistant.models import (
     ProposalStatus,
 )
 from apps.interviews.models import InterviewEvent, InterviewStatus
+from apps.reports.drive import get_drive_status
+from apps.reports.models import CloudBackupSettings
+
+from .models import UserProfile
 
 
 @login_required
@@ -40,6 +44,10 @@ def dashboard(request):
         .order_by("-created_at")
     )
     assistant_settings = GmailAssistantSettings.objects.filter(user=request.user).first()
+    profile = UserProfile.objects.filter(user=request.user).only("telegram_chat_id").first()
+    drive_status = get_drive_status(request.user)
+    backup_settings = CloudBackupSettings.objects.filter(user=request.user).only("enabled").first()
+    drive_connected = bool(drive_status.get("connected") and drive_status.get("has_refresh_token"))
 
     return render(
         request,
@@ -62,5 +70,8 @@ def dashboard(request):
                 if assistant_settings
                 else None
             ),
+            "telegram_connected": bool(profile and profile.telegram_chat_id),
+            "drive_connected": drive_connected,
+            "drive_auto_backup_enabled": bool(backup_settings and backup_settings.enabled),
         },
     )

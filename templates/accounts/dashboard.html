@@ -3,6 +3,7 @@
 
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
 {% endblock %}
 
 {% block content %}
@@ -85,22 +86,39 @@
         </div>
       </section>
 
-      <aside class="dashboard-card dashboard-next">
-        <div class="dashboard-card__header">
-          <h2>{% trans "Next interview" %}</h2>
-          <a href="/interviews/">{% trans "View all" %}</a>
-        </div>
-        {% if next_interview %}
-          <div class="dashboard-next__date">{{ next_interview.starts_at|date:"d" }}<span>{{ next_interview.starts_at|date:"M" }}</span></div>
-          <h3>{{ next_interview.application.company }}</h3>
-          <p>{{ next_interview.application.title }}</p>
-          <dl>
-            <div><dt>{% trans "Time" %}</dt><dd>{{ next_interview.starts_at|date:"H:i" }}</dd></div>
-            {% if next_interview.location %}<div><dt>{% trans "Location" %}</dt><dd>{{ next_interview.location }}</dd></div>{% endif %}
-          </dl>
-        {% else %}
-          <div class="dashboard-empty dashboard-empty--compact"><span>🗓️</span><div><strong>{% trans "No upcoming interviews" %}</strong><p>{% trans "Scheduled interviews will appear here." %}</p></div></div>
-        {% endif %}
+      <aside class="dashboard-sidebar">
+        <section class="dashboard-card dashboard-next">
+          <div class="dashboard-card__header">
+            <h2>{% trans "Next interview" %}</h2>
+            <a href="/interviews/">{% trans "View all" %}</a>
+          </div>
+          {% if next_interview %}
+            <div class="dashboard-next__date">{{ next_interview.starts_at|date:"d" }}<span>{{ next_interview.starts_at|date:"M" }}</span></div>
+            <h3>{{ next_interview.application.company }}</h3>
+            <p>{{ next_interview.application.title }}</p>
+            <dl>
+              <div><dt>{% trans "Time" %}</dt><dd>{{ next_interview.starts_at|date:"H:i" }}</dd></div>
+              {% if next_interview.location %}<div><dt>{% trans "Location" %}</dt><dd>{{ next_interview.location }}</dd></div>{% endif %}
+            </dl>
+          {% else %}
+            <div class="dashboard-empty dashboard-empty--compact"><span>🗓️</span><div><strong>{% trans "No upcoming interviews" %}</strong><p>{% trans "Scheduled interviews will appear here." %}</p></div></div>
+          {% endif %}
+        </section>
+
+        <section class="dashboard-card dashboard-connections" aria-labelledby="connectionsTitle">
+          <div class="dashboard-card__header">
+            <h2 id="connectionsTitle">{% trans "Connections" %}</h2>
+            <a href="{% url 'accounts:settings' %}?tab=telegram">{% trans "Manage" %}</a>
+          </div>
+          <a class="dashboard-connection" href="{% url 'accounts:settings' %}?tab=telegram">
+            <span aria-hidden="true">📨</span><span><strong>{% trans "Telegram bot" %}</strong><small>{% trans "Notifications" %}</small></span>
+            <b class="dashboard-status {% if telegram_connected %}is-active{% endif %}">{% if telegram_connected %}🟢{% else %}⚪{% endif %}</b>
+          </a>
+          <a class="dashboard-connection" href="{% url 'reports:drive_backups' %}">
+            <span aria-hidden="true">☁️</span><span><strong>{% trans "Drive backups" %}</strong><small>{% if drive_auto_backup_enabled %}{% trans "Automatic" %}{% else %}{% trans "Manual" %}{% endif %}</small></span>
+            <b class="dashboard-status {% if drive_connected %}is-active{% endif %}">{% if drive_connected %}🟢{% else %}⚪{% endif %}</b>
+          </a>
+        </section>
       </aside>
     </div>
 
