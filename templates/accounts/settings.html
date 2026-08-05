@@ -24,6 +24,22 @@
         </dl>
       </div>
     </div>
+  {% elif active_tab == 'account' %}
+    <div class="card border-danger shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 text-danger mb-2">{% trans "Delete account" %}</h2>
+        <div class="alert alert-danger" role="alert">
+          {% trans "This permanently deletes your JobApply account, applications, interviews, Gmail messages and analyses, proposals, backups settings, and Telegram connection. This cannot be undone." %}
+        </div>
+        <p class="text-body-secondary small">
+          {% trans "Your Google account is not deleted. You can separately revoke JobApply access in your Google Account security settings." %}
+        </p>
+        <form method="post" action="{% url 'accounts:delete_account' %}" onsubmit="return confirm('{% trans "Permanently delete your JobApply account and all associated data? This cannot be undone." %}');">
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">{% trans "Delete my account permanently" %}</button>
+        </form>
+      </div>
+    </div>
   {% else %}
     <div class="card shadow-sm">
       <div class="card-body">

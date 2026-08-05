@@ -7,8 +7,11 @@ from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.google.views import oauth2_login
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import transaction
+from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 
 from apps.gmail_stats.models import GmailSyncState
@@ -109,12 +112,16 @@ def settings_view(request):
     sync_state = GmailSyncState.objects.filter(user=request.user).first()
     interval_seconds = int(getattr(settings, "GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS", 21600))
 
+    active_tab = request.GET.get("tab", "telegram")
+    if active_tab not in {"telegram", "gmail", "account"}:
+        active_tab = "telegram"
+
     return render(
         request,
         "accounts/settings.html",
         {
             "profile": profile,
-            "active_tab": request.GET.get("tab", "telegram"),
+            "active_tab": active_tab,
             "telegram_bot_username": bot_username,
             "telegram_bot_url": telegram_bot_url,
             "telegram_link_command": link_command,
@@ -126,3 +133,16 @@ def settings_view(request):
             "gmail_safe_error": gmail_error,
         },
     )
+
+
+@login_required
+def delete_account(request):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    user = request.user
+    with transaction.atomic():
+        user.delete()
+    logout(request)
+    messages.success(request, "Your JobApply account and its associated data were deleted.")
+    return redirect("landing")

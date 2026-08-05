@@ -2,13 +2,18 @@
 
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab != 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
+    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'telegram' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
       <span aria-hidden="true">📨</span> {% trans "Telegram" %}
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">
       <span aria-hidden="true">✉️</span> Gmail
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'account' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=account">
+      <span aria-hidden="true">👤</span> {% trans "Account" %}
     </a>
   </li>
   <li class="nav-item">

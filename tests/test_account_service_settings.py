@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import UserProfile
+from apps.applications.models import JobApplication
 from apps.accounts.telegram_linking import bind_telegram_from_start
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.permissions import is_update_allowed
@@ -139,3 +140,32 @@ def test_gmail_status_tab_hides_credentials_and_service_links(client, account):
     assert "Open Gmail statistics" not in content
     assert "refresh_token" not in content
     assert "access_token" not in content
+
+
+def test_account_deletion_removes_the_current_users_data_and_logs_them_out(client, account):
+    user, _profile = account
+    user_id = user.pk
+    application = JobApplication.objects.create(user=user, company="Example GmbH", title="Developer")
+    client.force_login(user)
+
+    account_page = client.get(reverse("accounts:settings") + "?tab=account")
+    assert account_page.status_code == 200
+    assert "Delete my account permanently" in account_page.content.decode()
+    assert "This cannot be undone" in account_page.content.decode()
+
+    response = client.post(reverse("accounts:delete_account"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("landing")
+    assert not get_user_model().objects.filter(pk=user_id).exists()
+    assert not JobApplication.objects.filter(pk=application.pk).exists()
+    assert client.get(reverse("accounts:settings")).status_code == 302
+
+
+def test_account_deletion_rejects_get_requests(client, account):
+    user, _profile = account
+    client.force_login(user)
+
+    response = client.get(reverse("accounts:delete_account"))
+
+    assert response.status_code == 405

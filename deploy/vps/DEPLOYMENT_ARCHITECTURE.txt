@@ -298,7 +298,7 @@ Disk optimization decisions
 - Docker images and build cache do not consume disk;
 - journal size should be monitored on very small disks.
 
-Recommended optional journald limits:
+The VPS operations installer applies these journald limits:
 
 SystemMaxUse=200M
 RuntimeMaxUse=50M

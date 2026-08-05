@@ -96,7 +96,7 @@ chmod +x deploy/vps/install-ops.sh deploy/vps/scripts/*.sh
 ./deploy/vps/install-ops.sh
 ```
 
-The installer copies versioned scripts, the fixed deploy command and its minimal sudoers rule, installs systemd units, validates Caddy and enables the services and timers.
+The installer copies versioned scripts, the fixed deploy command and its minimal sudoers rule, installs systemd units, configures a 14-day/200 MB journald retention limit, validates Caddy and enables the services and timers.
 
 The Neon timer safely skips its run when `BACKUP_DATABASE_URL` is empty.
 

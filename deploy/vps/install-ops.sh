@@ -5,6 +5,7 @@ PROJECT_DIR="${PROJECT_DIR:-/opt/jobapply}"
 SYSTEMD_DIR="/etc/systemd/system"
 BIN_DIR="/usr/local/bin"
 CADDY_FILE="/etc/caddy/Caddyfile"
+JOURNALD_DROPIN_DIR="/etc/systemd/journald.conf.d"
 
 cd "$PROJECT_DIR"
 
@@ -18,6 +19,8 @@ sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy-notify.sh "$
 sudo install -m 0440 deploy/vps/sudoers/jobapply-telegram /etc/sudoers.d/jobapply-telegram
 sudo visudo -cf /etc/sudoers.d/jobapply-telegram
 sudo install -m 0644 deploy/vps/Caddyfile "$CADDY_FILE"
+sudo install -d -m 0755 "$JOURNALD_DROPIN_DIR"
+sudo install -m 0644 deploy/vps/systemd/journald-jobapply-retention.conf "$JOURNALD_DROPIN_DIR/60-jobapply-retention.conf"
 
 sudo install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply
 
@@ -45,6 +48,7 @@ for asset_dir in "$PROJECT_DIR/staticfiles" "$PROJECT_DIR/media"; do
 done
 
 sudo systemctl daemon-reload
+sudo systemctl restart systemd-journald.service
 sudo systemctl enable --now jobapply-web.service jobapply-gmail-worker.service
 sudo systemctl enable --now jobapply-backup.timer jobapply-neon-sync.timer
 sudo caddy validate --config "$CADDY_FILE"

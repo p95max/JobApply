@@ -39,6 +39,8 @@ def test_privacy_page_uses_configured_legal_details(client):
     assert b"Max Mustermann" in response.content
     assert b"privacy@example.com" in response.content
     assert b"14 Tage" in response.content
+    assert b"drive.file" in response.content
+    assert b"Google-Drive-Backups" in response.content
     assert b"Demo-Placeholder" not in response.content
 
 

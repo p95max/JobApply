@@ -25,8 +25,9 @@
   <p>JobApply hilft Nutzerinnen und Nutzern, die eigene Jobsuche zu organisieren. Dafür verarbeitet der Dienst insbesondere Kontodaten aus Google OAuth (z. B. Name, E-Mail-Adresse und technische Konto-ID), Bewerbungs-, Interview- und Notizdaten, sowie technische Protokolldaten.</p>
   <p>Wenn ein Nutzer Gmail verbindet, verarbeitet JobApply nur die Daten des verbundenen Google-Kontos. Je nach verwendeter Funktion können Absender, Empfänger, Betreff, Zeitpunkt, Textauszüge und Textinhalte von E-Mails verarbeitet und gespeichert werden. Das Lesen erfolgt durch einen manuellen Sync oder bei aktivierter automatischer Prüfung. Anhänge werden nicht an die AI-Analyse übertragen.</p>
 
-  <h2>3. Google OAuth und Gmail</h2>
-  <p>Die Anmeldung erfolgt über Google OAuth. Bei der Autorisierung werden Profil- und E-Mail-Daten sowie die Berechtigungen <code>gmail.readonly</code> und <code>drive.file</code> angefordert. Die Berechtigung <code>gmail.readonly</code> wird ausschließlich verwendet, um vom Nutzer ausgelöste Funktionen zur Auswertung eigener Gmail-Nachrichten bereitzustellen. Der Zugriff kann über die Google-Kontoeinstellungen widerrufen werden.</p>
+  <h2>3. Google OAuth, Gmail und Drive</h2>
+  <p>Die Anmeldung erfolgt über Google OAuth. Mit deiner Einwilligung zur Nutzung von JobApply mit deinem Google-Konto und bei der Google-Autorisierung werden Profil- und E-Mail-Daten sowie die Berechtigungen <code>gmail.readonly</code> und <code>drive.file</code> angefordert.</p>
+  <p>Die Berechtigung <code>gmail.readonly</code> wird ausschließlich verwendet, um vom Nutzer ausgelöste Funktionen zur Auswertung eigener Gmail-Nachrichten bereitzustellen. Die Berechtigung <code>drive.file</code> wird ausschließlich für die vom Nutzer aktivierten Google-Drive-Backups verwendet: JobApply erstellt, listet, aktualisiert und löscht dabei nur die von JobApply erzeugten Sicherungsdateien und greift nicht auf andere Drive-Inhalte zu. Der Zugriff kann über die Google-Kontoeinstellungen widerrufen werden.</p>
   <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
   <p>Google-Nutzerdaten werden nicht verkauft, nicht für Werbung verwendet und nicht zum Training allgemeiner Modelle genutzt.</p>
 
