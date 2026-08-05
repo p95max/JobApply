@@ -29,10 +29,10 @@ def account(db):
     return user, profile
 
 
-def _update(token: str, *, user_id: int = 200, chat_id: int = 100):
+def _update(token: str, *, command: str = "/start", user_id: int = 200, chat_id: int = 100):
     return {
         "message": {
-            "text": f"/start {token}",
+            "text": f"{command} {token}",
             "chat": {"id": chat_id, "type": "private"},
             "from": {"id": user_id},
         }
@@ -51,6 +51,17 @@ def test_one_time_token_binds_private_telegram_chat(account):
     assert profile.telegram_chat_id == 100
     assert profile.telegram_link_token_hash == ""
     assert bind_telegram_from_start(_update(token)) is None
+
+
+def test_one_time_token_binds_private_telegram_chat_from_link_command(account):
+    _user, profile = account
+    token = profile.create_telegram_link_token()
+
+    linked = bind_telegram_from_start(_update(token, command="/link"))
+
+    assert linked is not None
+    profile.refresh_from_db()
+    assert profile.telegram_chat_id == 100
 
 
 def test_invalid_link_token_does_not_bind(account):
@@ -102,11 +113,11 @@ def test_settings_generates_one_time_telegram_command_without_redirecting_to_bot
     page = client.get(reverse("accounts:settings"))
     content = page.content.decode()
     assert "One-time connection code" in content
-    assert "/start " in content
+    assert "/link " in content
     assert "Connect automatically instead" in content
 
     page = client.get(reverse("accounts:settings"))
-    assert "/start " in page.content.decode()
+    assert "/link " in page.content.decode()
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")

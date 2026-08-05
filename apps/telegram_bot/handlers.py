@@ -16,7 +16,7 @@ from .client import TelegramClient
 from .config import TelegramConfig
 from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
-from .permissions import is_update_allowed
+from .permissions import is_update_allowed, linked_profile_for_update
 from .proposal_actions import apply_callback_action, parse_callback_data
 from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
 from .texts import (
@@ -103,21 +103,21 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
     user_id = _callback_user_id(update)
     chat_id = _callback_chat_id(update)
     started = time.monotonic()
-    if not _is_owner(user_id, chat_id, config):
-        _record_audit(user_id, chat_id, "callback", "forbidden", started)
-        _answer_callback(client, callback_id, "This action is available only to the bot owner.")
-        return
-    if is_rate_limited(
-        user_id=user_id,
-        chat_id=chat_id,
-        limit=config.rate_limit_count,
-        window_seconds=config.rate_limit_window_seconds,
-    ):
-        _record_audit(user_id, chat_id, "callback", "rate_limited", started)
-        _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
-        return
 
     if deploy_callback is not None:
+        if not _is_owner(user_id, chat_id, config):
+            _record_audit(user_id, chat_id, "deploy_callback", "forbidden", started)
+            _answer_callback(client, callback_id, "This action is available only to the bot owner.")
+            return
+        if is_rate_limited(
+            user_id=user_id,
+            chat_id=chat_id,
+            limit=config.rate_limit_count,
+            window_seconds=config.rate_limit_window_seconds,
+        ):
+            _record_audit(user_id, chat_id, "deploy_callback", "rate_limited", started)
+            _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
+            return
         request_id, action = deploy_callback
         if not config.deploy_enabled:
             _finish_callback(
@@ -152,9 +152,27 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
         return
 
     assert proposal_callback is not None
+    if not is_update_allowed(update, config):
+        _record_audit(user_id, chat_id, "proposal_callback", "forbidden", started)
+        _answer_callback(client, callback_id, "Connect this Telegram chat to JobApply first.")
+        return
+    profile = linked_profile_for_update(update)
+    if profile is None and not _is_owner(user_id, chat_id, config):
+        _record_audit(user_id, chat_id, "proposal_callback", "forbidden", started)
+        _answer_callback(client, callback_id, "This action is available only to the bot owner.")
+        return
+    if is_rate_limited(
+        user_id=user_id,
+        chat_id=chat_id,
+        limit=config.rate_limit_count,
+        window_seconds=config.rate_limit_window_seconds,
+    ):
+        _record_audit(user_id, chat_id, "proposal_callback", "rate_limited", started)
+        _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
+        return
     proposal_id, action = proposal_callback
     try:
-        proposal_user = get_owner(config.owner_email)
+        proposal_user = profile.user if profile is not None else get_owner(config.owner_email)
         result = apply_callback_action(
             proposal_id=proposal_id,
             action=action,
@@ -247,7 +265,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         client.send_message(_chat_id(update), "Telegram disconnected from JobApply.")
         return
 
-    if text_raw.startswith("/start "):
+    if text_raw.startswith(("/start ", "/link ")):
         try:
             profile = bind_telegram_from_start(update)
         except Exception:
@@ -258,8 +276,18 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             return
 
     if not is_update_allowed(update, config):
+        command = text_raw.split(maxsplit=1)[0].split("@", 1)[0]
+        if command in {"/start", "/link"}:
+            client.send_message(
+                _chat_id(update),
+                "To connect Telegram, generate a one-time code in JobApply Settings → Telegram and send /link <code> here.",
+            )
+            return
         logger.warning("Rejected unauthorized Telegram update")
         return
+
+    profile = linked_profile_for_update(update)
+    data_owner_email = profile.user.email if profile is not None else config.owner_email
 
     if update.get("callback_query"):
         _handle_callback(update, client, config)
@@ -300,7 +328,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 else:
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
             elif text == "/gmail":
-                total, proposals = get_gmail_summary(config.owner_email)
+                total, proposals = get_gmail_summary(data_owner_email)
                 reply = gmail_text(total, proposals)
                 reply_markup = gmail_keyboard(proposals, detail_url=_proposal_detail_url)
                 if reply_markup is None:
@@ -310,7 +338,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                         ]
                     }
             elif text == "/applications":
-                reply = applications_text(get_application_summary(config.owner_email))
+                reply = applications_text(get_application_summary(data_owner_email))
             elif text == "/health":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "This command is available only to the bot owner."

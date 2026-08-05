@@ -90,7 +90,7 @@ def settings_view(request):
         action = request.POST.get("action", "")
         if action == "telegram_link":
             token = profile.create_telegram_link_token()
-            link_command = f"/start {token}"
+            link_command = f"/link {token}"
             telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
             request.session["telegram_link_command"] = link_command
             request.session["telegram_link_url"] = telegram_link_url
