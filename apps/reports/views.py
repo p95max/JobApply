@@ -10,12 +10,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from allauth.socialaccount.models import SocialAccount
+from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
+from google_auth_oauthlib.flow import Flow
 
 from apps.applications.models import JobApplication
 
 from .drive import (
     DriveError,
+    SCOPE as DRIVE_SCOPE,
+    TOKEN_URI,
     disconnect_drive,
     download_file,
     ensure_jobapply_folder,
@@ -27,6 +30,32 @@ from .models import CloudBackupSettings
 from .services import build_stats, export_csv, export_xlsx, import_csv
 
 logger = logging.getLogger(__name__)
+GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
+
+
+def _google_app() -> SocialApp:
+    app = SocialApp.objects.filter(provider="google").first()
+    if not app:
+        raise RuntimeError("Google SocialApp is not configured.")
+    return app
+
+
+def _drive_flow(request, *, state: str | None = None) -> Flow:
+    app = _google_app()
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": app.client_id,
+                "client_secret": app.secret,
+                "auth_uri": GOOGLE_AUTH_URI,
+                "token_uri": TOKEN_URI,
+            }
+        },
+        scopes=[DRIVE_SCOPE],
+        state=state,
+    )
+    flow.redirect_uri = request.build_absolute_uri(reverse("reports:drive_callback"))
+    return flow
 
 
 @login_required
@@ -94,7 +123,7 @@ def drive_backups(request):
         settings_obj, _ = CloudBackupSettings.objects.get_or_create(user=request.user)
     except Exception:
         logger.exception("CloudBackupSettings get_or_create failed user=%s", request.user.id)
-        settings_obj = CloudBackupSettings(user=request.user, enabled=False)
+        settings_obj = CloudBackupSettings(user=request.user, enabled=False, drive_connected=False)
 
     google_email = None
     folder_url = None
@@ -193,17 +222,64 @@ def drive_restore(request, file_id: str):
 @login_required
 def drive_connect(request):
     try:
-        request.session["drive_connect_next"] = reverse("reports:drive_backups")
+        flow = _drive_flow(request)
+        authorization_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+        )
+        request.session["drive_oauth_state"] = state
+        return HttpResponseRedirect(authorization_url)
     except Exception:
-        logger.exception("drive_connect session set failed user=%s", request.user.id)
-    return HttpResponseRedirect("/accounts/google/login/?process=connect")
+        logger.exception("drive_connect failed user=%s", request.user.id)
+        messages.error(request, "Could not start Google Drive authorization. Try again later.")
+        return redirect("reports:drive_backups")
+
+
+@login_required
+def drive_callback(request):
+    if request.GET.get("error"):
+        messages.info(request, "Google Drive access was not granted.")
+        return redirect("reports:drive_backups")
+
+    state = request.session.pop("drive_oauth_state", "")
+    if not state or request.GET.get("state") != state:
+        messages.error(request, "Google Drive authorization expired. Please try again.")
+        return redirect("reports:drive_backups")
+
+    try:
+        flow = _drive_flow(request, state=state)
+        flow.fetch_token(authorization_response=request.build_absolute_uri())
+        credentials = flow.credentials
+
+        account = SocialAccount.objects.filter(user=request.user, provider="google").first()
+        if not account:
+            raise RuntimeError("Google account is not connected.")
+        app = _google_app()
+        token, _ = SocialToken.objects.get_or_create(account=account, app=app)
+        token.token = credentials.token or token.token
+        if credentials.refresh_token:
+            token.token_secret = credentials.refresh_token
+        token.expires_at = credentials.expiry
+        token.save()
+
+        settings_obj, _ = CloudBackupSettings.objects.get_or_create(user=request.user)
+        settings_obj.drive_connected = True
+        settings_obj.enabled = False
+        settings_obj.save(update_fields=["drive_connected", "enabled", "updated_at"])
+        messages.success(request, "Google Drive connected. Automatic backups remain off until you enable them.")
+    except Exception:
+        logger.exception("drive_callback failed user=%s", request.user.id)
+        messages.error(request, "Google Drive connection failed. Please try again.")
+
+    return redirect("reports:drive_backups")
 
 
 @login_required
 def drive_disconnect(request):
     try:
         disconnect_drive(request.user)
-        messages.success(request, "Google Drive disconnected.")
+        messages.success(request, "Google Drive backups disconnected.")
     except Exception:
         logger.exception("drive_disconnect failed user=%s", request.user.id)
         messages.error(request, "Could not disconnect Google Drive. Try again.")
@@ -214,11 +290,10 @@ def drive_disconnect(request):
 @require_POST
 def toggle_auto_backup(request):
     drive_status = get_drive_status(request.user)
-
     enabled = request.POST.get("enabled") == "1"
 
     if enabled and not (drive_status.get("connected") and drive_status.get("has_refresh_token")):
-        messages.error(request, "Connect Google Drive (offline access) before enabling auto backups.")
+        messages.error(request, "Connect Google Drive before enabling automatic backups.")
         return redirect("reports:drive_backups")
 
     try:
@@ -231,8 +306,8 @@ def toggle_auto_backup(request):
         return redirect("reports:drive_backups")
 
     if enabled:
-        messages.success(request, "Auto backups enabled (every 5 minutes).")
+        messages.success(request, "Automatic backups enabled (every 5 minutes).")
     else:
-        messages.success(request, "Auto backups disabled.")
+        messages.success(request, "Automatic backups disabled.")
 
     return redirect("reports:drive_backups")
