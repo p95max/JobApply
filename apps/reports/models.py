@@ -21,7 +21,10 @@ class CloudBackupSettings(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["drive_connected"]),
+            models.Index(
+                fields=["drive_connected"],
+                name="reports_clo_drive_c_56d45a_idx",
+            ),
             models.Index(fields=["enabled"]),
             models.Index(fields=["last_run_at"]),
         ]
