@@ -365,6 +365,39 @@ def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("days", [1, 7, 30, 90, 180])
+def test_sync_api_passes_selected_period_to_assistant(client, django_user_model, monkeypatch, days):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+    preflight_queries = []
+    synced = []
+
+    class PreflightGmailClient:
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            preflight_queries.append(query)
+            return []
+
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: object())
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", lambda credentials: PreflightGmailClient())
+    monkeypatch.setattr(
+        "apps.gmail_stats.views.sync_gmail_messages_for_user",
+        lambda **kwargs: synced.append(kwargs) or {"proposals_created": 0},
+    )
+
+    client.force_login(user)
+    response = client.post(reverse("gmail_stats:gmail_sync_api") + f"?days={days}&reanalyze=1")
+
+    assert response.status_code == 200
+    assert preflight_queries == [f"newer_than:{min(days, 7)}d"]
+    assert len(synced) == 1
+    assert synced[0]["user"] == user
+    assert isinstance(synced[0]["gmail_client"], PreflightGmailClient)
+    assert synced[0]["days"] == days
+    assert synced[0]["max_results_each"] == 500
+    assert synced[0]["reanalyze_existing"] is True
+
+
+@pytest.mark.django_db
 def test_sync_api_reports_disabled_gmail_api(client, django_user_model, monkeypatch):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     UserProfile.objects.create(user=user, google_data_access_consent=True)

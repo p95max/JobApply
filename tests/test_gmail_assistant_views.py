@@ -156,6 +156,7 @@ def test_assistant_highlights_rejection_proposals(client, proposal):
 
 @pytest.mark.django_db
 def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
+    GmailAssistantSettings.objects.create(user=proposal.user, ai_enabled=True)
     client.force_login(proposal.user)
 
     response = client.get(reverse("gmail_assistant:gmail_assistant"))
@@ -165,6 +166,10 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b"FAQ" in response.content
     assert b'aiAnalysisSpinner' in response.content
     assert b'aiAnalysisSync' in response.content
+    assert b'gmailSyncPeriodModal' in response.content
+    for days in (b'"1"', b'"7"', b'"30"', b'"90"', b'"180"'):
+        assert b"data-sync-days=" + days in response.content
+    assert b"?days=" in response.content
     assert b'aiAnalysisSave' not in response.content
     assert b"toggle.disabled" not in response.content
     assert reverse("gmail_assistant:gmail_assistant").encode() in response.content

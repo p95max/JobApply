@@ -14,7 +14,15 @@
     <div class="d-flex align-items-center gap-2">
       <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
       {% if settings.ai_enabled %}
-        <button id="aiAnalysisSync" type="button" class="btn btn-primary btn-sm">{% trans "Sync Gmail" %}</button>
+        <button
+          id="aiAnalysisSync"
+          type="button"
+          class="btn btn-primary btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#gmailSyncPeriodModal"
+        >
+          {% trans "Sync Gmail" %}
+        </button>
       {% endif %}
     </div>
   </div>
@@ -154,6 +162,29 @@
     </div>
   </section>
 </div>
+
+{% if settings.ai_enabled %}
+  <div class="modal fade" id="gmailSyncPeriodModal" tabindex="-1" aria-labelledby="gmailSyncPeriodModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="gmailSyncPeriodModalLabel" class="modal-title fs-5">{% trans "Choose Gmail sync period" %}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">{% trans "Only messages from the selected period will be checked and may be sent to AI analysis." %}</p>
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="1">{% trans "Last day" %}</button>
+            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="7">{% trans "Last 7 days" %}</button>
+            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="30">{% trans "Last 30 days" %}</button>
+            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="90">{% trans "Last 3 months" %}</button>
+            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="180">{% trans "Last 6 months" %}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}
 
 {% block page_scripts %}
@@ -164,6 +195,7 @@
   const progressSpinner = document.getElementById("aiAnalysisSpinner");
   const progressText = document.getElementById("aiAnalysisProgressText");
   const syncButton = document.getElementById("aiAnalysisSync");
+  const syncPeriodOptions = document.querySelectorAll(".sync-period-option");
   const wasEnabled = {{ settings.ai_enabled|yesno:"true,false" }};
 
   settingsForm.addEventListener("submit", () => {
@@ -175,28 +207,40 @@
   });
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
+  async function syncGmail(days) {
+    const syncModal = document.getElementById("gmailSyncPeriodModal");
+    bootstrap.Modal.getOrCreateInstance(syncModal).hide();
+    progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progressSpinner.classList.remove("d-none");
+    progress.classList.remove("alert-danger");
+    progress.classList.add("alert-info");
+    progress.classList.remove("d-none");
+    syncButton.disabled = true;
+    syncPeriodOptions.forEach((option) => { option.disabled = true; });
+    try {
+      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?days=" + encodeURIComponent(days) + "&reanalyze=1", {
+        method: "POST",
+        headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
+      window.location.reload();
+    } catch (error) {
+      progressText.textContent = error.message;
+      progressSpinner.classList.add("d-none");
+      progress.classList.remove("alert-info");
+      progress.classList.add("alert-danger");
+      syncButton.disabled = false;
+      syncPeriodOptions.forEach((option) => { option.disabled = false; });
+    }
+  }
+
+  syncPeriodOptions.forEach((option) => {
+    option.addEventListener("click", () => syncGmail(option.dataset.syncDays));
+  });
+
   if (syncButton) {
-    syncButton.addEventListener("click", async () => {
-      progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
-      progressSpinner.classList.remove("d-none");
-      progress.classList.remove("alert-danger");
-      progress.classList.add("alert-info");
-      progress.classList.remove("d-none");
-      syncButton.disabled = true;
-      try {
-        const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?reanalyze=1", {
-          method: "POST",
-          headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
-        });
-        if (!response.ok) throw new Error((await response.json()).error || "Sync failed");
-        window.location.reload();
-      } catch (error) {
-        progressText.textContent = error.message;
-        progressSpinner.classList.add("d-none");
-        progress.classList.remove("alert-info");
-        progress.classList.add("alert-danger");
-        syncButton.disabled = false;
-      }
+    syncButton.addEventListener("click", () => {
+      progress.classList.add("d-none");
     });
   }
 </script>
