@@ -28,7 +28,7 @@
 
   <section class="card proposal-section proposal-section--email mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">1</span>{% trans "Check the source email" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">1</span> {% trans "Check the source email" %}</h2>
       <div class="proposal-metadata">
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender" %}</span>{{ proposal.message.from_email|default:"—" }}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender domain" %}</span>{{ review_context.sender_domain|default:"—" }}</div>
@@ -45,7 +45,7 @@
 
   <section class="card proposal-section proposal-section--analysis mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">2</span>{% trans "Understand why this was suggested" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">2</span> {% trans "Understand why this was suggested" %}</h2>
       <div class="proposal-metadata">
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Event" %}</span>{{ proposal.analysis.get_event_type_display }}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Confidence" %}</span>{{ proposal.analysis.confidence }}%</div>
@@ -64,7 +64,7 @@
 
   <section class="card proposal-section proposal-section--changes mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">3</span>{% trans "Verify the proposed change" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">3</span> {% trans "Verify the proposed change" %}</h2>
       {% if proposal.changes.application %}
         {% if proposal.proposal_type == "create_application" %}
           <div class="proposal-change-row"><strong>{% trans "Job title" %}:</strong> {{ proposal.changes.application.title }}</div>
@@ -88,7 +88,7 @@
 
   <section class="card proposal-section proposal-section--assignment mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span>{% trans "Link the correct application" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% trans "Link the correct application" %}</h2>
       {% if proposal.application_id %}
         <p class="mb-0">{% trans "Linked application" %}: <strong>{{ proposal.application.company }} — {{ proposal.application.title }}</strong></p>
       {% else %}
@@ -111,7 +111,7 @@
 
   {% if not proposal.application_id and proposal.proposal_type != "create_application" %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span>{% trans "Or create and link an application" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Or create and link an application" %}</h2>
       <p class="text-muted">{% trans "Use this only after confirming the employer and role from the email." %}</p>
       <form method="post" action="{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}">
         {% csrf_token %}
@@ -127,7 +127,7 @@
 
   <section class="card proposal-section proposal-section--decision mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">5</span>{% trans "Choose the outcome" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">5</span> {% trans "Choose the outcome" %}</h2>
       <p class="text-muted">{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}</p>
       <form method="post">
         {% csrf_token %}
@@ -149,7 +149,7 @@
 
   {% if not proposal.application_id %}{% if proposal.proposal_type == "create_application" or proposal.changes.interview %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">5a</span>{% trans "Edit before accepting" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">5a</span> {% trans "Edit before accepting" %}</h2>
       <form method="post" action="{% url 'gmail_assistant:edit_accept_gmail_proposal' proposal.pk %}">
         {% csrf_token %}
         <div class="row g-2">
