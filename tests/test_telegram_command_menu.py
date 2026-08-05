@@ -42,4 +42,7 @@ def test_set_commands_publishes_native_telegram_menu():
         "status",
         "gmail",
         "applications",
+        "health",
+        "doctor",
+        "deploy",
     ]
