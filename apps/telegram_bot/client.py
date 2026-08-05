@@ -7,15 +7,14 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-BOT_COMMANDS: tuple[dict[str, str], ...] = (
-    {"command": "help", "description": "Show available commands"},
-    {"command": "status", "description": "Show JobApply service status"},
-    {"command": "gmail", "description": "Show pending Gmail proposals"},
+CLIENT_COMMANDS: tuple[dict[str, str], ...] = (
+    {"command": "help", "description": "Show user commands"},
+    {"command": "gmail", "description": "Show pending email events"},
     {"command": "applications", "description": "Show application statistics"},
-    {"command": "health", "description": "Run runtime health checks"},
-    {"command": "doctor", "description": "Run owner diagnostics"},
-    {"command": "deploy", "description": "Queue production deploy (owner only)"},
+    {"command": "admin", "description": "Show administrator commands"},
 )
+
+BOT_COMMANDS = CLIENT_COMMANDS
 
 
 class TelegramClient:
