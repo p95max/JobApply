@@ -142,7 +142,7 @@ def test_gmail_command_includes_open_accept_and_reject_buttons(proposal):
     )
 
     buttons = client.messages[0][2]["inline_keyboard"][0]
-    assert [button["text"] for button in buttons] == ["Open", "Accept", "Reject"]
+    assert [button["text"] for button in buttons] == ["🔎 Open", "✅ Accept", "❌ Reject"]
     assert buttons[1]["callback_data"] == f"proposal:{proposal.pk}:accept"
 
 
