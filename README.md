@@ -262,16 +262,19 @@ systemctl list-timers --all | grep jobapply
 
 ## Telegram Bot
 
-The Telegram Bot is a private, read-only owner dashboard. It does not accept arbitrary shell commands and does not apply Gmail proposals automatically.
+The Telegram Bot is a private owner dashboard. It does not accept arbitrary shell commands. Gmail proposals remain review-first: each Accept or Reject action is explicit and is checked again against the current proposal state.
 
-Supported commands in the first version:
+Supported commands:
 
 - `/help`
 - `/status`
 - `/gmail`
 - `/applications`
+- `/health`
+- `/doctor` (owner only)
+- `/deploy` (owner only, disabled by default)
 
-`/gmail` includes an HTTPS **Open in JobApply** button. Accept and Reject actions remain in the authenticated web interface.
+`/gmail` provides **Open**, **Accept** and **Reject** buttons for pending proposals. The bot rechecks the user, chat, expiry and proposal status before an action is applied. `/health` reports database, disk and worker heartbeats; `/doctor` additionally reports the branch, working tree, migrations and known systemd units.
 
 ### BotFather setup
 
@@ -294,9 +297,33 @@ TELEGRAM_ALLOWED_USER_IDS=...
 TELEGRAM_OWNER_EMAIL=your-exact-google-email@example.com
 TELEGRAM_ENV_LABEL=PRODUCTION
 TELEGRAM_NOTIFICATIONS_ENABLED=1
+# Keep production deploy disabled until the systemd unit and sudoers rule are verified.
+TELEGRAM_DEPLOY_ENABLED=0
+TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS=300
+JOBAPPLY_PRODUCTION_BRANCH=master
 ```
 
 The bot validates the token and allowlists before polling. Both `from_user.id` and private `chat.id` must match the configured allowlists.
+
+### Owner-only deploy
+
+`/deploy` accepts no branch name or shell arguments. It displays the current and target `master` commits and requires a short-lived, one-time **Confirm deploy** callback. The bot can invoke only `jobapply-deploy.service` through this minimal sudoers rule:
+
+```text
+jobapply ALL=(root) NOPASSWD: /usr/bin/systemctl --no-block start jobapply-deploy.service
+```
+
+The fixed deploy script refuses a non-`master` branch, local changes and non-fast-forward updates. It then runs tests, Django checks, migrations, static collection, known JobApply service restarts and an HTTP health check. Manual emergency deployment uses the same fixed script:
+
+```bash
+sudo /usr/local/sbin/jobapply-deploy
+```
+
+Inspect a deploy with:
+
+```bash
+sudo journalctl -u jobapply-deploy.service -n 100 --no-pager -l
+```
 
 ### systemd service
 
@@ -346,6 +373,27 @@ sudo systemctl status jobapply-telegram-bot.service --no-pager -l
 ```
 
 Do not print the token in shell history, logs, screenshots or support messages.
+
+### VPS smoke checks
+
+Run these after changing Telegram configuration or deploying a new version:
+
+```bash
+sudo systemctl is-active jobapply-web.service jobapply-gmail-worker.service jobapply-telegram-bot.service
+sudo systemctl status jobapply-telegram-bot.service --no-pager -l
+pgrep -af 'manage.py run_telegram_bot'
+sudo journalctl -u jobapply-telegram-bot.service -n 100 --no-pager -l
+```
+
+There must be one polling process. In Telegram, verify `/status`, `/gmail`, `/applications`, `/health` and owner-only `/doctor`. To verify isolation, stop the bot briefly and confirm that the web and Gmail worker services remain active:
+
+```bash
+sudo systemctl stop jobapply-telegram-bot.service
+sudo systemctl is-active jobapply-web.service jobapply-gmail-worker.service
+sudo systemctl start jobapply-telegram-bot.service
+```
+
+After a planned reboot, repeat the commands above and verify that the bot responds to `/status`. Do not test access with an untrusted Telegram account that has been added to an allowlist.
 
 ### Notifications
 
