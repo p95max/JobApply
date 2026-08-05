@@ -310,44 +310,8 @@ def test_assign_endpoint_accepts_only_current_users_application(client, proposal
 
 
 @pytest.mark.django_db
-def test_enabling_ai_analysis_starts_gmail_sync(client, proposal, monkeypatch):
+def test_enabling_ai_analysis_only_saves_the_setting(client, proposal):
     client.force_login(proposal.user)
-    credentials = object()
-    monkeypatch.setattr("apps.gmail_assistant.views.get_google_credentials_for_user", lambda user: credentials)
-    monkeypatch.setattr("apps.gmail_assistant.views.GmailClient", lambda value: ("gmail", value))
-    synced = []
-    monkeypatch.setattr(
-        "apps.gmail_assistant.views.sync_gmail_messages_for_user",
-        lambda **kwargs: synced.append(kwargs) or {"proposals_created": 2},
-    )
-
-    response = client.post(reverse("gmail_assistant:gmail_assistant_settings"), {"ai_enabled": "1"})
-
-    settings = GmailAssistantSettings.objects.get(user=proposal.user)
-    assert response.status_code == 302
-    assert settings.ai_enabled is True
-    assert settings.ai_consent_at is not None
-    assert synced == [
-        {
-            "user": proposal.user,
-            "gmail_client": ("gmail", credentials),
-            "days": 180,
-            "max_results_each": 500,
-            "reanalyze_existing": True,
-        }
-    ]
-
-
-@pytest.mark.django_db
-def test_initial_ai_sync_does_not_expose_gmail_error_details(client, proposal, monkeypatch):
-    secret = "refresh-token-should-not-reach-the-browser"
-    client.force_login(proposal.user)
-    monkeypatch.setattr("apps.gmail_assistant.views.get_google_credentials_for_user", lambda user: object())
-    monkeypatch.setattr("apps.gmail_assistant.views.GmailClient", lambda credentials: object())
-    monkeypatch.setattr(
-        "apps.gmail_assistant.views.sync_gmail_messages_for_user",
-        lambda **kwargs: (_ for _ in ()).throw(RuntimeError(secret)),
-    )
 
     response = client.post(
         reverse("gmail_assistant:gmail_assistant_settings"),
@@ -355,23 +319,12 @@ def test_initial_ai_sync_does_not_expose_gmail_error_details(client, proposal, m
         follow=True,
     )
 
+    settings = GmailAssistantSettings.objects.get(user=proposal.user)
     assert response.status_code == 200
-    assert b"Gmail sync failed. Try again later." in response.content
-    assert secret.encode() not in response.content
-
-
-@pytest.mark.django_db
-def test_saving_enabled_ai_analysis_does_not_start_another_sync(client, proposal, monkeypatch):
-    GmailAssistantSettings.objects.create(user=proposal.user, ai_enabled=True)
-    client.force_login(proposal.user)
-    monkeypatch.setattr(
-        "apps.gmail_assistant.views.sync_gmail_messages_for_user",
-        lambda **kwargs: pytest.fail("sync must only run when AI is first enabled"),
-    )
-
-    response = client.post(reverse("gmail_assistant:gmail_assistant_settings"), {"ai_enabled": "1"})
-
-    assert response.status_code == 302
+    assert settings.ai_enabled is True
+    assert settings.ai_consent_at is not None
+    assert b"AI analysis setting updated." in response.content
+    assert b"Gmail synced" not in response.content
 
 
 @pytest.mark.django_db

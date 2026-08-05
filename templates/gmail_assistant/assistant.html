@@ -44,7 +44,7 @@
     <div class="card-body">
       <div id="aiAnalysisProgress" class="alert alert-info d-none d-flex align-items-center gap-2" role="status">
         <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        <span id="aiAnalysisProgressText">{% trans "The first AI analysis and Gmail sync can take about 30 seconds. Please keep this page open." %}</span>
+        <span id="aiAnalysisProgressText">{% trans "Gmail sync and AI analysis can take about 30 seconds. Please keep this page open." %}</span>
       </div>
       <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
@@ -143,7 +143,7 @@
       <h2 class="h6 mb-3">{% trans "FAQ" %}</h2>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "How do I start AI analysis?" %}</summary>
-        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis and save the setting. The first Gmail sync can take about 30 seconds." %}</p>
+        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis, then choose a period with Sync Gmail. The analysis can take about 30 seconds." %}</p>
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
@@ -192,15 +192,7 @@
   const progressText = document.getElementById("aiAnalysisProgressText");
   const syncButton = document.getElementById("aiAnalysisSync");
   const syncPeriodOptions = document.querySelectorAll(".sync-period-option");
-  const wasEnabled = {{ settings.ai_enabled|yesno:"true,false" }};
 
-  settingsForm.addEventListener("submit", () => {
-    const enabled = toggle.checked;
-    if (enabled && !wasEnabled) {
-      progressSpinner.classList.remove("d-none");
-      progress.classList.remove("d-none");
-    }
-  });
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
   async function syncGmail(days) {

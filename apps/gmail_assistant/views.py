@@ -11,7 +11,6 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.utils.translation import ngettext
 from django.views.decorators.http import require_POST
 
 from apps.applications.models import JobApplication
@@ -25,9 +24,6 @@ from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
-from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
-from apps.gmail_stats.services.credentials import get_google_credentials_for_user
-from apps.gmail_stats.services.gmail_client import GmailClient
 
 logger = logging.getLogger(__name__)
 
@@ -278,47 +274,11 @@ def ignore_gmail_proposal(request, pk: int):
 def gmail_assistant_settings(request):
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
     enabled = "ai_enabled" in request.POST
-    was_enabled = assistant_settings.ai_enabled
     assistant_settings.ai_enabled = enabled
     if enabled and assistant_settings.ai_consent_at is None:
         assistant_settings.ai_consent_at = timezone.now()
     assistant_settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
-
-    if enabled and not was_enabled:
-        try:
-            credentials = get_google_credentials_for_user(request.user)
-        except (RuntimeError, ValueError) as error:
-            logger.warning("Gmail Assistant credential lookup failed user_id=%s error=%s", request.user.id, type(error).__name__)
-            credentials = None
-        if not credentials:
-            messages.warning(
-                request,
-                _("AI analysis enabled, but Gmail is not connected. Reconnect Google and then sync Gmail."),
-            )
-        else:
-            try:
-                result = sync_gmail_messages_for_user(
-                    user=request.user,
-                    gmail_client=GmailClient(credentials),
-                    days=180,
-                    max_results_each=500,
-                    reanalyze_existing=True,
-                )
-            except (RuntimeError, ValueError) as error:
-                logger.warning("Initial Gmail Assistant sync failed user_id=%s error=%s", request.user.id, type(error).__name__)
-                messages.warning(request, _("AI analysis is enabled, but Gmail sync failed. Try again later."))
-            else:
-                messages.success(
-                    request,
-                    ngettext(
-                        "AI analysis enabled. Gmail synced; %(count)d suggestion created.",
-                        "AI analysis enabled. Gmail synced; %(count)d suggestions created.",
-                        result["proposals_created"],
-                    )
-                    % {"count": result["proposals_created"]},
-                )
-    else:
-        messages.success(request, _("AI analysis setting updated."))
+    messages.success(request, _("AI analysis setting updated."))
     return redirect("gmail_assistant:gmail_assistant")
 
 
