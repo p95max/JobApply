@@ -5,6 +5,7 @@ from django.urls import resolve
 
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import CommandTimedOut, _jobapply_url, handle_update
+from apps.telegram_bot.selectors import ApplicationSummary
 
 
 class FakeClient:
@@ -60,8 +61,23 @@ def test_gmail_command_includes_gmail_assistant_link_without_buttons(monkeypatch
     handle_update(_update("/gmail"), client, _config())
 
     assert "Pending proposals: <b>2</b>" in client.calls[1][1]
-    assert "https://jobapply.p95max.dev/gmail_stats/gmail/assistant/" in client.calls[1][1]
+    assert 'href="https://jobapply.p95max.dev/gmail_stats/gmail/assistant/"' in client.calls[1][1]
+    assert "Open Gmail Assistant" in client.calls[1][1]
     assert client.calls[1][2] is None
+
+
+def test_applications_command_includes_hidden_web_link(monkeypatch):
+    client = FakeClient()
+    monkeypatch.setattr(
+        "apps.telegram_bot.handlers.get_application_summary",
+        lambda email: ApplicationSummary(counts={"total": 0}, next_interview=None),
+    )
+
+    handle_update(_update("/applications"), client, _config())
+
+    assert 'href="https://jobapply.p95max.dev/applications/"' in client.calls[0][1]
+    assert "Open applications" in client.calls[0][1]
+    assert client.calls[0][2] is None
 
 
 def test_disconnect_deep_link_returns_confirmation():

@@ -172,7 +172,7 @@ def test_gmail_command_links_to_the_web_review_without_action_buttons(proposal):
     )
 
     assert "Pending proposals: <b>1</b>" in client.messages[0][1]
-    assert "/gmail_stats/gmail/assistant/" in client.messages[0][1]
+    assert 'href="https://jobapply.p95max.dev/gmail_stats/gmail/assistant/"' in client.messages[0][1]
     assert client.messages[0][2] is None
 
 

@@ -333,7 +333,10 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     assistant_url=_jobapply_url("/gmail_stats/gmail/assistant/"),
                 )
             elif text == "/applications":
-                reply = applications_text(get_application_summary(data_owner_email))
+                reply = applications_text(
+                    get_application_summary(data_owner_email),
+                    applications_url=_jobapply_url("/applications/"),
+                )
             elif text == "/health":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "This command is available only to the bot owner."

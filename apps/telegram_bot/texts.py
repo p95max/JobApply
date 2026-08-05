@@ -78,11 +78,11 @@ def gmail_text(total: int, *, assistant_url: str) -> str:
         "📨 <b>Gmail Assistant</b>\n\n"
         f"Pending proposals: <b>{total}</b>\n"
         "Review the source emails and proposed changes in JobApply:\n"
-        f"{escape(assistant_url)}"
+        f'<a href="{escape(assistant_url)}">Open Gmail Assistant</a>'
     )
 
 
-def applications_text(summary: ApplicationSummary) -> str:
+def applications_text(summary: ApplicationSummary, *, applications_url: str = "") -> str:
     counts = summary.counts
     labels = (
         ("applied", "📤 Applied"),
@@ -108,6 +108,8 @@ def applications_text(summary: ApplicationSummary) -> str:
                 f"🕒 {escape(_format_dt(interview.starts_at))}",
             ]
         )
+    if applications_url:
+        lines.extend(["", f'<a href="{escape(applications_url)}">Open applications</a>'])
     return "\n".join(lines)
 
 
