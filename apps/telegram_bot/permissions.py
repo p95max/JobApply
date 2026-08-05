@@ -13,7 +13,7 @@ def linked_profile_for_update(update: dict[str, Any]):
     user = update.get("message", {}).get("from") or update.get("callback_query", {}).get("from") or {}
 
     if chat.get("type") != "private":
-        return False
+        return None
 
     try:
         chat_id = int(chat["id"])
@@ -30,7 +30,7 @@ def is_update_allowed(update: dict[str, Any], config: TelegramConfig) -> bool:
     user = update.get("message", {}).get("from") or update.get("callback_query", {}).get("from") or {}
 
     if chat.get("type") != "private":
-        return None
+        return False
 
     try:
         chat_id = int(chat["id"])

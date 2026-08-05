@@ -286,12 +286,17 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         logger.warning("Rejected unauthorized Telegram update")
         return
 
-    profile = linked_profile_for_update(update)
-    data_owner_email = profile.user.email if profile is not None else config.owner_email
-
     if update.get("callback_query"):
         _handle_callback(update, client, config)
         return
+
+    profile = None
+    if not (
+        _chat_id(update) in config.allowed_chat_ids
+        and _user_id(update) in config.allowed_user_ids
+    ):
+        profile = linked_profile_for_update(update)
+    data_owner_email = profile.user.email if profile is not None else config.owner_email
 
     command_parts = text_raw.split(maxsplit=1)
     text = command_parts[0].split("@", 1)[0]
