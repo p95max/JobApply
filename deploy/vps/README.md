@@ -129,6 +129,7 @@ systemctl status jobapply-web jobapply-gmail-worker
 journalctl -u jobapply-web -f
 journalctl -u jobapply-gmail-worker -f
 systemctl start jobapply-backup.service
+systemctl start jobapply-backup-now.service
 systemctl start jobapply-neon-sync.service
 systemctl start jobapply-gmail-sync-now.service
 systemctl list-timers --all | grep jobapply
@@ -137,6 +138,9 @@ systemctl list-timers --all | grep jobapply
 `jobapply-gmail-sync-now.service` is an optional one-shot run for all users who
 enabled the Gmail Assistant. It uses the shared background-job lock, so it never
 runs at the same time as backup, Neon sync, or deployment.
+
+`jobapply-backup-now.service` is the equivalent on-demand local database backup;
+the scheduled `jobapply-backup.service` remains unchanged.
 
 ## Deployment update
 

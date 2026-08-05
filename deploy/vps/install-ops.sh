@@ -15,8 +15,8 @@ sudo install -m 0644 deploy/vps/systemd/jobapply-*.service deploy/vps/systemd/jo
 sudo install -o root -g jobapply -m 0750 deploy/vps/scripts/jobapply-* "$BIN_DIR/"
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy.sh /usr/local/sbin/jobapply-deploy
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy-notify.sh "$BIN_DIR/jobapply-deploy-notify.sh"
-sudo install -m 0440 deploy/vps/sudoers/jobapply-deploy /etc/sudoers.d/jobapply-deploy
-sudo visudo -cf /etc/sudoers.d/jobapply-deploy
+sudo install -m 0440 deploy/vps/sudoers/jobapply-telegram /etc/sudoers.d/jobapply-telegram
+sudo visudo -cf /etc/sudoers.d/jobapply-telegram
 sudo install -m 0644 deploy/vps/Caddyfile "$CADDY_FILE"
 
 sudo install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply

@@ -1,0 +1,16 @@
+[Unit]
+Description=JobApply one-time local PostgreSQL backup
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+EnvironmentFile=/opt/jobapply/.env
+Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
+ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-backup-now /usr/local/bin/jobapply-backup-db.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
