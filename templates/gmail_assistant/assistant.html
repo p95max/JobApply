@@ -13,17 +13,15 @@
     </div>
     <div class="d-flex align-items-center gap-2">
       <span class="badge bg-primary">{{ pending_count }} {% trans "pending" %}</span>
-      {% if settings.ai_enabled %}
-        <button
-          id="aiAnalysisSync"
-          type="button"
-          class="btn btn-primary btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#gmailSyncPeriodModal"
-        >
-          {% trans "Sync Gmail" %}
-        </button>
-      {% endif %}
+      <button
+        id="aiAnalysisSync"
+        type="button"
+        class="btn btn-primary btn-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#gmailSyncPeriodModal"
+      >
+        {% trans "Sync Gmail" %}
+      </button>
     </div>
   </div>
 
@@ -163,28 +161,26 @@
   </section>
 </div>
 
-{% if settings.ai_enabled %}
-  <div class="modal fade" id="gmailSyncPeriodModal" tabindex="-1" aria-labelledby="gmailSyncPeriodModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="gmailSyncPeriodModalLabel" class="modal-title fs-5">{% trans "Choose Gmail sync period" %}</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted small mb-3">{% trans "Only messages from the selected period will be checked and may be sent to AI analysis." %}</p>
-          <div class="d-grid gap-2">
-            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="1">{% trans "Last day" %}</button>
-            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="7">{% trans "Last 7 days" %}</button>
-            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="30">{% trans "Last 30 days" %}</button>
-            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="90">{% trans "Last 3 months" %}</button>
-            <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="180">{% trans "Last 6 months" %}</button>
-          </div>
+<div class="modal fade" id="gmailSyncPeriodModal" tabindex="-1" aria-labelledby="gmailSyncPeriodModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="gmailSyncPeriodModalLabel" class="modal-title fs-5">{% trans "Choose Gmail sync period" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">{% trans "Only messages from the selected period will be checked. They are sent to AI analysis only when AI analysis is enabled." %}</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="1">{% trans "Last day" %}</button>
+          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="7">{% trans "Last 7 days" %}</button>
+          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="30">{% trans "Last 30 days" %}</button>
+          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="90">{% trans "Last 3 months" %}</button>
+          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="180">{% trans "Last 6 months" %}</button>
         </div>
       </div>
     </div>
   </div>
-{% endif %}
+</div>
 {% endblock %}
 
 {% block page_scripts %}
