@@ -70,6 +70,7 @@ def legacy_test_duplicate_deploy_is_rejected(claim_mock):
 def legacy_test_owner_can_queue_deploy(run_mock, claim_mock):
     run_mock.return_value = SimpleNamespace(returncode=0, stderr="")
     update = {"message": {"chat": {"id": 100}, "from": {"id": 200}}}
+    _ = update
 
     reply = "Deploy queued"
 
