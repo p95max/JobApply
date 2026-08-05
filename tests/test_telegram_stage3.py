@@ -132,6 +132,36 @@ def test_callback_is_owner_only_and_rate_limited(proposal):
 
 
 @pytest.mark.django_db
+def test_client_help_hides_admin_commands_and_admin_menu_is_owner_only():
+    client = FakeClient()
+    owner = {"message": {"text": "/admin", "chat": {"id": 100, "type": "private"}, "from": {"id": 200}}}
+    client_help = {"message": {"text": "/help", "chat": {"id": 100, "type": "private"}, "from": {"id": 201}}}
+    client_admin = {"message": {"text": "/admin", "chat": {"id": 100, "type": "private"}, "from": {"id": 201}}}
+    shared_config = config(allowed_user_ids=frozenset({200, 201}))
+
+    handle_update(client_help, client, shared_config)
+    handle_update(owner, client, shared_config)
+    handle_update(client_admin, client, shared_config)
+
+    assert "/deploy" not in client.messages[0][1]
+    assert "/admin" not in client.messages[0][1]
+    assert "/status" in client.messages[1][1]
+    assert "/deploy" in client.messages[1][1]
+    assert "only to the bot owner" in client.messages[2][1]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("command", ["/status", "/health", "/doctor", "/deploy"])
+def test_client_cannot_run_administrative_commands(command):
+    client = FakeClient()
+    update = {"message": {"text": command, "chat": {"id": 100, "type": "private"}, "from": {"id": 201}}}
+
+    handle_update(update, client, config(allowed_user_ids=frozenset({200, 201})))
+
+    assert "only to the bot owner" in client.messages[0][1]
+
+
+@pytest.mark.django_db
 def test_gmail_command_includes_open_accept_and_reject_buttons(proposal):
     client = FakeClient()
 

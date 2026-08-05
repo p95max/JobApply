@@ -42,7 +42,7 @@ class Command(BaseCommand):
         offset: int | None = None
 
         try:
-            client.set_commands()
+            client.set_commands(admin_chat_id=config.default_chat_id)
             self.stdout.write(self.style.SUCCESS("Telegram command menu published."))
         except (requests.RequestException, RuntimeError, ValueError) as error:
             logger.warning("Telegram command menu publication failed: %s", type(error).__name__)

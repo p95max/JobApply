@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from apps.telegram_bot.client import BOT_COMMANDS, TelegramClient
+from apps.telegram_bot.client import ADMIN_COMMANDS, CLIENT_COMMANDS, TelegramClient
 
 
 class FakeResponse:
@@ -23,25 +23,38 @@ class FakeSession:
         return None
 
 
-def test_set_commands_publishes_native_telegram_menu():
+def test_set_commands_publishes_client_and_admin_scopes():
     client = TelegramClient("test-token")
     session = FakeSession()
     client.session = session
 
-    client.set_commands()
+    client.set_commands(admin_chat_id=100)
 
     assert session.calls == [
         {
             "url": "https://api.telegram.org/bottest-token/setMyCommands",
-            "json": {"commands": list(BOT_COMMANDS)},
+            "json": {
+                "commands": list(CLIENT_COMMANDS),
+                "scope": {"type": "all_private_chats"},
+            },
             "timeout": 10,
-        }
+        },
+        {
+            "url": "https://api.telegram.org/bottest-token/setMyCommands",
+            "json": {
+                "commands": list(ADMIN_COMMANDS),
+                "scope": {"type": "chat", "chat_id": 100},
+            },
+            "timeout": 10,
+        },
     ]
-    assert [item["command"] for item in BOT_COMMANDS] == [
+    assert [item["command"] for item in CLIENT_COMMANDS] == ["help", "gmail", "applications"]
+    assert [item["command"] for item in ADMIN_COMMANDS] == [
         "help",
-        "status",
         "gmail",
         "applications",
+        "admin",
+        "status",
         "health",
         "doctor",
         "deploy",

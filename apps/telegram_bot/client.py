@@ -11,10 +11,15 @@ CLIENT_COMMANDS: tuple[dict[str, str], ...] = (
     {"command": "help", "description": "Show user commands"},
     {"command": "gmail", "description": "Show pending email events"},
     {"command": "applications", "description": "Show application statistics"},
-    {"command": "admin", "description": "Show administrator commands"},
 )
 
-BOT_COMMANDS = CLIENT_COMMANDS
+ADMIN_COMMANDS: tuple[dict[str, str], ...] = CLIENT_COMMANDS + (
+    {"command": "admin", "description": "Show administrator commands"},
+    {"command": "status", "description": "Show JobApply service status"},
+    {"command": "health", "description": "Run runtime health checks"},
+    {"command": "doctor", "description": "Run owner diagnostics"},
+    {"command": "deploy", "description": "Queue production deploy"},
+)
 
 
 class TelegramClient:
@@ -38,10 +43,21 @@ class TelegramClient:
             raise RuntimeError("Telegram getUpdates returned an error")
         return data.get("result", [])
 
-    def set_commands(self) -> None:
+    def set_commands(self, *, admin_chat_id: int | None = None) -> None:
+        self._set_commands(
+            commands=CLIENT_COMMANDS,
+            scope={"type": "all_private_chats"},
+        )
+        if admin_chat_id is not None:
+            self._set_commands(
+                commands=ADMIN_COMMANDS,
+                scope={"type": "chat", "chat_id": admin_chat_id},
+            )
+
+    def _set_commands(self, *, commands: tuple[dict[str, str], ...], scope: dict[str, Any]) -> None:
         response = self.session.post(
             f"{self.base_url}/setMyCommands",
-            json={"commands": list(BOT_COMMANDS)},
+            json={"commands": list(commands), "scope": scope},
             timeout=10,
         )
         response.raise_for_status()

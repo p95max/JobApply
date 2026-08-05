@@ -20,17 +20,27 @@ def _state_icon(ok: bool) -> str:
     return "✅" if ok else "❌"
 
 
-def help_text(environment: str) -> str:
+def help_text(environment: str, *, is_admin: bool) -> str:
+    lines = [
+        f"🤖 <b>JobApply · {escape(environment)}</b>",
+        "",
+        "<b>Available commands</b>",
+        "ℹ️ /help — available commands",
+        "📨 /gmail — pending Gmail proposals",
+        "📋 /applications — application statistics",
+    ]
+    if is_admin:
+        lines.extend(["", "🛠 /admin — administrator commands"])
+    return "\n".join(lines)
+
+
+def admin_text() -> str:
     return (
-        f"🤖 <b>JobApply · {escape(environment)}</b>\n\n"
-        "<b>Available commands</b>\n"
-        "ℹ️ /help — available commands\n"
+        "🛠 <b>Administrator commands</b>\n\n"
         "📊 /status — service summary\n"
-        "📨 /gmail — pending Gmail proposals\n"
-        "📋 /applications — application statistics\n"
         "🩺 /health — runtime health checks\n"
-        "🛠 /doctor — diagnostics (owner only)\n"
-        "🚀 /deploy — queue production deploy (owner only)"
+        "🛠 /doctor — extended diagnostics\n"
+        "🚀 /deploy — queue production deploy"
     )
 
 

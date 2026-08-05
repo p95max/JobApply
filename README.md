@@ -264,17 +264,21 @@ systemctl list-timers --all | grep jobapply
 
 The Telegram Bot is a private owner dashboard. It does not accept arbitrary shell commands. Gmail proposals remain review-first: each Accept or Reject action is explicit and is checked again against the current proposal state.
 
-Supported commands:
+The native Telegram menu uses two command scopes. All private chats receive only application-facing commands:
 
 - `/help`
-- `/status`
 - `/gmail`
 - `/applications`
-- `/health`
-- `/doctor` (owner only)
-- `/deploy` (owner only, disabled by default)
 
-`/gmail` provides **Open**, **Accept** and **Reject** buttons for pending proposals. The bot rechecks the user, chat, expiry and proposal status before an action is applied. `/health` reports database, disk and worker heartbeats; `/doctor` additionally reports the branch, working tree, migrations and known systemd units.
+The configured owner chat receives those commands plus the administrative menu:
+
+- `/admin`
+- `/status`
+- `/health`
+- `/doctor`
+- `/deploy`
+
+`/help` is role-aware and does not expose administrative commands to a client chat. `/admin`, `/status`, `/health`, `/doctor` and `/deploy` require both the configured owner user ID and the configured owner chat ID. `/gmail` provides **Open**, **Accept** and **Reject** buttons for pending proposals; the bot rechecks the user, chat, expiry and proposal status before an action is applied. `/health` reports database, disk and worker heartbeats; `/doctor` additionally reports the branch, working tree, migrations and known systemd units.
 
 ### BotFather setup
 

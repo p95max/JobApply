@@ -20,6 +20,7 @@ from .permissions import is_update_allowed
 from .proposal_actions import apply_callback_action, parse_callback_data
 from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
 from .texts import (
+    admin_text,
     applications_text,
     deploy_keyboard,
     doctor_text,
@@ -81,8 +82,13 @@ def _proposal_detail_url(proposal_id: int) -> str:
     return _jobapply_url(f"/gmail_stats/gmail/assistant/proposals/{proposal_id}/")
 
 
-def _is_owner(user_id: int, config: TelegramConfig) -> bool:
-    return config.owner_user_id is not None and user_id == config.owner_user_id
+def _is_owner(user_id: int, chat_id: int, config: TelegramConfig) -> bool:
+    return (
+        config.owner_user_id is not None
+        and user_id == config.owner_user_id
+        and config.default_chat_id is not None
+        and chat_id == config.default_chat_id
+    )
 
 
 def _handle_callback(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
@@ -97,7 +103,7 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
     user_id = _callback_user_id(update)
     chat_id = _callback_chat_id(update)
     started = time.monotonic()
-    if not _is_owner(user_id, config):
+    if not _is_owner(user_id, chat_id, config):
         _record_audit(user_id, chat_id, "callback", "forbidden", started)
         _answer_callback(client, callback_id, "This action is available only to the bot owner.")
         return
@@ -280,21 +286,39 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
     try:
         with _command_timeout():
             if text in {"/start", "/help"}:
-                reply = help_text(config.environment_label)
+                reply = help_text(config.environment_label, is_admin=_is_owner(user_id, chat_id, config))
+            elif text == "/admin":
+                if not _is_owner(user_id, chat_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    reply = admin_text()
             elif text == "/status":
-                reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
+                if not _is_owner(user_id, chat_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
             elif text == "/gmail":
                 total, proposals = get_gmail_summary(config.owner_email)
                 reply = gmail_text(total, proposals)
                 reply_markup = gmail_keyboard(proposals, detail_url=_proposal_detail_url)
                 if reply_markup is None:
-                    reply_markup = {"inline_keyboard": [[{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]]}
+                    reply_markup = {
+                        "inline_keyboard": [
+                            [{"text": "Open in JobApply", "url": _jobapply_url("/gmail_stats/gmail/assistant/")}]
+                        ]
+                    }
             elif text == "/applications":
                 reply = applications_text(get_application_summary(config.owner_email))
             elif text == "/health":
-                reply = health_text(config.environment_label, get_health_snapshot())
+                if not _is_owner(user_id, chat_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    reply = health_text(config.environment_label, get_health_snapshot())
             elif text == "/doctor":
-                if not _is_owner(user_id, config):
+                if not _is_owner(user_id, chat_id, config):
                     reply = "This command is available only to the bot owner."
                     result = "forbidden"
                 else:
@@ -303,12 +327,12 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 if has_arguments:
                     reply = "Deploy does not accept branch names or command arguments."
                     result = "invalid"
+                elif not _is_owner(user_id, chat_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
                 elif not config.deploy_enabled:
                     reply = "Deploy is disabled by configuration."
                     result = "disabled"
-                elif not _is_owner(user_id, config):
-                    reply = "This command is available only to the bot owner."
-                    result = "forbidden"
                 else:
                     deployment = prepare_deploy_request(
                         telegram_user_id=user_id,
