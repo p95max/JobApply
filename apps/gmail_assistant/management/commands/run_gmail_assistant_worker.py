@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from html import escape
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -35,13 +36,16 @@ class Command(BaseCommand):
         date_key = timezone.localdate().isoformat()
         event_type = "gmail_oauth_required" if oauth else "gmail_sync_error"
         title = "Gmail OAuth reconnect required" if oauth else "Gmail sync failed"
+        icon = "🔐" if oauth else "❌"
+        action = "Reconnect Gmail in JobApply settings." if oauth else "Check the Gmail worker logs."
         send_notification_once(
             event_key=f"{event_type}:{assistant_settings.user_id}:{date_key}",
             event_type=event_type,
             text=(
-                f"<b>{title}</b>\n"
-                f"User ID: <code>{assistant_settings.user_id}</code>\n"
-                f"Error: <code>{type(error).__name__}</code>"
+                f"{icon} <b>{title}</b>\n\n"
+                f"👤 User ID: <code>{assistant_settings.user_id}</code>\n"
+                f"⚠️ Error: <code>{escape(type(error).__name__)}</code>\n\n"
+                f"🛠 {action}"
             ),
         )
 
