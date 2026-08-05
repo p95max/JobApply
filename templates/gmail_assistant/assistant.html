@@ -33,10 +33,23 @@
   {% if dev_tools_enabled %}
     <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
       <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
-      <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
-        {% csrf_token %}
-        <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
-      </form>
+      <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-nowrap" for="devReanalyzeDays">{% trans "Reanalyze" %}</label>
+          <select id="devReanalyzeDays" class="form-select form-select-sm">
+            <option value="1">{% trans "1 day" %}</option>
+            <option value="7" selected>{% trans "1 week" %}</option>
+            <option value="30">{% trans "1 month" %}</option>
+            <option value="90">{% trans "3 months" %}</option>
+            <option value="180">{% trans "6 months" %}</option>
+          </select>
+          <button id="devReanalyzeGmail" type="button" class="btn btn-outline-warning btn-sm text-nowrap">{% trans "Reanalyze saved" %}</button>
+        </div>
+        <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm">{% trans "Reset test data" %}</button>
+        </form>
+      </div>
     </div>
   {% endif %}
 
@@ -148,7 +161,7 @@
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
-        <p class="text-muted mb-0 mt-2">{% trans "It searches relevant Gmail messages, rechecks saved analyses, and creates reviewable suggestions. It never changes an application by itself." %}</p>
+        <p class="text-muted mb-0 mt-2">{% trans "It searches relevant new Gmail messages and creates reviewable suggestions. Already synced messages are skipped. It never changes an application by itself." %}</p>
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
@@ -170,14 +183,17 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted small mb-3">{% trans "Only messages from the selected period will be checked. They are sent to AI analysis only when AI analysis is enabled." %}</p>
-        <div class="d-grid gap-2">
-          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="1">{% trans "Last day" %}</button>
-          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="7">{% trans "Last 7 days" %}</button>
-          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="30">{% trans "Last 30 days" %}</button>
-          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="90">{% trans "Last 3 months" %}</button>
-          <button type="button" class="btn btn-outline-primary sync-period-option" data-sync-days="180">{% trans "Last 6 months" %}</button>
-        </div>
+        <p class="text-muted small mb-1">{% trans "Only new messages from the selected period will be checked. They are sent to AI analysis only when AI analysis is enabled." %}</p>
+        <p class="text-muted small mb-3">{% trans "Previously synced messages are skipped to avoid repeated AI analysis and token usage." %}</p>
+        <label class="form-label" for="gmailSyncDays">{% trans "Period" %}</label>
+        <select id="gmailSyncDays" class="form-select mb-3">
+          <option value="1">{% trans "Last day" %}</option>
+          <option value="7" selected>{% trans "Last 7 days" %}</option>
+          <option value="30">{% trans "Last 30 days" %}</option>
+          <option value="90">{% trans "Last 3 months" %}</option>
+          <option value="180">{% trans "Last 6 months" %}</option>
+        </select>
+        <button id="syncNewGmail" type="button" class="btn btn-primary w-100">{% trans "Sync new messages" %}</button>
       </div>
     </div>
   </div>
@@ -192,22 +208,30 @@
   const progressSpinner = document.getElementById("aiAnalysisSpinner");
   const progressText = document.getElementById("aiAnalysisProgressText");
   const syncButton = document.getElementById("aiAnalysisSync");
-  const syncPeriodOptions = document.querySelectorAll(".sync-period-option");
+  const syncDays = document.getElementById("gmailSyncDays");
+  const syncNewButton = document.getElementById("syncNewGmail");
+  const devReanalyzeDays = document.getElementById("devReanalyzeDays");
+  const devReanalyzeButton = document.getElementById("devReanalyzeGmail");
 
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
-  async function syncGmail(days) {
+  async function syncGmail(days, reanalyze = false) {
     const syncModal = document.getElementById("gmailSyncPeriodModal");
-    bootstrap.Modal.getOrCreateInstance(syncModal).hide();
+    if (syncModal.classList.contains("show")) bootstrap.Modal.getOrCreateInstance(syncModal).hide();
     progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
     progressSpinner.classList.remove("d-none");
     progress.classList.remove("alert-danger");
     progress.classList.add("alert-info");
     progress.classList.remove("d-none");
     syncButton.disabled = true;
-    syncPeriodOptions.forEach((option) => { option.disabled = true; });
+    syncDays.disabled = true;
+    syncNewButton.disabled = true;
+    if (devReanalyzeDays) devReanalyzeDays.disabled = true;
+    if (devReanalyzeButton) devReanalyzeButton.disabled = true;
     try {
-      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?days=" + encodeURIComponent(days) + "&reanalyze=1", {
+      const params = new URLSearchParams({days});
+      if (reanalyze) params.set("reanalyze", "1");
+      const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?" + params.toString(), {
         method: "POST",
         headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
       });
@@ -219,12 +243,18 @@
       progress.classList.remove("alert-info");
       progress.classList.add("alert-danger");
       syncButton.disabled = false;
-      syncPeriodOptions.forEach((option) => { option.disabled = false; });
+      syncDays.disabled = false;
+      syncNewButton.disabled = false;
+      if (devReanalyzeDays) devReanalyzeDays.disabled = false;
+      if (devReanalyzeButton) devReanalyzeButton.disabled = false;
     }
   }
 
-  syncPeriodOptions.forEach((option) => {
-    option.addEventListener("click", () => syncGmail(option.dataset.syncDays));
+  syncNewButton.addEventListener("click", () => syncGmail(syncDays.value));
+  devReanalyzeButton?.addEventListener("click", () => {
+    if (window.confirm("{% trans 'Reanalyze saved messages for the selected period? This can consume your daily AI email limit.' %}")) {
+      syncGmail(devReanalyzeDays.value, true);
+    }
   });
 
   if (syncButton) {

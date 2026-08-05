@@ -168,12 +168,29 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b'aiAnalysisSync' in response.content
     assert b'gmailSyncPeriodModal' in response.content
     assert b"only when AI analysis is enabled" in response.content
+    assert b"Previously synced messages are skipped" in response.content
+    assert b'syncNewGmail' in response.content
+    assert b'devReanalyzeGmail' not in response.content
     for days in (b'"1"', b'"7"', b'"30"', b'"90"', b'"180"'):
-        assert b"data-sync-days=" + days in response.content
-    assert b"?days=" in response.content
+        assert b"value=" + days in response.content
+    assert b'new URLSearchParams({days})' in response.content
+    assert b'params.set("reanalyze", "1")' in response.content
     assert b'aiAnalysisSave' not in response.content
     assert b"toggle.disabled" not in response.content
     assert reverse("gmail_assistant:gmail_assistant").encode() in response.content
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True)
+def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b'devReanalyzeGmail' in response.content
+    assert b'devReanalyzeDays' in response.content
+    assert b"Reanalyze saved" in response.content
 
 
 @pytest.mark.django_db
