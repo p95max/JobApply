@@ -449,6 +449,35 @@ body:has(.landing-shell) main {
   text-decoration: underline;
 }
 
+.landing-footer__link-button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.landing-footer__link-button:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.cookie-consent__category {
+  display: grid;
+  gap: 0.2rem;
+  margin: 1.25rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(73, 214, 177, 0.42);
+  border-radius: 0.75rem;
+  background: rgba(73, 214, 177, 0.08);
+}
+
+.cookie-consent__category span {
+  color: var(--bs-secondary-color);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 991.98px) {
   .landing-hero {
     min-height: auto;

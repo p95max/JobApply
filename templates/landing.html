@@ -141,11 +141,49 @@
       <a href="{% url 'legal:impressum' %}">{% trans "Impressum" %}</a>
       <a href="{% url 'legal:privacy' %}">{% trans "Privacy policy" %}</a>
       <a href="{% url 'legal:terms' %}">{% trans "Terms of use" %}</a>
+      {% if LANGUAGE_CODE == 'de' %}
+        <button class="landing-footer__link-button" type="button" data-open-cookie-settings>Cookie-Einstellungen</button>
+      {% else %}
+        <button class="landing-footer__link-button" type="button" data-open-cookie-settings>Cookie settings</button>
+      {% endif %}
     </nav>
   </footer>
+</div>
+
+<div class="modal fade" id="cookieConsentModal" data-cookie-consent-modal tabindex="-1" aria-labelledby="cookieConsentTitle" aria-describedby="cookieConsentDescription" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        {% if LANGUAGE_CODE == 'de' %}
+          <h2 id="cookieConsentTitle" class="modal-title fs-5">Cookie-Einstellungen</h2>
+        {% else %}
+          <h2 id="cookieConsentTitle" class="modal-title fs-5">Cookie settings</h2>
+        {% endif %}
+      </div>
+      <div class="modal-body" id="cookieConsentDescription">
+        {% if LANGUAGE_CODE == 'de' %}
+          <p>JobApply verwendet nur technisch notwendige Cookies für Anmeldung, CSRF-Schutz und Spracheinstellungen. Es werden keine Analyse-, Werbe- oder Tracking-Cookies verwendet.</p>
+          <div class="cookie-consent__category"><strong>Immer aktiv · Notwendig</strong><span>Session, Sicherheit und deine gespeicherte Cookie-Information.</span></div>
+          <p class="small text-body-secondary mb-0">Deine Kenntnisnahme wird als <code>jobapply_cookie_notice</code> für 180 Tage gespeichert. Details stehen in der <a href="{% url 'legal:privacy' %}">Datenschutzerklärung</a>.</p>
+        {% else %}
+          <p>JobApply uses only technically necessary cookies for sign-in, CSRF protection and language preferences. No analytics, advertising or tracking cookies are used.</p>
+          <div class="cookie-consent__category"><strong>Always active · Necessary</strong><span>Session, security and your stored cookie notice preference.</span></div>
+          <p class="small text-body-secondary mb-0">Your acknowledgement is stored in <code>jobapply_cookie_notice</code> for 180 days. See the <a href="{% url 'legal:privacy' %}">Privacy Policy</a> for details.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        {% if LANGUAGE_CODE == 'de' %}
+          <button class="btn btn-primary" type="button" data-save-cookie-settings>Speichern und schließen</button>
+        {% else %}
+          <button class="btn btn-primary" type="button" data-save-cookie-settings>Save and close</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{% static 'js/landing_carousel.js' %}?v=1" defer></script>
+<script src="{% static 'js/cookie_consent.js' %}?v=1" defer></script>
 {% endblock %}

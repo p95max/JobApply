@@ -46,6 +46,7 @@ def test_privacy_page_uses_configured_legal_details(client):
     assert b"14 Tage" in response.content
     assert b"drive.file" in response.content
     assert b"Google-Drive-Backups" in response.content
+    assert b"jobapply_cookie_notice" in response.content
     assert b"Demo-Placeholder" not in response.content
 
 
@@ -69,5 +70,6 @@ def test_legal_pages_use_english_when_english_is_selected(client):
 
     assert b"Privacy Policy" in privacy.content
     assert b"Google Drive backups" in privacy.content
+    assert b"jobapply_cookie_notice" in privacy.content
     assert b"Legal notice" in impressum.content
     assert b"Terms of Use" in terms.content

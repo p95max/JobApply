@@ -21,6 +21,8 @@ def test_public_root_renders_landing_page(client):
     assert "control token usage" in content
     assert "DEMO" in content
     assert reverse("legal:privacy") in content
+    assert "data-cookie-consent-modal" in content
+    assert "data-open-cookie-settings" in content
 
 
 @pytest.mark.django_db
