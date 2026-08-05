@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from html import escape
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
@@ -41,9 +43,10 @@ class Command(BaseCommand):
                 event_key=f"backup_failed:{day}",
                 event_type="backup_failed",
                 text=(
-                    "<b>JobApply backup failed</b>\n"
-                    f"Error category: {error_category}\n"
-                    "Check the backup service logs."
+                    "❌ <b>JobApply backup failed</b>\n\n"
+                    f"⚠️ Error category: <code>{escape(error_category)}</code>\n\n"
+                    "🛠 Check the service logs:\n"
+                    "<pre><code>journalctl -u jobapply-backup.service -n 100 --no-pager</code></pre>"
                 ),
             )
 
