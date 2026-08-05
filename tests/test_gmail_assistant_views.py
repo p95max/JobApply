@@ -446,4 +446,26 @@ def test_create_application_proposal_displays_extracted_values(client, proposal)
     assert response.status_code == 200
     assert b"Python Software Engineer" in response.content
     assert b"Smart Systems Hub GmbH" in response.content
-    assert b"Choose another application" not in response.content
+    assert b"Link the correct application" in response.content
+    assert b"Check the source email" in response.content
+    assert b"Verify the proposed change" in response.content
+
+
+@pytest.mark.django_db
+def test_review_page_shows_sender_excerpt_and_requires_link_for_action(client, proposal):
+    proposal.application = None
+    proposal.proposal_type = ProposalType.ACTION_REQUIRED
+    proposal.changes = {"action": {"text": "Confirm here: https://example.org/confirm", "deadline_at": None}}
+    proposal.message.from_email = "jobs@example.org"
+    proposal.message.snippet = "Complete the requested confirmation."
+    proposal.message.save(update_fields=["from_email", "snippet"])
+    proposal.save(update_fields=["application", "proposal_type", "changes"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk]))
+
+    assert response.status_code == 200
+    assert b"jobs@example.org" in response.content
+    assert b"Complete the requested confirmation." in response.content
+    assert b"https://example.org/confirm" in response.content
+    assert b"Complete step 4 before accepting this proposal." in response.content

@@ -101,6 +101,11 @@ def _review_note(value: str) -> str:
 def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides: dict[str, Any]) -> JobApplication | None:
     changes = _merged_changes(proposal.changes.get("application"), overrides.get("application"), _APPLICATION_FIELDS)
     if proposal.proposal_type == ProposalType.CREATE_APPLICATION:
+        if proposal.application_id:
+            application = JobApplication.objects.select_for_update().filter(pk=proposal.application_id, user=user).first()
+            if application is None:
+                raise ProposalApplyError("application does not belong to the proposal user")
+            return application
         if not changes or changes.get("operation") != "create":
             raise ProposalApplyError("create proposal has invalid application changes")
         application = JobApplication(
@@ -119,7 +124,7 @@ def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides
 
     application = proposal.application
     if application is None:
-        if proposal.proposal_type == ProposalType.UPDATE_APPLICATION:
+        if proposal.proposal_type in {ProposalType.UPDATE_APPLICATION, ProposalType.ACTION_REQUIRED}:
             raise ProposalApplyError("assign an application before accepting this proposal")
         return None
     if application.user_id != user.pk:

@@ -128,6 +128,91 @@ def test_unmatched_application_event_can_propose_new_application(proposal_contex
 
 
 @pytest.mark.django_db
+def test_job_board_name_is_not_used_as_a_new_application_company(proposal_context):
+    user, _, message = proposal_context
+
+    result = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.APPLICATION_RECEIVED,
+            extracted_data={"company": "Stepstone", "position_title": "Python Software Engineer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+
+    assert result == []
+
+
+@pytest.mark.django_db
+def test_reanalysis_removes_an_existing_job_board_create_proposal(proposal_context):
+    user, _, message = proposal_context
+    record = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "Real Company", "position_title": "Python Software Engineer"},
+    )
+    build_proposals(message=message, analysis=record, match=ApplicationMatch(suggested=None, ambiguous=()))
+    record.extracted_data = {"company": "Indeed Ireland Operations Limited", "position_title": "Python Software Engineer"}
+    record.save(update_fields=["extracted_data"])
+
+    result = build_proposals(message=message, analysis=record, match=ApplicationMatch(suggested=None, ambiguous=()))
+
+    assert result == []
+    assert not ApplicationUpdateProposal.objects.filter(
+        message=message,
+        analysis=record,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_matching_pending_create_intent_does_not_create_a_second_application_proposal(proposal_context):
+    user, _, message = proposal_context
+    first = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.APPLICATION_RECEIVED,
+            extracted_data={"company": "Smart Systems Hub GmbH", "position_title": "Python Software Engineer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+    second_message = GmailMessage.objects.create(
+        user=user,
+        message_id="message-duplicate",
+        thread_id="thread-duplicate",
+        received_at=message.received_at + timedelta(minutes=2),
+        subject="Application received again",
+        from_email="no-reply@example.org",
+    )
+
+    result = build_proposals(
+        message=second_message,
+        analysis=analysis(
+            user=user,
+            message=second_message,
+            event_type=GmailEventType.APPLICATION_RECEIVED,
+            extracted_data={"company": "Smart Systems Hub GmbH", "position_title": "Python Software Engineer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+
+    first.refresh_from_db()
+    assert result == []
+    assert ApplicationUpdateProposal.objects.filter(
+        user=user,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).count() == 1
+    assert first.changes["related_messages"][0]["subject"] == "Application received again"
+
+
+@pytest.mark.django_db
 def test_rebuilding_pending_create_proposal_refreshes_extracted_location(proposal_context):
     user, _, message = proposal_context
     record = analysis(
@@ -163,6 +248,29 @@ def test_unmatched_rejection_requires_manual_application_assignment(proposal_con
 
 
 @pytest.mark.django_db
+def test_manually_linked_create_proposal_reuses_the_application(proposal_context):
+    user, application, message = proposal_context
+    proposal = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.APPLICATION_RECEIVED,
+            extracted_data={"company": "Example GmbH", "position_title": "Python Developer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+    proposal.application = application
+    proposal.match_method = "manual"
+    proposal.save(update_fields=["application", "match_method"])
+
+    result = apply_proposal(proposal=proposal, user=user)
+
+    assert result.application == application
+    assert JobApplication.objects.filter(user=user).count() == 1
+
+
+@pytest.mark.django_db
 def test_action_required_proposal_does_not_change_status(proposal_context):
     user, application, message = proposal_context
     result = build_proposals(
@@ -178,6 +286,27 @@ def test_action_required_proposal_does_not_change_status(proposal_context):
 
     assert result[0].proposal_type == ProposalType.ACTION_REQUIRED
     assert result[0].changes["action"]["required"] is True
+
+
+@pytest.mark.django_db
+def test_unlinked_action_cannot_be_accepted(proposal_context):
+    user, _, message = proposal_context
+    proposal = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+            extracted_data={"action_text": "Confirm your application"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+
+    with pytest.raises(ProposalApplyError, match="assign an application"):
+        apply_proposal(proposal=proposal, user=user)
+
+    proposal.refresh_from_db()
+    assert proposal.status == ProposalStatus.PENDING
 
 
 @pytest.mark.django_db

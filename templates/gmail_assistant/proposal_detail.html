@@ -8,42 +8,66 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 900px;">
-  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Back" %}</a>
+<div class="container py-4 proposal-review" style="max-width: 900px;">
+  <a class="btn btn-outline-secondary btn-sm mb-3" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Back to suggestions" %}</a>
 
   <section class="card proposal-review-header tone-{{ event_tone }} mb-3">
     <div class="card-body">
       <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
         <div>
+          <p class="proposal-eyebrow mb-1">{% trans "Gmail Assistant review" %}</p>
           <h1 class="h4 mb-2">{{ proposal.message.subject|default:"—" }}</h1>
-          <p class="mb-0 text-muted">{{ proposal.message.from_email }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
+          <p class="mb-0 text-muted">{{ proposal.message.from_email|default:"—" }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
         </div>
-        <span class="badge text-bg-{{ event_tone }}">{{ proposal.analysis.event_type }}</span>
+        <span class="badge text-bg-{{ event_tone }}">{{ proposal.analysis.get_event_type_display }}</span>
       </div>
+    </div>
+  </section>
+
+  <p class="text-muted mb-3">{% trans "Follow the numbered steps. Nothing is changed until you choose Accept in the final step." %}</p>
+
+  <section class="card proposal-section proposal-section--email mb-3">
+    <div class="card-body">
+      <h2 class="proposal-step-title"><span class="proposal-step-number">1</span>{% trans "Check the source email" %}</h2>
+      <div class="proposal-metadata">
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender" %}</span>{{ proposal.message.from_email|default:"—" }}</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender domain" %}</span>{{ review_context.sender_domain|default:"—" }}</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Received" %}</span>{{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
+      </div>
+      {% if proposal.message.snippet %}
+        <div class="proposal-email-excerpt mt-3"><strong>{% trans "Email excerpt" %}</strong><p class="mb-0 mt-1">{{ proposal.message.snippet }}</p></div>
+      {% endif %}
+      {% if proposal.changes.related_messages %}
+        <div class="proposal-evidence mt-3"><strong>{% trans "Related confirmation emails" %}</strong><ul class="mb-0 mt-2">{% for message in proposal.changes.related_messages %}<li>{{ message.subject|default:"—" }} — {{ message.from_email|default:"—" }} · {{ message.received_at }}</li>{% endfor %}</ul></div>
+      {% endif %}
     </div>
   </section>
 
   <section class="card proposal-section proposal-section--analysis mb-3">
     <div class="card-body">
-      <h2 class="proposal-section__title">{% trans "Email analysis" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">2</span>{% trans "Understand why this was suggested" %}</h2>
       <div class="proposal-metadata">
-        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Event" %}</span>{{ proposal.analysis.event_type }}</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Event" %}</span>{{ proposal.analysis.get_event_type_display }}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Confidence" %}</span>{{ proposal.analysis.confidence }}%</div>
-        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Match" %}</span>{% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "unmatched" %}{% endif %} ({{ proposal.match_score }})</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Match" %}</span>{% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "No application matched" %}{% endif %} ({{ proposal.match_score }})</div>
+        {% if proposal.analysis.extracted_data.company %}<div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Detected company" %}</span>{{ proposal.analysis.extracted_data.company }}</div>{% endif %}
+        {% if proposal.analysis.extracted_data.position_title %}<div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Detected role" %}</span>{{ proposal.analysis.extracted_data.position_title }}</div>{% endif %}
+        {% if proposal.analysis.extracted_data.external_application_id %}<div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Application reference" %}</span>{{ proposal.analysis.extracted_data.external_application_id }}</div>{% endif %}
       </div>
       {% if proposal.analysis.extracted_data.summary %}<p class="proposal-summary">{{ proposal.analysis.extracted_data.summary }}</p>{% endif %}
-      {% if proposal.analysis.extracted_data.evidence %}
-        <div class="proposal-evidence"><strong>{% trans "Evidence" %}</strong><ul class="mb-0 mt-2">{% for item in proposal.analysis.extracted_data.evidence %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      {% if proposal.analysis.extracted_data.evidence %}<div class="proposal-evidence"><strong>{% trans "Evidence from email" %}</strong><ul class="mb-0 mt-2">{% for item in proposal.analysis.extracted_data.evidence %}<li>{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+      {% if review_context.match_candidates %}
+        <div class="proposal-candidates mt-3"><strong>{% trans "Possible matches — choose manually if one is correct" %}</strong><ul class="mb-0 mt-2">{% for candidate in review_context.match_candidates %}<li>{{ candidate.application.company }} — {{ candidate.application.title }} <span class="text-muted">({{ candidate.method }}, {{ candidate.score }})</span></li>{% endfor %}</ul></div>
       {% endif %}
     </div>
   </section>
 
   <section class="card proposal-section proposal-section--changes mb-3">
     <div class="card-body">
-      <h2 class="proposal-section__title">{% trans "Proposed changes" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">3</span>{% trans "Verify the proposed change" %}</h2>
       {% if proposal.changes.application %}
         {% if proposal.proposal_type == "create_application" %}
-          <div class="proposal-change-row"><strong>{% trans "Title" %}:</strong> {{ proposal.changes.application.title }}</div>
+          <div class="proposal-change-row"><strong>{% trans "Job title" %}:</strong> {{ proposal.changes.application.title }}</div>
           <div class="proposal-change-row"><strong>{% trans "Company" %}:</strong> {{ proposal.changes.application.company }}</div>
           <div class="proposal-change-row"><strong>{% trans "Location" %}:</strong> {{ proposal.changes.application.location|default:"—" }}</div>
           <div class="proposal-change-row"><strong>{% trans "Source" %}:</strong> {{ proposal.changes.application.source }}</div>
@@ -54,71 +78,96 @@
         {% endif %}
       {% endif %}
       {% if proposal.changes.interview %}<div class="proposal-change-row"><strong>{% trans "Interview" %}:</strong> {{ proposal.changes.interview.operation }} {{ proposal.changes.interview.starts_at|default:"" }} {{ proposal.changes.interview.location|default:"" }}</div>{% endif %}
-      {% if proposal.changes.action %}<div class="proposal-change-row"><strong>{% trans "Required action" %}:</strong> {{ proposal.changes.action.text|default:"—" }}</div>{% endif %}
+      {% if proposal.changes.action %}
+        <div class="proposal-change-row"><strong>{% trans "Required action" %}:</strong> {{ proposal.changes.action.text|default:"—" }}</div>
+        <div class="proposal-change-row"><strong>{% trans "Deadline" %}:</strong> {{ proposal.changes.action.deadline_at|default:"—" }}</div>
+        {% if review_context.action_url %}<div class="proposal-change-row"><strong>{% trans "Action link" %}:</strong> <a href="{{ review_context.action_url }}" rel="noreferrer" target="_blank">{{ review_context.action_url }}</a></div>{% endif %}
+      {% endif %}
     </div>
   </section>
 
-  <form method="post" class="card proposal-section proposal-section--decision mb-3">
+  <section class="card proposal-section proposal-section--assignment mb-3">
     <div class="card-body">
-      {% csrf_token %}
-      <h2 class="proposal-section__title">{% trans "Decision" %}</h2>
-      <label class="form-label" for="reviewNote">{% trans "Note" %} <span class="text-muted">({% trans "optional" %})</span></label>
-      <textarea class="form-control mb-3" name="review_note" id="reviewNote" rows="2" placeholder="{% trans 'Add a note for this review' %}"></textarea>
-      <div class="d-flex flex-wrap gap-2">
-        {% if proposal.application_id or proposal.proposal_type == "create_application" %}
-          <button class="btn btn-primary" formaction="{% url 'gmail_assistant:accept_gmail_proposal' proposal.pk %}">{% trans "Accept" %}</button>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span>{% trans "Link the correct application" %}</h2>
+      {% if proposal.application_id %}
+        <p class="mb-0">{% trans "Linked application" %}: <strong>{{ proposal.application.company }} — {{ proposal.application.title }}</strong></p>
+      {% else %}
+        <p class="text-muted">{% trans "For a status change or required action, this step is mandatory. For a new application, link an existing record only when it is clearly the same application." %}</p>
+        {% if candidates %}
+          <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}">
+            {% csrf_token %}
+            <label class="form-label" for="applicationId">{% trans "Existing application" %}</label>
+            <select class="form-select mb-3" name="application_id" id="applicationId">
+              {% for application in candidates %}<option value="{{ application.pk }}">{{ application.company }} — {{ application.title }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-outline-primary">{% trans "Link this application" %}</button>
+          </form>
         {% else %}
-          <span class="text-muted me-2">{% trans "Assign this proposal to an application before accepting it." %}</span>
+          <p class="text-muted mb-0">{% trans "There are no active applications available to link." %}</p>
         {% endif %}
-        <button class="btn btn-outline-danger" formaction="{% url 'gmail_assistant:reject_gmail_proposal' proposal.pk %}">{% trans "Reject" %}</button>
-        <button class="btn btn-outline-secondary" formaction="{% url 'gmail_assistant:ignore_gmail_proposal' proposal.pk %}">{% trans "Ignore" %}</button>
-      </div>
-      {% if proposal.application_id or proposal.proposal_type == "create_application" %}
-        <p class="small text-muted mb-0 mt-3">{% trans "After acceptance, this Gmail activity will appear in the application details." %}</p>
       {% endif %}
     </div>
-  </form>
+  </section>
 
   {% if not proposal.application_id and proposal.proposal_type != "create_application" %}
-    <form method="post" action="{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}" class="card proposal-section proposal-section--assignment mb-3">
-      <div class="card-body">
+    <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span>{% trans "Or create and link an application" %}</h2>
+      <p class="text-muted">{% trans "Use this only after confirming the employer and role from the email." %}</p>
+      <form method="post" action="{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}">
         {% csrf_token %}
-        <h2 class="proposal-section__title">{% trans "Create application from this email" %}</h2>
-        <p class="small text-muted">{% trans "Review the extracted details. The proposal will be linked to the new application, but it will not be accepted automatically." %}</p>
         <div class="row g-2">
-          <div class="col-md-6">
-            <label class="form-label" for="newApplicationTitle">{% trans "Job title" %}</label>
-            <input class="form-control" id="newApplicationTitle" name="title" maxlength="200" required value="{{ proposal.analysis.extracted_data.position_title|default:'' }}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label" for="newApplicationCompany">{% trans "Company" %}</label>
-            <input class="form-control" id="newApplicationCompany" name="company" maxlength="200" required value="{{ proposal.analysis.extracted_data.company|default:'' }}">
-          </div>
-          <div class="col-12">
-            <label class="form-label" for="newApplicationLocation">{% trans "Location" %}</label>
-            <input class="form-control" id="newApplicationLocation" name="location" maxlength="200" value="{{ proposal.analysis.extracted_data.location|default:'' }}">
-          </div>
+          <div class="col-md-6"><label class="form-label" for="newApplicationTitle">{% trans "Job title" %}</label><input class="form-control" id="newApplicationTitle" name="title" maxlength="200" required value="{{ proposal.analysis.extracted_data.position_title|default:'' }}"></div>
+          <div class="col-md-6"><label class="form-label" for="newApplicationCompany">{% trans "Company" %}</label><input class="form-control" id="newApplicationCompany" name="company" maxlength="200" required value="{{ proposal.analysis.extracted_data.company|default:'' }}"></div>
+          <div class="col-12"><label class="form-label" for="newApplicationLocation">{% trans "Location" %}</label><input class="form-control" id="newApplicationLocation" name="location" maxlength="200" value="{{ proposal.analysis.extracted_data.location|default:'' }}"></div>
         </div>
         <button class="btn btn-success mt-3">{% trans "Create and link application" %}</button>
-      </div>
-    </form>
+      </form>
+    </div></section>
   {% endif %}
 
-  {% if candidates and proposal.proposal_type != "create_application" %}
-    <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}" class="card proposal-section proposal-section--assignment mb-3">
-      <div class="card-body">
+  <section class="card proposal-section proposal-section--decision mb-3">
+    <div class="card-body">
+      <h2 class="proposal-step-title"><span class="proposal-step-number">5</span>{% trans "Choose the outcome" %}</h2>
+      <p class="text-muted">{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}</p>
+      <form method="post">
         {% csrf_token %}
-        <h2 class="proposal-section__title">{% trans "Link to an existing application" %}</h2>
-        <p class="small text-muted">{% trans "Choose the application that this Gmail activity belongs to before accepting the proposal." %}</p>
-        <label class="form-label" for="applicationId">{% trans "Choose another application" %}</label>
-        <select class="form-select mb-3" name="application_id" id="applicationId">
-          {% for application in candidates %}<option value="{{ application.pk }}" {% if proposal.application_id == application.pk %}selected{% endif %}>{{ application.company }} — {{ application.title }}</option>{% endfor %}
-        </select>
-        <button class="btn btn-outline-primary">{% trans "Link application" %}</button>
-      </div>
-    </form>
-  {% endif %}
+        <label class="form-label" for="reviewNote">{% trans "Review note" %} <span class="text-muted">({% trans "optional" %})</span></label>
+        <textarea class="form-control mb-3" name="review_note" id="reviewNote" rows="2" placeholder="{% trans 'Why did you accept, reject, or link this proposal?' %}"></textarea>
+        <div class="d-flex flex-wrap gap-2">
+          {% if review_context.can_accept %}
+            <button class="btn btn-primary" formaction="{% url 'gmail_assistant:accept_gmail_proposal' proposal.pk %}">{% trans "Accept verified change" %}</button>
+          {% else %}
+            <span class="text-warning me-2">{% trans "Complete step 4 before accepting this proposal." %}</span>
+          {% endif %}
+          <button class="btn btn-outline-danger" formaction="{% url 'gmail_assistant:reject_gmail_proposal' proposal.pk %}">{% trans "Reject suggestion" %}</button>
+          <button class="btn btn-outline-secondary" formaction="{% url 'gmail_assistant:ignore_gmail_proposal' proposal.pk %}">{% trans "Ignore for now" %}</button>
+        </div>
+      </form>
+      {% if review_context.can_accept %}<p class="small text-muted mb-0 mt-3">{% trans "After acceptance, this Gmail activity will appear in the linked application's details." %}</p>{% endif %}
+    </div>
+  </section>
 
-  <form method="post" action="{% url 'gmail_assistant:edit_accept_gmail_proposal' proposal.pk %}" class="card proposal-section proposal-section--edit mb-3"><div class="card-body">{% csrf_token %}<h2 class="proposal-section__title">{% trans "Edit and accept" %}</h2><textarea class="form-control mb-3" name="review_note" rows="2" placeholder="{% trans 'Add a note for this review' %}"></textarea><div class="row g-2">{% if proposal.proposal_type == "create_application" %}<div class="col-md-6"><input class="form-control" name="title" value="{{ proposal.changes.application.title }}" placeholder="{% trans 'Job title' %}"></div><div class="col-md-6"><input class="form-control" name="company" value="{{ proposal.changes.application.company }}" placeholder="{% trans 'Company' %}"></div><div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.application.location }}" placeholder="{% trans 'Location' %}"></div><div class="col-md-6"><input class="form-control" name="source" value="{{ proposal.changes.application.source }}" placeholder="{% trans 'Source' %}"></div>{% elif proposal.changes.interview %}<div class="col-md-6"><input class="form-control" name="starts_at" value="{{ proposal.changes.interview.starts_at }}" placeholder="2026-08-06T09:00:00+02:00"></div><div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.interview.location }}" placeholder="{% trans 'Location' %}"></div><div class="col-12"><textarea class="form-control" name="notes" placeholder="{% trans 'Interview notes' %}">{{ proposal.changes.interview.notes }}</textarea></div>{% else %}<div class="col-md-6"><input class="form-control" name="title" placeholder="{% trans 'Job title' %}"></div><div class="col-md-6"><input class="form-control" name="company" placeholder="{% trans 'Company' %}"></div><div class="col-md-6"><input class="form-control" name="location" placeholder="{% trans 'Location' %}"></div>{% endif %}</div><button class="btn btn-primary align-self-start mt-3">{% trans "Edit and accept" %}</button></div></form>
+  {% if not proposal.application_id %}{% if proposal.proposal_type == "create_application" or proposal.changes.interview %}
+    <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
+      <h2 class="proposal-step-title"><span class="proposal-step-number">5a</span>{% trans "Edit before accepting" %}</h2>
+      <form method="post" action="{% url 'gmail_assistant:edit_accept_gmail_proposal' proposal.pk %}">
+        {% csrf_token %}
+        <div class="row g-2">
+          {% if proposal.proposal_type == "create_application" %}
+            <div class="col-md-6"><input class="form-control" name="title" value="{{ proposal.changes.application.title }}" placeholder="{% trans 'Job title' %}"></div>
+            <div class="col-md-6"><input class="form-control" name="company" value="{{ proposal.changes.application.company }}" placeholder="{% trans 'Company' %}"></div>
+            <div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.application.location }}" placeholder="{% trans 'Location' %}"></div>
+            <div class="col-md-6"><input class="form-control" name="source" value="{{ proposal.changes.application.source }}" placeholder="{% trans 'Source' %}"></div>
+          {% else %}
+            <div class="col-md-6"><input class="form-control" name="starts_at" value="{{ proposal.changes.interview.starts_at }}" placeholder="2026-08-06T09:00:00+02:00"></div>
+            <div class="col-md-6"><input class="form-control" name="location" value="{{ proposal.changes.interview.location }}" placeholder="{% trans 'Location' %}"></div>
+            <div class="col-12"><textarea class="form-control" name="notes" placeholder="{% trans 'Interview notes' %}">{{ proposal.changes.interview.notes }}</textarea></div>
+          {% endif %}
+        </div>
+        <textarea class="form-control mt-3" name="review_note" rows="2" placeholder="{% trans 'Review note (optional)' %}"></textarea>
+        <button class="btn btn-primary mt-3">{% trans "Save edits and accept" %}</button>
+      </form>
+    </div></section>
+  {% endif %}{% endif %}
 </div>
 {% endblock %}

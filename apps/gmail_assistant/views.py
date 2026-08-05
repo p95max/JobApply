@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import timedelta
 
 from django.conf import settings as django_settings
@@ -21,6 +22,7 @@ from apps.gmail_assistant.models import (
     ProposalStatus,
 )
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
+from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
@@ -44,6 +46,15 @@ def _event_tone(event_type: str) -> str:
     }:
         return "primary"
     return "secondary"
+
+
+def _first_url(*values: object) -> str:
+    for value in values:
+        if isinstance(value, str):
+            match = re.search(r"https?://[^\s<>()]+", value)
+            if match:
+                return match.group(0).rstrip(".,;:!?")
+    return ""
 
 
 def _group_proposals_by_message(proposals):
@@ -135,11 +146,28 @@ def gmail_proposal_detail(request, pk: int):
         pk=pk,
         user=request.user,
     )
-    candidates = JobApplication.objects.filter(user=request.user).exclude(status__in=["archived", "rejected"])
+    candidates = list(
+        JobApplication.objects.filter(user=request.user)
+        .exclude(status__in=["archived", "rejected"])
+        .order_by("-updated_at", "-pk")
+    )
+    match = match_for_message(user=request.user, message=proposal.message, extracted_data=proposal.analysis.extracted_data)
+    action = proposal.changes.get("action") if isinstance(proposal.changes.get("action"), dict) else {}
+    review_context = {
+        "sender_domain": proposal.message.from_email.rsplit("@", 1)[-1] if "@" in proposal.message.from_email else "",
+        "action_url": _first_url(action.get("text"), proposal.message.snippet, proposal.analysis.extracted_data.get("summary")),
+        "match_candidates": match.ambiguous,
+        "can_accept": proposal.application_id is not None or proposal.proposal_type == "create_application",
+    }
     return render(
         request,
         "gmail_assistant/proposal_detail.html",
-        {"proposal": proposal, "candidates": candidates, "event_tone": _event_tone(proposal.analysis.event_type)},
+        {
+            "proposal": proposal,
+            "candidates": candidates,
+            "event_tone": _event_tone(proposal.analysis.event_type),
+            "review_context": review_context,
+        },
     )
 
 

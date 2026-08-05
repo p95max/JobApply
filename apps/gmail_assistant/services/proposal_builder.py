@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
+from apps.gmail_assistant.services.application_matcher import normalize_company, normalize_position
 from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
     GmailEventType,
@@ -32,6 +34,18 @@ _OPTIONAL_NUDGE_PHRASES = (
     "send a short message to confirm your interest",
     "stand out with a short message",
 )
+_JOB_PLATFORM_COMPANIES = frozenset(
+    {
+        "arbeitsagentur",
+        "indeed",
+        "indeed ireland operations limited",
+        "stepstone",
+        "stepstone deutschland",
+        "xing",
+        "linkedin",
+        "glassdoor",
+    }
+)
 
 
 def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[ApplicationUpdateProposal]:
@@ -58,18 +72,31 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             status=ProposalStatus.PENDING,
         ).delete()
 
-    if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS and _can_create_application(extracted):
-        proposal = _create_pending(
-            message=message,
-            analysis=analysis,
-            application=None,
-            proposal_type=ProposalType.CREATE_APPLICATION,
-            match_score=0,
-            match_method="unmatched",
-            changes={"application": _create_application_changes(message, extracted)},
-        )
-        proposals.append(proposal)
-        return proposals
+    if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS:
+        if not _can_create_application(extracted):
+            ApplicationUpdateProposal.objects.filter(
+                message=message,
+                analysis=analysis,
+                proposal_type=ProposalType.CREATE_APPLICATION,
+                status=ProposalStatus.PENDING,
+            ).delete()
+        else:
+            changes = _create_application_changes(message, extracted)
+            duplicate = _pending_create_duplicate(message=message, changes=changes)
+            if duplicate is not None:
+                _record_related_message(proposal=duplicate, message=message)
+                return []
+            proposal = _create_pending(
+                message=message,
+                analysis=analysis,
+                application=None,
+                proposal_type=ProposalType.CREATE_APPLICATION,
+                match_score=0,
+                match_method="unmatched",
+                changes={"application": changes},
+            )
+            proposals.append(proposal)
+            return proposals
 
     if application is None:
         if analysis.event_type in _MANUAL_ASSIGNMENT_EVENTS:
@@ -264,7 +291,58 @@ def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
 
 
 def _can_create_application(extracted: dict[str, Any]) -> bool:
-    return bool(_string_or_none(extracted.get("company")) and _string_or_none(extracted.get("position_title")))
+    company = _string_or_none(extracted.get("company"))
+    return bool(company and _string_or_none(extracted.get("position_title")) and not _is_job_platform(company))
+
+
+def _is_job_platform(company: str) -> bool:
+    return normalize_company(company) in {normalize_company(value) for value in _JOB_PLATFORM_COMPANIES}
+
+
+def _pending_create_duplicate(*, message: Any, changes: dict[str, Any]) -> ApplicationUpdateProposal | None:
+    """Return the same pending creation intent, without merging unrelated applications."""
+    title = normalize_position(changes.get("title"))
+    company = normalize_company(changes.get("company"))
+    if not title or not company:
+        return None
+    candidates = (
+        ApplicationUpdateProposal.objects.filter(
+            user=message.user,
+            proposal_type=ProposalType.CREATE_APPLICATION,
+            status=ProposalStatus.PENDING,
+        )
+        .exclude(message=message)
+        .select_related("message")
+        .order_by("-created_at")[:100]
+    )
+    for candidate in candidates:
+        proposed = candidate.changes.get("application")
+        if not isinstance(proposed, dict):
+            continue
+        if normalize_position(proposed.get("title")) != title:
+            continue
+        if normalize_company(proposed.get("company")) != company:
+            continue
+        if abs(candidate.message.received_at - message.received_at) <= timedelta(minutes=5):
+            return candidate
+    return None
+
+
+def _record_related_message(*, proposal: ApplicationUpdateProposal, message: Any) -> None:
+    """Keep short review evidence when a second acknowledgement confirms one intent."""
+    changes = dict(proposal.changes)
+    related = changes.get("related_messages")
+    related_messages = list(related) if isinstance(related, list) else []
+    item = {
+        "subject": str(message.subject or ""),
+        "from_email": str(message.from_email or ""),
+        "received_at": message.received_at.isoformat(),
+    }
+    if item not in related_messages:
+        related_messages.append(item)
+        changes["related_messages"] = related_messages
+        proposal.changes = changes
+        proposal.save(update_fields=["changes", "updated_at"])
 
 
 def _create_application_changes(message: Any, extracted: dict[str, Any]) -> dict[str, Any]:

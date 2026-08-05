@@ -13,16 +13,45 @@
 }
 
 .proposal-section--analysis { border-left-color: var(--bs-info); }
+.proposal-section--email { border-left-color: var(--bs-secondary); }
 .proposal-section--changes { border-left-color: var(--bs-primary); }
 .proposal-section--decision { border-left-color: var(--bs-success); }
 .proposal-section--assignment { border-left-color: var(--bs-warning); }
 .proposal-section--edit { border-left-color: var(--bs-info); }
 
-.proposal-section__title {
+.proposal-section__title,
+.proposal-step-title {
   color: var(--bs-emphasis-color);
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.proposal-step-title {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.proposal-step-number {
+  align-items: center;
+  background: var(--bs-primary);
+  border-radius: 50%;
+  color: var(--bs-white);
+  display: inline-flex;
+  font-size: 0.75rem;
+  height: 1.55rem;
+  justify-content: center;
+  letter-spacing: normal;
+  min-width: 1.55rem;
+}
+
+.proposal-eyebrow {
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -57,6 +86,13 @@
   background: var(--bs-tertiary-bg);
   border-radius: 0.4rem;
   margin-top: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.proposal-email-excerpt,
+.proposal-candidates {
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.4rem;
   padding: 0.85rem 1rem;
 }
 
