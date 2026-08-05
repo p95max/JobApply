@@ -35,6 +35,7 @@ send_telegram() {
     --max-time 10 \
     --data-urlencode "chat_id=$CHAT_ID" \
     --data-urlencode "text=$text" \
+    --data-urlencode "parse_mode=HTML" \
     "https://api.telegram.org/bot${TOKEN}/sendMessage" \
     >/dev/null || echo "Telegram notification failed." >&2
 }
@@ -50,7 +51,7 @@ format_duration() {
   fi
 }
 
-send_telegram "$(printf '⏳ JobApply deploy started (%s).\nCommit before deploy: %s\nEstimated time: about 3–10 minutes.' "$ENV_LABEL" "$START_COMMIT")"
+send_telegram "$(printf '⏳ <b>JobApply deploy started</b>\n\n🌍 Environment: <b>%s</b>\n🔖 Commit before deploy: <code>%s</code>\n⏱ Estimated time: <b>3–10 minutes</b>' "$ENV_LABEL" "$START_COMMIT")"
 
 set +e
 "$DEPLOY_COMMAND" >"$LOG_FILE" 2>&1
@@ -72,9 +73,9 @@ if (( status == 0 )); then
     result="UPDATED"
     icon="✅"
   fi
-  send_telegram "$(printf '%s JobApply deploy finished: %s.\nCommit: %s\nDuration: %s.' "$icon" "$result" "$end_commit" "$duration")"
+  send_telegram "$(printf '%s <b>JobApply deploy finished</b>\n\n📦 Result: <b>%s</b>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>' "$icon" "$result" "$end_commit" "$duration")"
 else
-  send_telegram "$(printf '❌ JobApply deploy FAILED.\nExit code: %s\nCommit: %s\nDuration: %s.\nCheck: journalctl -u jobapply-deploy.service' "$status" "$end_commit" "$duration")"
+  send_telegram "$(printf '❌ <b>JobApply deploy failed</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>journalctl -u jobapply-deploy.service -n 100 --no-pager</code></pre>' "$status" "$end_commit" "$duration")"
 fi
 
 exit "$status"
