@@ -5,6 +5,7 @@ from html import escape
 from django.utils import timezone
 
 from .diagnostics import DoctorSnapshot, HealthSnapshot
+from .deployments import deploy_callback_data
 from .proposal_actions import ACCEPT_ACTION, REJECT_ACTION, callback_data
 from .selectors import ApplicationSummary, StatusSnapshot
 
@@ -109,6 +110,17 @@ def gmail_keyboard(proposals: list, *, detail_url) -> dict[str, list[list[dict[s
             ]
         )
     return {"inline_keyboard": rows} if rows else None
+
+
+def deploy_keyboard(request_id: int) -> dict[str, list[list[dict[str, str]]]]:
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "Confirm deploy", "callback_data": deploy_callback_data(request_id, "confirm")},
+                {"text": "Cancel", "callback_data": deploy_callback_data(request_id, "cancel")},
+            ]
+        ]
+    }
 
 
 def health_text(environment: str, snapshot: HealthSnapshot) -> str:

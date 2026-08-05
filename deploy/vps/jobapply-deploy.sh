@@ -5,17 +5,18 @@ APP_DIR="${APP_DIR:-/opt/jobapply}"
 APP_USER="${APP_USER:-jobapply}"
 DB_ADMIN="${DB_ADMIN:-postgres}"
 DB_USER="${DB_USER:-jobapply}"
-BRANCH="${BRANCH:-master}"
+BRANCH="${JOBAPPLY_PRODUCTION_BRANCH:-agent/vps-no-docker-deploy}"
 PYTHON="${PYTHON:-$APP_DIR/.venv/bin/python}"
 MANAGE="$APP_DIR/manage.py"
 GUNICORN_VERSION="${GUNICORN_VERSION:-26.0.0}"
+HEALTH_URL="${JOBAPPLY_HEALTH_URL:-http://127.0.0.1/}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script as root: sudo $0" >&2
   exit 1
 fi
 
-for command in git psql systemctl; do
+for command in git psql systemctl curl; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "Required command not found: $command" >&2
     exit 1
@@ -49,10 +50,34 @@ run_django() {
     "$PYTHON" "$MANAGE" "$@"
 }
 
-echo "==> Fetching master"
+[[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || {
+  echo "Invalid production branch name." >&2
+  exit 1
+}
+
+current_branch="$(sudo -u "$APP_USER" git -C "$APP_DIR" branch --show-current)"
+[[ "$current_branch" == "$BRANCH" ]] || {
+  echo "Refusing deploy: HEAD must remain on $BRANCH (currently $current_branch)." >&2
+  exit 1
+}
+
+[[ -z "$(sudo -u "$APP_USER" git -C "$APP_DIR" status --porcelain)" ]] || {
+  echo "Refusing deploy: production working tree has local changes." >&2
+  exit 1
+}
+
+echo "==> Fetching production branch: $BRANCH"
 sudo -u "$APP_USER" git -C "$APP_DIR" fetch origin "$BRANCH"
-sudo -u "$APP_USER" git -C "$APP_DIR" checkout "$BRANCH"
-sudo -u "$APP_USER" git -C "$APP_DIR" pull --ff-only origin "$BRANCH"
+current_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
+target_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short "origin/$BRANCH")"
+echo "==> Current commit: $current_commit"
+echo "==> Target commit:  $target_commit"
+
+sudo -u "$APP_USER" git -C "$APP_DIR" merge-base --is-ancestor HEAD "origin/$BRANCH" || {
+  echo "Refusing deploy: update is not fast-forward only." >&2
+  exit 1
+}
+sudo -u "$APP_USER" git -C "$APP_DIR" merge --ff-only "origin/$BRANCH"
 
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
@@ -135,6 +160,9 @@ for service in "${installed_services[@]}"; do
   }
   echo "  active: $service"
 done
+
+echo "==> Running HTTP health check"
+curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
 
 echo
 printf 'Deployment completed successfully at commit: '

@@ -96,7 +96,7 @@ chmod +x deploy/vps/install-ops.sh deploy/vps/scripts/*.sh
 ./deploy/vps/install-ops.sh
 ```
 
-The installer copies versioned scripts to `/usr/local/bin`, installs systemd units, validates Caddy and enables the services and timers.
+The installer copies versioned scripts, the fixed deploy command and its minimal sudoers rule, installs systemd units, validates Caddy and enables the services and timers.
 
 The Neon timer safely skips its run when `BACKUP_DATABASE_URL` is empty.
 
@@ -135,14 +135,32 @@ systemctl list-timers --all | grep jobapply
 
 ## Deployment update
 
+Deploys are always taken from `agent/vps-no-docker-deploy`. The deploy script refuses a different checked-out branch, local changes or a non-fast-forward update. It runs tests, Django checks, migrations, static collection, service restart and a local HTTP health check.
+
+Manual emergency deploy remains available and uses the same fixed script:
+
+```bash
+sudo /usr/local/sbin/jobapply-deploy
+```
+
+To enable the owner-only Telegram entry point after the manual command is proven, set these values in `/opt/jobapply/.env` and restart the bot:
+
+```text
+TELEGRAM_DEPLOY_ENABLED=1
+TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS=300
+JOBAPPLY_PRODUCTION_BRANCH=agent/vps-no-docker-deploy
+```
+
+`/deploy` shows the current and target commit, then requires a one-time inline confirmation. The bot may start only `jobapply-deploy.service`; the installed sudoers rule allows no shell, Git or arbitrary `systemctl` command.
+
+The deploy wrapper records its exit code and a short tail in `/var/log/jobapply/deploy-last.status` and `/var/log/jobapply/deploy-last-tail.log`. Use `journalctl -u jobapply-deploy.service` for the service lifecycle.
+
 ```bash
 cd /opt/jobapply
-sudo -u jobapply git pull --ff-only
-sudo -u jobapply poetry install --only main --no-interaction
-sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py migrate --noinput
-sudo -u jobapply /opt/jobapply/.venv/bin/python manage.py collectstatic --noinput
 ./deploy/vps/install-ops.sh
-systemctl restart jobapply-web jobapply-gmail-worker
+sudo -n -u jobapply true
+sudo -n -l -U jobapply
+sudo /usr/local/sbin/jobapply-deploy
 ```
 
 ## Recovery

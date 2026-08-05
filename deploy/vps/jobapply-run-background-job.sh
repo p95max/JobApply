@@ -5,6 +5,7 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH
 
 QUEUE_LOCK_FILE="${JOBAPPLY_BACKGROUND_QUEUE_LOCK_FILE:-/tmp/jobapply-background-jobs.lock}"
 QUEUE_WAIT_SECONDS="${JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS:-1800}"
+QUEUE_STATUS_FILE="${JOBAPPLY_BACKGROUND_QUEUE_STATUS_FILE:-/var/tmp/jobapply-background-job.status}"
 
 if [[ "$#" -lt 2 ]]; then
   echo "Usage: $0 <job-name> <command> [args...]" >&2
@@ -35,6 +36,13 @@ if ! flock -n 8; then
 fi
 
 started_at="$(date +%s)"
+status_written=0
+cleanup() {
+  if [[ "$status_written" -eq 1 ]]; then
+    rm -f "$QUEUE_STATUS_FILE"
+  fi
+}
+trap cleanup EXIT INT TERM
 exec 9>"$QUEUE_LOCK_FILE"
 echo "Queue[$JOB_NAME]: waiting up to ${QUEUE_WAIT_SECONDS}s for shared lock."
 
@@ -45,6 +53,9 @@ fi
 
 waited=$(( $(date +%s) - started_at ))
 echo "Queue[$JOB_NAME]: acquired shared lock after ${waited}s."
+printf '%s (running)\n' "$JOB_NAME" >"$QUEUE_STATUS_FILE"
+chmod 0644 "$QUEUE_STATUS_FILE"
+status_written=1
 echo "Queue[$JOB_NAME]: starting: $*"
 
 set +e

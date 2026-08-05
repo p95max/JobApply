@@ -62,3 +62,36 @@ class TelegramCommandAudit(models.Model):
 
     def __str__(self) -> str:
         return f"{self.command}: {self.result}"
+
+
+class TelegramDeployRequestStatus(models.TextChoices):
+    PENDING = "pending", "Pending confirmation"
+    QUEUED = "queued", "Queued"
+    CANCELED = "canceled", "Canceled"
+    EXPIRED = "expired", "Expired"
+    BUSY = "busy", "Queue busy"
+    FAILED = "failed", "Failed to queue"
+
+
+class TelegramDeployRequest(models.Model):
+    """A short-lived, one-time confirmation for a fixed production deploy."""
+
+    telegram_user_id = models.BigIntegerField()
+    chat_id = models.BigIntegerField()
+    current_commit = models.CharField(max_length=64)
+    target_commit = models.CharField(max_length=64)
+    status = models.CharField(
+        max_length=16,
+        choices=TelegramDeployRequestStatus.choices,
+        default=TelegramDeployRequestStatus.PENDING,
+    )
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("telegram_user_id", "chat_id", "status"))]
+
+    def __str__(self) -> str:
+        return f"Deploy {self.pk}: {self.status}"

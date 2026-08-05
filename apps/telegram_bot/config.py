@@ -31,6 +31,9 @@ class TelegramConfig:
     callback_ttl_seconds: int = 900
     rate_limit_count: int = 20
     rate_limit_window_seconds: int = 60
+    deploy_enabled: bool = False
+    deploy_confirmation_ttl_seconds: int = 300
+    production_branch: str = "agent/vps-no-docker-deploy"
 
     @classmethod
     def from_env(cls) -> "TelegramConfig":
@@ -48,6 +51,10 @@ class TelegramConfig:
         callback_ttl_seconds = _positive_int("TELEGRAM_CALLBACK_TTL_SECONDS", 900)
         rate_limit_count = _non_negative_int("TELEGRAM_RATE_LIMIT_COUNT", 20)
         rate_limit_window_seconds = _positive_int("TELEGRAM_RATE_LIMIT_WINDOW_SECONDS", 60)
+        deploy_confirmation_ttl_seconds = _positive_int("TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS", 300)
+        production_branch = getenv("JOBAPPLY_PRODUCTION_BRANCH", "agent/vps-no-docker-deploy").strip()
+        if not production_branch or any(char.isspace() for char in production_branch):
+            raise ValueError("JOBAPPLY_PRODUCTION_BRANCH must be a branch name")
 
         return cls(
             enabled=getenv("TELEGRAM_BOT_ENABLED", "0") == "1",
@@ -62,6 +69,9 @@ class TelegramConfig:
             callback_ttl_seconds=callback_ttl_seconds,
             rate_limit_count=rate_limit_count,
             rate_limit_window_seconds=rate_limit_window_seconds,
+            deploy_enabled=getenv("TELEGRAM_DEPLOY_ENABLED", "0") == "1",
+            deploy_confirmation_ttl_seconds=deploy_confirmation_ttl_seconds,
+            production_branch=production_branch,
         )
 
     def validate_for_polling(self) -> None:
@@ -76,6 +86,8 @@ class TelegramConfig:
             missing.append("TELEGRAM_ALLOWED_USER_IDS")
         if not self.owner_email:
             missing.append("TELEGRAM_OWNER_EMAIL")
+        if self.deploy_enabled and self.owner_user_id is None:
+            missing.append("TELEGRAM_OWNER_USER_ID")
         if missing:
             raise ValueError("Missing Telegram settings: " + ", ".join(missing))
 

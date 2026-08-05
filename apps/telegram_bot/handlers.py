@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-import os
 import signal
-import subprocess
 import time
 from contextlib import contextmanager
 from typing import Any, Iterator
@@ -16,12 +14,14 @@ from apps.accounts.telegram_linking import bind_telegram_from_start
 from .audit import is_rate_limited, record_command_audit
 from .client import TelegramClient
 from .config import TelegramConfig
+from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
 from .permissions import is_update_allowed
 from .proposal_actions import apply_callback_action, parse_callback_data
 from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
 from .texts import (
     applications_text,
+    deploy_keyboard,
     doctor_text,
     gmail_keyboard,
     gmail_text,
@@ -32,8 +32,6 @@ from .texts import (
 
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
-DEPLOY_SERVICE = "jobapply-deploy.service"
-DEPLOY_REQUEST_MARKER = "/var/tmp/jobapply-deploy.requested"
 
 
 class CommandTimedOut(Exception):
@@ -79,46 +77,6 @@ def _jobapply_url(path: str = "/") -> str:
     return f"{base_url}{path}"
 
 
-def _claim_deploy_request() -> bool:
-    try:
-        fd = os.open(DEPLOY_REQUEST_MARKER, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError:
-        return False
-    with os.fdopen(fd, "w", encoding="utf-8") as marker:
-        marker.write(str(os.getpid()))
-    return True
-
-
-def _queue_deploy(update: dict[str, Any], config: TelegramConfig) -> str:
-    if config.owner_user_id is None or _user_id(update) != config.owner_user_id:
-        logger.warning("Rejected owner-only /deploy command from Telegram user %s", _user_id(update))
-        return "This command is available only to the bot owner."
-
-    if not _claim_deploy_request():
-        return "⏳ Deploy is already queued, waiting, or running."
-
-    result = subprocess.run(
-        ["sudo", "-n", "systemctl", "--no-block", "start", DEPLOY_SERVICE],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=5,
-    )
-    if result.returncode != 0:
-        try:
-            os.unlink(DEPLOY_REQUEST_MARKER)
-        except FileNotFoundError:
-            pass
-        logger.error("Could not queue deploy: %s", result.stderr.strip())
-        return "Could not queue deploy. Check the Telegram bot service logs."
-
-    return (
-        "🚀 Deploy queued.\n"
-        "Estimated time: about 3–10 minutes.\n"
-        "You will receive a start message when the shared queue is free and a final result afterwards."
-    )
-
-
 def _proposal_detail_url(proposal_id: int) -> str:
     return _jobapply_url(f"/gmail_stats/gmail/assistant/proposals/{proposal_id}/")
 
@@ -130,8 +88,9 @@ def _is_owner(user_id: int, config: TelegramConfig) -> bool:
 def _handle_callback(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
     callback = update.get("callback_query") or {}
     callback_id = str(callback.get("id") or "")
-    parsed = parse_callback_data(callback.get("data"))
-    if parsed is None:
+    proposal_callback = parse_callback_data(callback.get("data"))
+    deploy_callback = parse_deploy_callback(callback.get("data"))
+    if proposal_callback is None and deploy_callback is None:
         _answer_callback(client, callback_id, "This action is not available.")
         return
 
@@ -139,7 +98,7 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
     chat_id = _callback_chat_id(update)
     started = time.monotonic()
     if not _is_owner(user_id, config):
-        _record_audit(user_id, chat_id, "proposal_callback", "forbidden", started)
+        _record_audit(user_id, chat_id, "callback", "forbidden", started)
         _answer_callback(client, callback_id, "This action is available only to the bot owner.")
         return
     if is_rate_limited(
@@ -148,11 +107,46 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
         limit=config.rate_limit_count,
         window_seconds=config.rate_limit_window_seconds,
     ):
-        _record_audit(user_id, chat_id, "proposal_callback", "rate_limited", started)
+        _record_audit(user_id, chat_id, "callback", "rate_limited", started)
         _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
         return
 
-    proposal_id, action = parsed
+    if deploy_callback is not None:
+        request_id, action = deploy_callback
+        if not config.deploy_enabled:
+            _finish_callback(
+                client=client,
+                callback=callback,
+                callback_id=callback_id,
+                chat_id=chat_id,
+                user_id=user_id,
+                command="deploy_callback",
+                outcome="disabled",
+                message="Deploy is disabled by configuration.",
+                started=started,
+            )
+            return
+        result = apply_deploy_callback(
+            request_id=request_id,
+            action=action,
+            telegram_user_id=user_id,
+            chat_id=chat_id,
+        )
+        _finish_callback(
+            client=client,
+            callback=callback,
+            callback_id=callback_id,
+            chat_id=chat_id,
+            user_id=user_id,
+            command="deploy_callback",
+            outcome=result.outcome,
+            message=result.message,
+            started=started,
+        )
+        return
+
+    assert proposal_callback is not None
+    proposal_id, action = proposal_callback
     try:
         proposal_user = get_owner(config.owner_email)
         result = apply_callback_action(
@@ -168,19 +162,53 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
         result = None
 
     if result is None:
-        _record_audit(user_id, chat_id, "proposal_callback", "failed", started)
-        _answer_callback(client, callback_id, "Action failed. Review it in JobApply.")
+        _finish_callback(
+            client=client,
+            callback=callback,
+            callback_id=callback_id,
+            chat_id=chat_id,
+            user_id=user_id,
+            command="proposal_callback",
+            outcome="failed",
+            message="Action failed. Review it in JobApply.",
+            started=started,
+        )
         return
 
-    _record_audit(user_id, chat_id, "proposal_callback", result.outcome, started)
-    _answer_callback(client, callback_id, result.message)
-    message = callback.get("message") or {}
-    message_id = message.get("message_id")
+    _finish_callback(
+        client=client,
+        callback=callback,
+        callback_id=callback_id,
+        chat_id=chat_id,
+        user_id=user_id,
+        command="proposal_callback",
+        outcome=result.outcome,
+        message=result.message,
+        started=started,
+    )
+
+
+def _finish_callback(
+    *,
+    client: TelegramClient,
+    callback: dict[str, Any],
+    callback_id: str,
+    chat_id: int,
+    user_id: int,
+    command: str,
+    outcome: str,
+    message: str,
+    started: float,
+) -> None:
+    _record_audit(user_id, chat_id, command, outcome, started)
+    _answer_callback(client, callback_id, message)
+    callback_message = callback.get("message") or {}
+    message_id = callback_message.get("message_id")
     if message_id is not None:
         try:
-            client.edit_message_text(chat_id, int(message_id), result.message)
+            client.edit_message_text(chat_id, int(message_id), message)
         except Exception as error:
-            logger.warning("Could not update Telegram proposal message: %s", type(error).__name__)
+            logger.warning("Could not update Telegram callback message: %s", type(error).__name__)
 
 
 def _answer_callback(client: TelegramClient, callback_id: str, text: str) -> None:
@@ -231,7 +259,9 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         _handle_callback(update, client, config)
         return
 
-    text = text_raw.split(maxsplit=1)[0].split("@", 1)[0]
+    command_parts = text_raw.split(maxsplit=1)
+    text = command_parts[0].split("@", 1)[0]
+    has_arguments = len(command_parts) > 1
     chat_id = _chat_id(update)
     user_id = _user_id(update)
     started = time.monotonic()
@@ -270,7 +300,26 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 else:
                     reply = doctor_text(config.environment_label, get_doctor_snapshot())
             elif text == "/deploy":
-                reply = _queue_deploy(update, config)
+                if has_arguments:
+                    reply = "Deploy does not accept branch names or command arguments."
+                    result = "invalid"
+                elif not config.deploy_enabled:
+                    reply = "Deploy is disabled by configuration."
+                    result = "disabled"
+                elif not _is_owner(user_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    deployment = prepare_deploy_request(
+                        telegram_user_id=user_id,
+                        chat_id=chat_id,
+                        branch=config.production_branch,
+                        ttl_seconds=config.deploy_confirmation_ttl_seconds,
+                    )
+                    reply = deployment.message
+                    result = deployment.outcome
+                    if deployment.request is not None:
+                        reply_markup = deploy_keyboard(deployment.request.pk)
             else:
                 reply = "Unknown command. Use /help."
     except CommandTimedOut:
