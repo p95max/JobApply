@@ -53,3 +53,28 @@ def test_worker_does_nothing_when_auto_sync_is_disabled(monkeypatch, django_user
     )
 
     Command()._tick()
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=False)
+def test_one_time_sync_can_run_when_auto_sync_is_disabled(monkeypatch, django_user_model):
+    user = django_user_model.objects.create_user("enabled", email="enabled@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+    calls = []
+
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.get_google_credentials_for_user",
+        lambda value: object(),
+    )
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.GmailClient",
+        lambda value: value,
+    )
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.sync_gmail_messages_for_user",
+        lambda **kwargs: calls.append(kwargs) or {"proposals_created": 0},
+    )
+
+    Command()._tick(force=True)
+
+    assert [call["user"] for call in calls] == [user]

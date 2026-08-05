@@ -1,0 +1,17 @@
+[Unit]
+Description=JobApply one-time Gmail Assistant synchronization
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+EnvironmentFile=/opt/jobapply/.env
+Environment=JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS=1800
+ExecStart=/usr/local/bin/jobapply-run-background-job.sh jobapply-gmail-sync /opt/jobapply/.venv/bin/python manage.py sync_gmail_assistant_once
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

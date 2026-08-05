@@ -45,8 +45,8 @@ class Command(BaseCommand):
             ),
         )
 
-    def _tick(self):
-        if not settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED:
+    def _tick(self, *, force: bool = False):
+        if not force and not settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED:
             return
 
         enabled_settings = GmailAssistantSettings.objects.select_related("user").filter(ai_enabled=True)
