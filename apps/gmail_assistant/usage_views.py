@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-
-from apps.gmail_assistant.services.token_usage import load_token_usage
+from django.shortcuts import redirect
+from django.urls import reverse
 
 
 @login_required
@@ -15,11 +14,4 @@ def token_usage(request):
     if days not in {7, 30}:
         days = 30
 
-    return render(
-        request,
-        "gmail_assistant/token_usage.html",
-        {
-            "usage": load_token_usage(user=request.user, days=days),
-            "days": days,
-        },
-    )
+    return redirect(f"{reverse('reports:ai_statistics')}?days={days}")

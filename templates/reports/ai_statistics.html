@@ -62,26 +62,99 @@
     </div>
   </section>
 
+  <section class="service-panel mb-4">
+    <div class="service-panel__header">
+      <div>
+        <div class="fw-semibold">🪙 {% trans "Token usage" %}</div>
+        <div class="small text-body-secondary">{% blocktrans with days=days %}OpenAI usage during the last {{ days }} days{% endblocktrans %}</div>
+      </div>
+      {% if token_usage.estimated_cost_usd is not None %}
+        <span class="service-unit-badge">{% trans "Estimated cost" %}: ${{ token_usage.estimated_cost_usd|floatformat:6 }}</span>
+      {% endif %}
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "AI requests" %}</div><div class="fs-4 fw-semibold">{{ token_usage.requests }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Input tokens" %}</div><div class="fs-4 fw-semibold">{{ token_usage.input_tokens }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Output tokens" %}</div><div class="fs-4 fw-semibold">{{ token_usage.output_tokens }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Total tokens" %}</div><div class="fs-4 fw-semibold">{{ token_usage.total_tokens }}</div></div></div>
+    </div>
+    {% if token_usage.by_day %}
+      <div class="border rounded-3 p-3 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div class="fw-semibold">📈 {% trans "Token usage by day" %}</div>
+          <div class="small text-body-secondary"><span class="badge bg-primary">&nbsp;</span> {% trans "Input" %} <span class="badge bg-info ms-2">&nbsp;</span> {% trans "Output" %}</div>
+        </div>
+        <div id="tokenUsageChart" class="d-flex align-items-end gap-1 overflow-hidden" style="height: 190px;" aria-label="{% trans 'Daily token usage chart' %}"></div>
+      </div>
+      {{ token_usage.by_day|json_script:"token-usage-data" }}
+    {% endif %}
+    {% if token_usage.by_model %}
+      <div class="border rounded-3 p-3">
+        <div class="fw-semibold mb-2">🧠 {% trans "Models" %}</div>
+        {% for row in token_usage.by_model %}
+          <div class="d-flex justify-content-between align-items-center gap-3 {% if not forloop.last %}border-bottom pb-2 mb-2{% endif %}">
+            <div><div class="font-monospace small fw-semibold">{{ row.model }}</div><div class="small text-body-secondary">{{ row.requests }} {% trans "requests" %}</div></div>
+            <div class="text-end"><div class="fw-semibold">{{ row.total_tokens }}</div><div class="small text-body-secondary">{% trans "tokens" %}</div></div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-body-secondary small mb-0">{% trans "No token usage was recorded for this period." %}</p>
+    {% endif %}
+  </section>
+
   <section class="service-info-card">
     <div class="service-info-card__icon" aria-hidden="true">ℹ️</div>
     <div class="w-100">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
         <div class="fw-semibold">{% trans "Tokens and limits" %}</div>
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage details" %}</a>
       </div>
       <div class="d-flex flex-wrap gap-2 small">
         <span class="badge rounded-pill text-bg-secondary">{% trans "Model" %}: {{ ai_model_name }}</span>
         <span class="badge rounded-pill text-bg-dark">{% trans "Daily limit" %}: {{ ai_daily_limit }}</span>
         <span class="badge rounded-pill text-bg-warning">{% trans "Used today" %}: {{ ai_daily_used }}</span>
         <span class="badge rounded-pill text-bg-success">{% trans "Remaining" %}: {{ ai_daily_remaining }}</span>
-        <span class="badge rounded-pill text-bg-primary">{% trans "Requests" %}: {{ token_usage.requests }}</span>
-        <span class="badge rounded-pill text-bg-info">{% trans "Tokens" %}: {{ token_usage.total_tokens }}</span>
-        {% if token_usage.estimated_cost_usd is not None %}
-          <span class="badge rounded-pill text-bg-light">{% trans "Estimated cost" %}: ${{ token_usage.estimated_cost_usd|floatformat:6 }}</span>
-        {% endif %}
       </div>
-      <p class="small text-body-secondary mb-0 mt-2">{% blocktrans with days=days %}Token totals and estimated cost cover the selected {{ days }}-day period. The daily email limit is per user and resets each day.{% endblocktrans %}</p>
+      <p class="small text-body-secondary mb-0 mt-2">{% trans "The daily email limit is per user and resets each day." %}</p>
     </div>
   </section>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+{% if token_usage.by_day %}
+<script>
+  (() => {
+    const source = document.getElementById("token-usage-data");
+    const chart = document.getElementById("tokenUsageChart");
+    if (!source || !chart) return;
+    const rows = JSON.parse(source.textContent);
+    const maxTokens = Math.max(...rows.map((row) => row.total_tokens), 1);
+    const labelStep = rows.length > 14 ? 5 : rows.length > 7 ? 2 : 1;
+    rows.forEach((row, index) => {
+      const column = document.createElement("div");
+      column.className = "d-flex flex-column justify-content-end align-items-center flex-grow-1 h-100";
+      column.style.minWidth = "8px";
+      column.title = `${row.day}: ${row.input_tokens} input + ${row.output_tokens} output = ${row.total_tokens}`;
+      const bars = document.createElement("div");
+      bars.className = "d-flex flex-column-reverse justify-content-start w-100 rounded-top overflow-hidden";
+      bars.style.maxWidth = "28px";
+      bars.style.height = `${Math.max(4, (row.total_tokens / maxTokens) * 150)}px`;
+      const input = document.createElement("div");
+      input.className = "bg-primary w-100";
+      input.style.height = `${row.total_tokens ? (row.input_tokens / row.total_tokens) * 100 : 0}%`;
+      const output = document.createElement("div");
+      output.className = "bg-info w-100";
+      output.style.height = `${row.total_tokens ? (row.output_tokens / row.total_tokens) * 100 : 0}%`;
+      const label = document.createElement("span");
+      label.className = "small text-body-secondary mt-1 text-nowrap";
+      label.style.fontSize = ".65rem";
+      label.textContent = index % labelStep === 0 ? row.day.slice(5) : "";
+      bars.append(input, output);
+      column.append(bars, label);
+      chart.append(column);
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

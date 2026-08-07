@@ -75,7 +75,6 @@
             <span class="badge rounded-pill text-bg-warning">{% trans "Used" %}: {{ ai_daily_used }}</span>
             <span class="badge rounded-pill text-bg-success">{% trans "Remaining" %}: {{ ai_daily_remaining }}</span>
             <span class="badge rounded-pill text-bg-primary">{% trans "Review below" %}: {{ ai_confidence_threshold }}%</span>
-            <a class="badge rounded-pill text-bg-light text-decoration-none" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage" %}</a>
             <a class="badge rounded-pill text-bg-light text-decoration-none" href="{% url 'reports:ai_statistics' %}">🤖 {% trans "AI statistics" %}</a>
           </div>
         </div>

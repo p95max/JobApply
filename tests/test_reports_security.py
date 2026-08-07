@@ -210,6 +210,16 @@ def test_ai_statistics_shows_only_the_current_users_analysis_and_proposals(
 
 
 @pytest.mark.django_db
+def test_legacy_token_usage_url_redirects_to_ai_statistics(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("gmail_assistant:token_usage"), {"days": 7})
+
+    assert response.status_code == 302
+    assert response.url == f"{reverse('reports:ai_statistics')}?days=7"
+
+
+@pytest.mark.django_db
 @override_settings(TELEGRAM_OWNER_EMAIL="owner@example.com")
 def test_server_backup_schedule_is_hidden_from_regular_users(client, user):
     client.force_login(user)
