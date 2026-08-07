@@ -61,7 +61,7 @@
     <div class="card-body">
       <div id="aiAnalysisProgress" class="alert alert-info d-none d-flex align-items-center gap-2" role="status">
         <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        <span id="aiAnalysisProgressText">{% trans "Gmail sync and AI analysis can take about 30 seconds. Please keep this page open." %}</span>
+        <span id="aiAnalysisProgressText">{% trans "Gmail sync and AI analysis time depends on the selected period and number of new messages. Please keep this page open." %}</span>
       </div>
       <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
@@ -216,7 +216,7 @@
       <h2 class="h6 mb-3">{% trans "FAQ" %}</h2>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "How do I start AI analysis?" %}</summary>
-        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis, then choose a period with Sync Gmail. The analysis can take about 30 seconds." %}</p>
+        <p class="text-muted mb-0 mt-2">{% trans "Enable AI analysis, then choose a period with Sync Gmail. Processing time depends on the selected period and number of new messages." %}</p>
       </details>
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "What does Sync Gmail do?" %}</summary>
@@ -340,10 +340,28 @@
   pendingSort?.addEventListener("change", filterPendingCards);
   filterPendingCards();
 
+  function syncDurationMessage(days, reanalyze, includeSent) {
+    const selectedDays = Number(days);
+    let estimate;
+    if (selectedDays <= 1) {
+      estimate = "{% trans 'usually about 30 seconds' %}";
+    } else if (selectedDays <= 7) {
+      estimate = "{% trans 'usually under a minute' %}";
+    } else if (selectedDays <= 30) {
+      estimate = "{% trans 'may take 1–2 minutes' %}";
+    } else {
+      estimate = "{% trans 'may take several minutes' %}";
+    }
+    const extraWork = reanalyze || includeSent
+      ? " {% trans 'Reanalysis or Sent import can take longer.' %}"
+      : "";
+    return `{% trans 'Gmail sync and AI analysis' %} ${estimate}. {% trans 'More new messages can take longer. Please keep this page open.' %}${extraWork}`;
+  }
+
   async function syncGmail(days, reanalyze = false, includeSent = false) {
     const syncModal = document.getElementById("gmailSyncPeriodModal");
     if (syncModal.classList.contains("show")) bootstrap.Modal.getOrCreateInstance(syncModal).hide();
-    progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
+    progressText.textContent = syncDurationMessage(days, reanalyze, includeSent);
     progressSpinner.classList.remove("d-none");
     progress.classList.remove("alert-danger");
     progress.classList.add("alert-info");
