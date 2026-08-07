@@ -144,7 +144,13 @@ def _deploy_commits(branch: str) -> tuple[str | None, str | None]:
 
 
 def _commit_date(revision: str) -> str:
-    return _git_output("show", "-s", "--format=%cI", revision) or "date unavailable"
+    return _git_output(
+        "show",
+        "-s",
+        "--format=%cd",
+        "--date=format-local:%d.%m.%Y %H:%M",
+        revision,
+    ) or "date unavailable"
 
 
 def _git_output(*args: str) -> str:

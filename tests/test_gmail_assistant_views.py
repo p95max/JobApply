@@ -10,6 +10,7 @@ from django.utils import timezone
 from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
 from apps.gmail_assistant.models import (
+    AnalysisClassifier,
     ApplicationUpdateProposal,
     GmailAnalysis,
     GmailAssistantSettings,
@@ -169,13 +170,28 @@ def test_assistant_highlights_rejection_proposals(client, proposal):
 
 
 @pytest.mark.django_db
+def test_assistant_cards_show_analysis_source_and_confidence(client, proposal):
+    proposal.analysis.classifier = AnalysisClassifier.RULE_AI
+    proposal.analysis.confidence = 96
+    proposal.analysis.save(update_fields=["classifier", "confidence"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b"Analysis:" in response.content
+    assert b"Confidence:" in response.content
+    assert b"96%" in response.content
+
+
+@pytest.mark.django_db
 def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     client.force_login(proposal.user)
 
     response = client.get(reverse("gmail_assistant:gmail_assistant"))
 
     assert response.status_code == 200
-    assert b"can take about 30 seconds" in response.content
+    assert b"depends on the selected period and number of new messages" in response.content
     assert b"Daily AI email limit (per user)" in response.content
     assert b"FAQ" in response.content
     assert b'aiAnalysisSpinner' in response.content
@@ -292,7 +308,7 @@ def test_dev_can_reset_only_own_daily_ai_limit(client, proposal):
     assistant_settings = GmailAssistantSettings.objects.get(user=proposal.user)
     assert response.status_code == 200
     assert assistant_settings.ai_daily_usage_reset_at is not None
-    assert b"Today's AI limit was reset" in response.content
+    assert b"AI limit was reset for this user" in response.content
 
 
 @pytest.mark.django_db

@@ -70,8 +70,8 @@ echo "==> Fetching production branch: $BRANCH"
 sudo -u "$APP_USER" git -C "$APP_DIR" fetch origin "$BRANCH"
 current_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
 target_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short "origin/$BRANCH")"
-current_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI HEAD)"
-target_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI "origin/$BRANCH")"
+current_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cd --date=format-local:'%d.%m.%Y %H:%M' HEAD)"
+target_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cd --date=format-local:'%d.%m.%Y %H:%M' "origin/$BRANCH")"
 echo "==> Current commit: $current_commit ($current_commit_date)"
 echo "==> Target commit:  $target_commit ($target_commit_date)"
 
@@ -176,5 +176,5 @@ curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
 
 echo
 final_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
-final_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI HEAD)"
+final_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cd --date=format-local:'%d.%m.%Y %H:%M' HEAD)"
 echo "Deployment completed successfully at commit: $final_commit ($final_commit_date)"

@@ -174,6 +174,20 @@ def test_deploy_confirmation_shows_dates_for_current_and_target_commits(monkeypa
     assert "Target: def5678 · 2026-08-07T11:00:00+02:00" in prepared.message
 
 
+def test_commit_date_uses_a_readable_local_format(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        deployments,
+        "_git_output",
+        lambda *args: calls.append(args) or "07.08.2026 10:50",
+    )
+
+    assert deployments._commit_date("HEAD") == "07.08.2026 10:50"
+    assert calls == [
+        ("show", "-s", "--format=%cd", "--date=format-local:%d.%m.%Y %H:%M", "HEAD"),
+    ]
+
+
 @pytest.mark.django_db
 def test_expired_deploy_confirmation_does_not_start_service(monkeypatch):
     called = []

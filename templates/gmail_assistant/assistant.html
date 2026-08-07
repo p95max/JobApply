@@ -178,6 +178,11 @@
           <div class="min-w-0">
             <div class="fw-semibold">{{ group.message.subject|default:"—" }}</div>
             <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
+            <div class="small mt-1 text-muted">
+              {% trans "Analysis" %}:
+              <strong>{% if group.analysis.classifier == "ai" %}🤖 AI{% elif group.analysis.classifier == "rule_ai" %}🤖 AI + ⚙️ {% trans "Rules" %}{% else %}⚙️ {% trans "Rules" %}{% endif %}</strong>
+              · {% trans "Confidence" %}: <strong>{{ group.analysis.confidence }}%</strong>
+            </div>
           </div>
           <span class="badge flex-shrink-0 {% if group.analysis.event_type == 'rejection' %}bg-danger{% elif group.analysis.event_type in technical_event_types %}bg-primary{% elif group.analysis.event_type in interview_event_types %}bg-success{% elif group.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
             {% if group.analysis.extracted_data.sent_kind == 'direct_application' %}myself_sent{% else %}{% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}{% endif %}

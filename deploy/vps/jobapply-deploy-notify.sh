@@ -17,7 +17,7 @@ get_commit() {
 }
 
 get_commit_date() {
-  sudo -u jobapply git -C /opt/jobapply log -1 --format=%cI HEAD 2>/dev/null || echo unknown
+  sudo -u jobapply git -C /opt/jobapply log -1 --format=%cd --date=format-local:'%d.%m.%Y %H:%M' HEAD 2>/dev/null || echo unknown
 }
 
 START_COMMIT="$(get_commit)"
