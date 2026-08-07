@@ -18,7 +18,7 @@ from apps.gmail_assistant.models import (
     ProposalStatus,
     ProposalType,
 )
-from apps.gmail_stats.models import GmailMessage, GmailSyncState
+from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailSyncState
 
 
 @pytest.fixture
@@ -664,6 +664,9 @@ def test_create_application_proposal_displays_extracted_values(client, proposal)
     assert b"Link the correct application" in response.content
     assert b"Check the source email" in response.content
     assert b"Verify the proposed change" in response.content
+    assert b"Check for an existing application" in response.content
+    assert b"No possible duplicate was detected" in response.content
+    assert b"Example GmbH" not in response.content
 
 
 @pytest.mark.django_db
@@ -733,3 +736,17 @@ def test_documents_request_explains_that_action_stays_pending_after_linking(clie
 
     assert response.status_code == 200
     assert b"required action remains pending" in response.content
+
+
+@pytest.mark.django_db
+def test_outbound_review_identifies_the_user_as_sender(client, proposal):
+    proposal.message.direction = GmailDirection.OUTBOUND
+    proposal.message.from_email = proposal.user.email
+    proposal.message.save(update_fields=["direction", "from_email"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk]))
+
+    assert response.status_code == 200
+    assert b"Sent by you" in response.content
+    assert b"You" in response.content

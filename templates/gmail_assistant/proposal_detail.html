@@ -17,7 +17,7 @@
         <div>
           <p class="proposal-eyebrow mb-1">{% trans "Gmail Assistant review" %}</p>
           <h1 class="h4 mb-2">{{ proposal.message.subject|default:"—" }}</h1>
-          <p class="mb-0 text-muted">{{ proposal.message.from_email|default:"—" }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
+          <p class="mb-0 text-muted">{% if proposal.message.direction == "outbound" %}{% trans "Sent by you" %}: {{ proposal.message.from_email|default:"—" }}{% else %}{{ proposal.message.from_email|default:"—" }}{% endif %} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
         </div>
         <span class="badge text-bg-{{ event_tone }}">{{ event_label }}</span>
       </div>
@@ -30,7 +30,7 @@
     <div class="card-body">
       <h2 class="proposal-step-title"><span class="proposal-step-number">1</span> {% trans "Check the source email" %}</h2>
       <div class="proposal-metadata">
-        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender" %}</span>{{ proposal.message.from_email|default:"—" }}</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% if proposal.message.direction == "outbound" %}{% trans "Sent by you" %}{% else %}{% trans "Sender" %}{% endif %}</span>{% if proposal.message.direction == "outbound" %}{% trans "You" %} <span class="text-muted">({{ proposal.message.from_email|default:"—" }})</span>{% else %}{{ proposal.message.from_email|default:"—" }}{% endif %}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Sender domain" %}</span>{{ review_context.sender_domain|default:"—" }}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Received" %}</span>{{ proposal.message.received_at|date:"d.m.Y H:i" }}</div>
       </div>
@@ -91,11 +91,15 @@
 
   <section class="card proposal-section proposal-section--assignment mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% trans "Link the correct application" %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% if proposal.proposal_type == "create_application" %}{% trans "Check for an existing application" %}{% else %}{% trans "Link the correct application" %}{% endif %}</h2>
       {% if proposal.application_id %}
         <p class="mb-0">{% trans "Linked application" %}: <strong>{{ proposal.application.company }} — {{ proposal.application.title }}</strong></p>
       {% else %}
-        <p class="text-muted">{% trans "For a status change or required action, this step is mandatory. For a new application, link an existing record only when it is clearly the same application." %}</p>
+        {% if proposal.proposal_type == "create_application" %}
+          <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same application; otherwise create the new application in step 5." %}</p>
+        {% else %}
+          <p class="text-muted">{% trans "For a status change or required action, this step is mandatory. For a new application, link an existing record only when it is clearly the same application." %}</p>
+        {% endif %}
         {% if candidates %}
           <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}">
             {% csrf_token %}
@@ -106,7 +110,11 @@
             <button class="btn btn-outline-primary">{% trans "Link this application" %}</button>
           </form>
         {% else %}
-          <p class="text-muted mb-0">{% trans "There are no active applications available to link." %}</p>
+          {% if proposal.proposal_type == "create_application" %}
+            <p class="text-success mb-0">{% trans "No possible duplicate was detected. You can create this application in step 5." %}</p>
+          {% else %}
+            <p class="text-muted mb-0">{% trans "There are no active applications available to link." %}</p>
+          {% endif %}
         {% endif %}
       {% endif %}
     </div>
@@ -142,15 +150,15 @@
 
   <section class="card proposal-section proposal-section--decision mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">5</span> {% trans "Choose the outcome" %}</h2>
-      <p class="text-muted">{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}</p>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">5</span> {% if proposal.proposal_type == "create_application" %}{% trans "Create the application" %}{% else %}{% trans "Choose the outcome" %}{% endif %}</h2>
+      <p class="text-muted">{% if proposal.proposal_type == "create_application" %}{% trans "Accept creates this new application. Reject and Ignore leave it uncreated." %}{% else %}{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}{% endif %}</p>
       <form method="post">
         {% csrf_token %}
         <label class="form-label" for="reviewNote">{% trans "Review note" %} <span class="text-muted">({% trans "optional" %})</span></label>
         <textarea class="form-control mb-3" name="review_note" id="reviewNote" rows="2" placeholder="{% trans 'Why did you accept, reject, or link this proposal?' %}"></textarea>
         <div class="d-flex flex-wrap gap-2">
           {% if review_context.can_accept %}
-            <button class="btn btn-primary" formaction="{% url 'gmail_assistant:accept_gmail_proposal' proposal.pk %}">{% trans "Accept verified change" %}</button>
+            <button class="btn btn-primary" formaction="{% url 'gmail_assistant:accept_gmail_proposal' proposal.pk %}">{% if proposal.proposal_type == "create_application" %}{% trans "Create application" %}{% else %}{% trans "Accept verified change" %}{% endif %}</button>
           {% else %}
             <span class="text-warning me-2">{% trans "Complete step 4 before accepting this proposal." %}</span>
           {% endif %}
@@ -158,7 +166,7 @@
           <button class="btn btn-outline-secondary" formaction="{% url 'gmail_assistant:ignore_gmail_proposal' proposal.pk %}">{% trans "Ignore for now" %}</button>
         </div>
       </form>
-      {% if review_context.can_accept %}<p class="small text-muted mb-0 mt-3">{% trans "After acceptance, this Gmail activity will appear in the linked application's details." %}</p>{% endif %}
+      {% if review_context.can_accept %}<p class="small text-muted mb-0 mt-3">{% if proposal.proposal_type == "create_application" %}{% trans "After creation, this Gmail activity will appear in the application's details." %}{% else %}{% trans "After acceptance, this Gmail activity will appear in the linked application's details." %}{% endif %}</p>{% endif %}
     </div>
   </section>
 

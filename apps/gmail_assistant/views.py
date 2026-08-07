@@ -19,6 +19,7 @@ from apps.gmail_assistant.models import (
     GmailAssistantSettings,
     GmailEventType,
     ProposalStatus,
+    ProposalType,
 )
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.application_matcher import match_for_message
@@ -162,12 +163,17 @@ def gmail_proposal_detail(request, pk: int):
         pk=pk,
         user=request.user,
     )
-    candidates = list(
-        JobApplication.objects.filter(user=request.user)
-        .exclude(status__in=["archived", "rejected"])
-        .order_by("-updated_at", "-pk")
-    )
     match = match_for_message(user=request.user, message=proposal.message, extracted_data=proposal.analysis.extracted_data)
+    if proposal.proposal_type == ProposalType.CREATE_APPLICATION:
+        # A new application must not offer unrelated records for linking. Only
+        # matching candidates are relevant here, and a lack of them is expected.
+        candidates = [candidate.application for candidate in match.ambiguous]
+    else:
+        candidates = list(
+            JobApplication.objects.filter(user=request.user)
+            .exclude(status__in=["archived", "rejected"])
+            .order_by("-updated_at", "-pk")
+        )
     action = proposal.changes.get("action") if isinstance(proposal.changes.get("action"), dict) else {}
     review_context = {
         "sender_domain": proposal.message.from_email.rsplit("@", 1)[-1] if "@" in proposal.message.from_email else "",
