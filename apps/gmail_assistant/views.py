@@ -23,6 +23,11 @@ from apps.gmail_assistant.models import (
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
+from apps.gmail_assistant.services.bulk_create import (
+    BULK_CREATE_MIN_CONFIDENCE,
+    bulk_create_eligible_proposals,
+    eligible_bulk_create_proposals,
+)
 from apps.gmail_assistant.services.dev_tools import has_dev_tools_access
 from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 
@@ -99,6 +104,7 @@ def gmail_assistant(request):
     ai_policy = AIUsagePolicy.from_environment()
     ai_daily_used = ai_policy.daily_usage(user=request.user)
     ai_daily_remaining = max(0, ai_policy.daily_limit - ai_daily_used)
+    bulk_create_candidate_count = len(eligible_bulk_create_proposals(user=request.user))
     next_automatic_check_at = None
     if (
         django_settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED
@@ -138,6 +144,8 @@ def gmail_assistant(request):
             "ai_daily_used": ai_daily_used,
             "ai_daily_remaining": ai_daily_remaining,
             "ai_confidence_threshold": django_settings.GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD,
+            "bulk_create_candidate_count": bulk_create_candidate_count,
+            "bulk_create_min_confidence": BULK_CREATE_MIN_CONFIDENCE,
         },
     )
 
@@ -173,6 +181,31 @@ def gmail_proposal_detail(request, pk: int):
             "review_context": review_context,
         },
     )
+
+
+@login_required
+@require_POST
+def bulk_create_gmail_applications(request):
+    result = bulk_create_eligible_proposals(user=request.user)
+    if result.created:
+        messages.success(
+            request,
+            _("Created %(created)d applications from high-confidence AI suggestions.") % {"created": result.created},
+        )
+    if result.skipped_as_possible_duplicate:
+        messages.warning(
+            request,
+            _("%(count)d possible duplicates were left pending for review.")
+            % {"count": result.skipped_as_possible_duplicate},
+        )
+    if result.failed:
+        messages.warning(
+            request,
+            _("%(count)d suggestions could not be created and remain pending.") % {"count": result.failed},
+        )
+    if not any((result.created, result.skipped_as_possible_duplicate, result.failed)):
+        messages.info(request, _("There are no eligible AI suggestions to create."))
+    return redirect("gmail_assistant:gmail_assistant")
 
 
 @login_required

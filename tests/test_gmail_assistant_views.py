@@ -264,6 +264,7 @@ def test_write_endpoints_reject_get_requests(client, proposal):
         reverse("gmail_assistant:assign_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_assistant:reject_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_assistant:ignore_gmail_proposal", args=[proposal.pk]),
+        reverse("gmail_assistant:bulk_create_gmail_applications"),
         reverse("gmail_assistant:gmail_assistant_settings"),
         reverse("gmail_assistant:reset_ai_daily_limit"),
         reverse("gmail_assistant:reset_gmail_assistant"),
@@ -378,6 +379,61 @@ def test_accept_endpoint_applies_a_pending_proposal(client, proposal):
     assert proposal.status == ProposalStatus.ACCEPTED
     assert proposal.review_note == "Status confirmed after recruiter call."
     assert proposal.application.status == "replied"
+
+
+@pytest.mark.django_db
+def test_bulk_create_only_creates_eligible_high_confidence_ai_proposals(client, proposal):
+    proposal.application = None
+    proposal.proposal_type = ProposalType.CREATE_APPLICATION
+    proposal.changes = {
+        "application": {
+            "operation": "create",
+            "title": "AI Developer",
+            "company": "Example AI GmbH",
+            "source": "other",
+            "status": "applied",
+            "applied_at": timezone.now().isoformat(),
+        }
+    }
+    proposal.analysis.classifier = AnalysisClassifier.AI
+    proposal.analysis.confidence = 75
+    proposal.analysis.save(update_fields=["classifier", "confidence"])
+    proposal.save(update_fields=["application", "proposal_type", "changes"])
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:bulk_create_gmail_applications"), follow=True)
+
+    assert response.status_code == 200
+    assert JobApplication.objects.filter(user=proposal.user, title="AI Developer", company="Example AI GmbH").exists()
+    proposal.refresh_from_db()
+    assert proposal.status == ProposalStatus.ACCEPTED
+    assert b"Created 1 applications from high-confidence AI suggestions." in response.content
+
+
+@pytest.mark.django_db
+def test_bulk_create_leaves_possible_duplicates_pending(client, proposal):
+    existing_application = proposal.application
+    proposal.application = None
+    proposal.proposal_type = ProposalType.CREATE_APPLICATION
+    proposal.changes = {
+        "application": {
+            "operation": "create",
+            "title": existing_application.title,
+            "company": existing_application.company,
+        }
+    }
+    proposal.analysis.classifier = AnalysisClassifier.AI
+    proposal.analysis.confidence = 90
+    proposal.analysis.save(update_fields=["classifier", "confidence"])
+    proposal.save(update_fields=["application", "proposal_type", "changes"])
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:bulk_create_gmail_applications"), follow=True)
+
+    proposal.refresh_from_db()
+    assert response.status_code == 200
+    assert proposal.status == ProposalStatus.PENDING
+    assert b"1 possible duplicates were left pending for review." in response.content
 
 
 @pytest.mark.django_db

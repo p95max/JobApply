@@ -94,6 +94,25 @@
         {% trans "Only AI suggestions with AI confidence ≥ 95%, an exact verified application match, and a low-risk status update are accepted automatically. Rejections, offers, interviews, actions, new applications, and uncertain matches always stay pending." %}
       </div>
 
+      {% if bulk_create_candidate_count %}
+        <form
+          class="alert alert-info small mt-3 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-3"
+          method="post"
+          action="{% url 'gmail_assistant:bulk_create_gmail_applications' %}"
+          onsubmit="return confirm('{% blocktrans with count=bulk_create_candidate_count threshold=bulk_create_min_confidence %}Create {{ count }} new applications from AI suggestions with confidence of at least {{ threshold }}%? Details may be inaccurate or duplicate an existing application. Continue only if you accept this risk.{% endblocktrans %}');"
+        >
+          {% csrf_token %}
+          <div>
+            <strong>{% trans "Create high-confidence applications" %}</strong>
+            <div>{% blocktrans with count=bulk_create_candidate_count threshold=bulk_create_min_confidence %}Create {{ count }} new applications from AI suggestions with confidence of at least {{ threshold }}%.{% endblocktrans %}</div>
+            <div class="text-muted">{% trans "Risk: details can be wrong or duplicate an existing application. Rejections, interviews, and actions are never included." %}</div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm text-nowrap">
+            {% blocktrans with count=bulk_create_candidate_count %}Create {{ count }} applications{% endblocktrans %}
+          </button>
+        </form>
+      {% endif %}
+
       <div class="small mt-3 d-grid gap-1">
         <div class="{% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
           {% if settings.last_successful_run_at and not settings.last_error_message %}✅{% endif %}
