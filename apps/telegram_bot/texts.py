@@ -142,6 +142,17 @@ def health_text(environment: str, snapshot: HealthSnapshot) -> str:
 
 def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
     migration_status = "unknown" if snapshot.pending_migrations < 0 else str(snapshot.pending_migrations)
+    unit_icons = {"active": "🟢", "failed": "🔴", "inactive": "⚪"}
+    has_failed_unit = any(state != "active" for _unit, state in snapshot.unit_states)
+    has_stale_worker = any(worker.is_stale for worker in snapshot.health.worker_heartbeats)
+    has_critical_issue = not snapshot.health.database_ok or snapshot.pending_migrations > 0 or has_failed_unit
+    has_warning = snapshot.is_dirty or snapshot.pending_migrations < 0 or has_stale_worker or bool(snapshot.worker_errors)
+    if has_critical_issue:
+        overall_icon, overall_label = "🔴", "ACTION REQUIRED"
+    elif has_warning:
+        overall_icon, overall_label = "🟡", "ATTENTION NEEDED"
+    else:
+        overall_icon, overall_label = "🟢", "HEALTHY"
     lines = [
         f"🛠 <b>Doctor · {escape(environment)}</b>",
         "",
@@ -151,8 +162,12 @@ def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
         "",
         "⚙️ <b>Systemd units</b>",
     ]
-    lines.extend(f"• {escape(unit)}: <b>{escape(state)}</b>" for unit, state in snapshot.unit_states)
+    lines.extend(
+        f"{unit_icons.get(state, '⚠️')} {escape(unit)}: <b>{escape(state)}</b>"
+        for unit, state in snapshot.unit_states
+    )
     if snapshot.worker_errors:
         lines.extend(["", "⚠️ <b>Recent worker errors</b>"])
         lines.extend(f"<pre><code>{escape(error)}</code></pre>" for error in snapshot.worker_errors)
+    lines.extend(["", f"{overall_icon} <b>Overall: {overall_label}</b>"])
     return "\n".join(lines)

@@ -11,6 +11,7 @@ from apps.telegram_bot.diagnostics import DoctorSnapshot, HealthSnapshot
 from apps.telegram_bot.heartbeat import HeartbeatStatus
 from apps.telegram_bot.handlers import handle_update
 from apps.telegram_bot.models import TelegramCommandAudit
+from apps.telegram_bot.texts import doctor_text
 
 
 class FakeClient:
@@ -196,4 +197,24 @@ def test_health_and_doctor_do_not_expose_configuration(monkeypatch, django_user_
     output = "\n".join(message[1] for message in client.messages)
     assert "Database" in output
     assert "Pending migrations" in output
+    assert "🟢 jobapply-web.service: <b>active</b>" in output
+    assert "🟢 <b>Overall: HEALTHY</b>" in output
     assert "test-token" not in output
+
+
+def test_doctor_marks_failed_systemd_units_and_reports_overall_state():
+    health = HealthSnapshot(True, 512, ())
+    doctor = DoctorSnapshot(
+        health,
+        "master",
+        False,
+        0,
+        (),
+        (("jobapply-web.service", "active"), ("jobapply-backup.service", "failed")),
+    )
+
+    text = doctor_text("PRODUCTION", doctor)
+
+    assert "🟢 jobapply-web.service: <b>active</b>" in text
+    assert "🔴 jobapply-backup.service: <b>failed</b>" in text
+    assert "🔴 <b>Overall: ACTION REQUIRED</b>" in text
