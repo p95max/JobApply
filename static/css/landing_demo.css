@@ -34,6 +34,13 @@
   box-shadow: 0 0 0 0.2rem rgba(124, 140, 255, 0.24);
 }
 
+html:has(.landing-shell),
+body:has(.landing-shell) {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 @media (max-width: 767.98px) {
   .landing-shell,
   .landing-shell main,
@@ -46,10 +53,6 @@
   .landing-shell .landing-preview {
     max-width: 100%;
     min-width: 0;
-  }
-
-  .landing-shell {
-    overflow-x: hidden;
   }
 
   .landing-shell .landing-header {
@@ -66,15 +69,20 @@
   }
 
   .landing-shell .landing-header__actions {
+    display: flex;
     width: 100%;
     min-width: 0;
+    align-items: center;
     justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 0.55rem;
   }
 
-  .landing-shell .landing-header__actions form {
-    margin: 0;
+  .landing-shell .landing-header__actions form,
+  .landing-shell .landing-header__actions > a,
+  .landing-shell .landing-header__actions > button {
     min-width: 0;
+    margin: 0;
   }
 
   .landing-shell .landing-hero {
@@ -102,6 +110,10 @@
     width: 100%;
   }
 
+  .landing-shell .landing-carousel__track {
+    max-width: none;
+  }
+
   .landing-shell .landing-preview {
     transform: none;
   }
@@ -117,17 +129,18 @@
   }
 
   .landing-shell .landing-header__actions {
-    display: grid;
-    grid-template-columns: auto auto auto auto;
-    justify-content: start;
+    display: flex;
+    width: 100%;
     align-items: center;
-    column-gap: 0.55rem;
-    row-gap: 0.55rem;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.55rem;
   }
 
   .landing-shell .landing-header__actions .landing-text-link,
   .landing-shell .landing-header__actions form,
   .landing-shell .landing-header__actions > a.btn {
+    flex: 0 0 auto;
     min-width: 0;
     margin: 0;
   }
@@ -140,7 +153,7 @@
 
   .landing-shell .landing-actions {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 0.8rem;
   }
@@ -150,6 +163,7 @@
   .landing-shell .landing-actions > form > .btn {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .landing-shell .landing-actions > a,
@@ -160,7 +174,7 @@
 
   .landing-shell .landing-trust {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 0.45rem;
   }
