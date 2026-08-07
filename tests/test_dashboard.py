@@ -44,6 +44,12 @@ def test_dashboard_shows_user_metrics_only(client):
         title="Other Role",
         status=ApplicationStatus.APPLIED,
     )
+    JobApplication.objects.create(
+        user=user,
+        company="Rejected GmbH",
+        title="Rejected Role",
+        status=ApplicationStatus.REJECTED,
+    )
     InterviewEvent.objects.create(
         user=user,
         application=application,
@@ -58,6 +64,8 @@ def test_dashboard_shows_user_metrics_only(client):
     assert "Example GmbH" in content
     assert "Python Developer" in content
     assert "Hidden GmbH" not in content
+    assert "dashboard-pill--applied" in content
+    assert "dashboard-pill--rejected" in content
     assert f'href="/applications/{application.pk}/"' in content
     assert "js-dashboard-application-row" in content
     assert response.context["active_application_count"] == 1

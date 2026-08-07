@@ -142,7 +142,7 @@
                 <tr class="dashboard-recent__row js-dashboard-application-row" data-href="{{ application_url }}" tabindex="0">
                   <td><a class="dashboard-recent__link" href="{{ application_url }}"><strong>{{ application.company }}</strong></a></td>
                   <td><a class="dashboard-recent__link" href="{{ application_url }}">{{ application.title }}</a></td>
-                  <td><a class="dashboard-recent__link" href="{{ application_url }}"><span class="dashboard-pill">{{ application.get_status_display }}</span></a></td>
+                  <td><a class="dashboard-recent__link" href="{{ application_url }}"><span class="dashboard-pill dashboard-pill--{{ application.status }}">{{ application.get_status_display }}</span></a></td>
                   <td><a class="dashboard-recent__link" href="{{ application_url }}">{{ application.updated_at|date:"d.m.Y" }}</a></td>
                 </tr>
               {% endfor %}

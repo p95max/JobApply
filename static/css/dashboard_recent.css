@@ -21,3 +21,11 @@
   outline: 2px solid #67dfbc;
   outline-offset: -2px;
 }
+
+.dashboard-pill--applied { background: rgba(13, 110, 253, .13); color: #76a7ff; }
+.dashboard-pill--screen { background: rgba(111, 66, 193, .16); color: #ba9aff; }
+.dashboard-pill--replied { background: rgba(13, 202, 240, .14); color: #76e7ff; }
+.dashboard-pill--interview { background: rgba(253, 126, 20, .16); color: #ffb56b; }
+.dashboard-pill--offer { background: rgba(25, 135, 84, .16); color: #78e0b3; }
+.dashboard-pill--rejected { background: rgba(220, 53, 69, .16); color: #ff8995; }
+.dashboard-pill--archived { background: rgba(108, 117, 125, .18); color: #b6bec8; }
