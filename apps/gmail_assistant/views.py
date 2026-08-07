@@ -35,6 +35,16 @@ from apps.gmail_assistant.services.reset import reset_gmail_assistant_data
 logger = logging.getLogger(__name__)
 
 
+def _auto_sync_interval_display(seconds: int) -> str:
+    if seconds % 3600 == 0:
+        hours = seconds // 3600
+        return f"{hours} hour" if hours == 1 else f"{hours} hours"
+    if seconds % 60 == 0:
+        minutes = seconds // 60
+        return f"{minutes} minute" if minutes == 1 else f"{minutes} minutes"
+    return f"{seconds} seconds"
+
+
 def _event_tone(event_type: str) -> str:
     if event_type == GmailEventType.REJECTION:
         return "danger"
@@ -141,7 +151,9 @@ def gmail_assistant(request):
                 GmailEventType.INTERVIEW_INVITATION,
                 GmailEventType.INTERVIEW_RESCHEDULED,
             },
-            "auto_sync_interval_minutes": django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS // 60,
+            "auto_sync_interval_display": _auto_sync_interval_display(
+                django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS
+            ),
             "next_automatic_check_at": next_automatic_check_at,
             "dev_tools_enabled": has_dev_tools_access(user=request.user),
             "ai_model_name": django_settings.OPENAI_EMAIL_MODEL,

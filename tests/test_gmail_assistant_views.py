@@ -18,7 +18,13 @@ from apps.gmail_assistant.models import (
     ProposalStatus,
     ProposalType,
 )
+from apps.gmail_assistant.views import _auto_sync_interval_display
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailSyncState
+
+
+def test_auto_sync_interval_display_prefers_hours_when_exact():
+    assert _auto_sync_interval_display(21_600) == "6 hours"
+    assert _auto_sync_interval_display(900) == "15 minutes"
 
 
 @pytest.fixture

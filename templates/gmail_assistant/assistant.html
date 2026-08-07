@@ -69,7 +69,7 @@
         <div>
           <small class="d-block text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
           <div class="d-flex flex-wrap align-items-center gap-2 mt-2 small">
-            <span class="badge rounded-pill text-bg-info">🕒 {% trans "Auto-check" %}: {% blocktrans with minutes=auto_sync_interval_minutes %}every {{ minutes }} min{% endblocktrans %}</span>
+            <span class="badge rounded-pill text-bg-info">🕒 {% trans "Auto-check" %}: {% trans "every" %} {{ auto_sync_interval_display }}</span>
             <span class="badge rounded-pill text-bg-secondary">{% trans "Model" %}: {{ ai_model_name }}</span>
             <span class="badge rounded-pill text-bg-dark" title="{% trans 'Daily AI email limit (per user)' %}">{% trans "Daily limit" %}: {{ ai_daily_limit }}</span>
             <span class="badge rounded-pill text-bg-warning">{% trans "Used" %}: {{ ai_daily_used }}</span>
