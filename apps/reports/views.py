@@ -65,6 +65,19 @@ def _drive_flow(request, *, state: str | None = None) -> Flow:
     return flow
 
 
+def _fetch_drive_credentials(flow: Flow, authorization_response: str):
+    """Complete incremental Google consent while requiring the Drive scope we requested."""
+    # Google returns the union of previously granted Gmail/identity scopes and
+    # the newly granted Drive scope. oauthlib otherwise rejects that legitimate
+    # incremental response as a scope-change warning.
+    flow.oauth2session.scope = None
+    flow.fetch_token(authorization_response=authorization_response)
+    granted_scopes = set(str(flow.oauth2session.token.get("scope") or "").split())
+    if DRIVE_SCOPE not in granted_scopes:
+        raise RuntimeError("Google did not grant the required Google Drive permission.")
+    return flow.credentials
+
+
 @login_required
 def statistics(request):
     try:
@@ -266,8 +279,7 @@ def drive_callback(request):
 
     try:
         flow = _drive_flow(request, state=state)
-        flow.fetch_token(authorization_response=request.build_absolute_uri())
-        credentials = flow.credentials
+        credentials = _fetch_drive_credentials(flow, request.build_absolute_uri())
 
         account = SocialAccount.objects.filter(user=request.user, provider="google").first()
         if not account:
