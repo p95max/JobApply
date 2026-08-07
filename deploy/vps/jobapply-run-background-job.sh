@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
-QUEUE_LOCK_FILE="${JOBAPPLY_BACKGROUND_QUEUE_LOCK_FILE:-/tmp/jobapply-background-jobs.lock}"
+QUEUE_LOCK_FILE="${JOBAPPLY_BACKGROUND_QUEUE_LOCK_FILE:-/var/tmp/jobapply-background-jobs.lock}"
 QUEUE_WAIT_SECONDS="${JOBAPPLY_BACKGROUND_QUEUE_WAIT_SECONDS:-1800}"
 QUEUE_STATUS_FILE="${JOBAPPLY_BACKGROUND_QUEUE_STATUS_FILE:-/var/tmp/jobapply-background-job.status}"
 

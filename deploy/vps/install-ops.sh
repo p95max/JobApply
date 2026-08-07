@@ -23,6 +23,11 @@ sudo install -d -m 0755 "$JOURNALD_DROPIN_DIR"
 sudo install -m 0644 deploy/vps/systemd/journald-jobapply-retention.conf "$JOURNALD_DROPIN_DIR/60-jobapply-retention.conf"
 
 sudo install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply
+# The deploy queue runs as root while backup jobs run as jobapply. Keep their
+# shared flock file writable for both through the jobapply group.
+sudo touch /var/tmp/jobapply-background-jobs.lock
+sudo chown root:jobapply /var/tmp/jobapply-background-jobs.lock
+sudo chmod 0660 /var/tmp/jobapply-background-jobs.lock
 
 # Caddy serves collected static and uploaded media directly. The application
 # directory is intentionally not world-readable, so grant Caddy access through
