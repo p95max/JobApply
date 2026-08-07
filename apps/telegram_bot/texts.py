@@ -21,7 +21,7 @@ def _state_icon(ok: bool) -> str:
 
 def help_text(environment: str, *, is_admin: bool) -> str:
     lines = [
-        f"🤖 <b>JobApply · {escape(environment)}</b>",
+        f"🤖 <b>JobApply{' · ' + escape(environment) if is_admin else ''}</b>",
         "",
         "<b>Available commands</b>",
         "ℹ️ /help — available commands",
