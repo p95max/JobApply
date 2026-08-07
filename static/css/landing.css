@@ -524,9 +524,19 @@ body:has(.landing-shell) main {
   }
 }
 
-@media (max-width: 575.98px) {
+@media (max-width: 767.98px) {
   .landing-header {
-    min-height: 68px;
+    min-height: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .landing-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.55rem;
   }
 
   .landing-header__actions .landing-text-link {
@@ -539,15 +549,29 @@ body:has(.landing-shell) main {
   }
 
   .landing-hero h1 {
-    font-size: clamp(2.6rem, 14vw, 4rem);
+    font-size: clamp(2.6rem, 10vw, 4rem);
   }
 
   .landing-actions {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
   }
 
+  .landing-actions > a,
+  .landing-actions > form,
   .landing-actions .btn {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .landing-preview,
+  .landing-carousel,
+  .landing-carousel__viewport {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .landing-preview__body,
