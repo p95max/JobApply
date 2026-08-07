@@ -26,7 +26,7 @@ from apps.telegram_bot.heartbeat import (
 @dataclass(frozen=True)
 class StatusSnapshot:
     database_ok: bool
-    total_applications: int
+    active_user_count: int
     pending_proposals: int
     commit_sha: str
     last_gmail_sync_at: datetime | None
@@ -87,7 +87,7 @@ def get_status_snapshot(email: str) -> StatusSnapshot:
 
     return StatusSnapshot(
         database_ok=database_ok,
-        total_applications=JobApplication.objects.filter(user=user).count(),
+        active_user_count=get_user_model().objects.filter(is_active=True).count(),
         pending_proposals=ApplicationUpdateProposal.objects.filter(
             user=user,
             status=ProposalStatus.PENDING,

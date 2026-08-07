@@ -53,8 +53,7 @@ def status_text(environment: str, snapshot: StatusSnapshot) -> str:
         "",
         commit_line,
         f"{_state_icon(snapshot.database_ok)} Database: <b>{'OK' if snapshot.database_ok else 'FAILED'}</b>",
-        f"📋 Applications: <b>{snapshot.total_applications}</b>",
-        f"📨 Pending Gmail proposals: <b>{snapshot.pending_proposals}</b>",
+        f"👥 Active user accounts: <b>{snapshot.active_user_count}</b>",
         f"🕒 Last Gmail sync: <b>{escape(_format_dt(snapshot.last_gmail_sync_at))}</b>",
         f"⏭ Next Gmail check: <b>{escape(_format_dt(snapshot.next_gmail_check_at))}</b>",
     ]

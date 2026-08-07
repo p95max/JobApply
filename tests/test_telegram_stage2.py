@@ -25,7 +25,7 @@ def test_status_snapshot_includes_commit_and_gmail_schedule(django_user_model, m
     snapshot = get_status_snapshot(user.email)
 
     assert snapshot.database_ok is True
-    assert snapshot.total_applications == 1
+    assert snapshot.active_user_count == 1
     assert snapshot.commit_sha == "abc1234"
     assert snapshot.commit_at == commit_at
     assert snapshot.last_gmail_sync_at == synced_at
@@ -38,7 +38,7 @@ def test_status_text_renders_stage_2_fields():
         "PRODUCTION",
         StatusSnapshot(
             database_ok=True,
-            total_applications=3,
+            active_user_count=3,
             pending_proposals=2,
             commit_sha="abc1234",
             last_gmail_sync_at=now,

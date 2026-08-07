@@ -1,36 +1,44 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
 
 {% block navbar %}{% endblock %}
 
-{% block content %}
-<div class="container mt-4" style="max-width: 520px;">
-  <div class="card border-0 shadow-sm glass-card">
-    <div class="card-body p-4">
-      <h1 class="h5 mb-2">{% trans "Continue with Google" %}</h1>
-      <p class="text-body-secondary mb-4">
-        {% trans "Complete the verification to proceed." %}
-      </p>
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/google_login_gate.css' %}?v=1">
+{% endblock %}
 
-      {% if turnstile_enabled %}
-        <form method="post" class="d-grid gap-3">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ next }}">
-          <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-          <div class="cf-turnstile"
-               data-sitekey="{{ turnstile_site_key }}"
-               data-theme="auto"></div>
-          <button class="btn btn-primary" type="submit">
-            {% trans "Continue" %}
-          </button>
-        </form>
-      {% else %}
-        <a class="btn btn-primary w-100"
-           href="{% url 'google_oauth_login' %}?next={{ next|urlencode }}">
-          {% trans "Continue" %}
-        </a>
-      {% endif %}
+{% block content %}
+<main class="google-login-gate">
+  <section class="google-login-gate__card" aria-labelledby="googleLoginTitle">
+    <div class="google-login-gate__brand">
+      <img src="{% static 'img/jobapply-mark.svg' %}" alt="" width="40" height="40">
+      <span>JobApply</span>
     </div>
-  </div>
-</div>
+    <div class="google-login-gate__intro">
+      <span class="google-login-gate__eyebrow">{% trans "Secure sign in" %}</span>
+      <h1 id="googleLoginTitle">{% trans "Continue with Google" %}</h1>
+      <p>{% trans "Complete the verification to proceed to your dashboard." %}</p>
+    </div>
+
+    {% if turnstile_enabled %}
+      <form method="post" class="google-login-gate__form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <div class="google-login-gate__turnstile cf-turnstile"
+             data-sitekey="{{ turnstile_site_key }}"
+             data-theme="auto"></div>
+        <button class="btn btn-primary google-login-gate__button" type="submit">
+          {% trans "Continue" %}
+        </button>
+      </form>
+    {% else %}
+      <a class="btn btn-primary google-login-gate__button"
+         href="{% url 'google_oauth_login' %}?next={{ next|urlencode }}">
+        {% trans "Continue with Google" %}
+      </a>
+    {% endif %}
+    <p class="google-login-gate__note">{% trans "JobApply uses your Google account only to sign you in and for the permissions you explicitly approve." %}</p>
+  </section>
+</main>
 {% endblock %}
