@@ -31,12 +31,12 @@
   </div>
 
   {% if dev_tools_enabled %}
-    <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
-      <span>{% trans "Development tools: remove this account's Gmail messages, analyses, proposals, and applications. Google connection is kept." %}</span>
-      <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
-        <div class="d-flex align-items-center gap-2">
+    <div class="alert alert-warning py-2 px-3 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2" role="alert">
+      <span class="small flex-grow-1">{% trans "Dev tools: reset this account's Gmail data and applications. Google stays connected." %}</span>
+      <div class="d-flex flex-wrap flex-lg-nowrap align-items-center justify-content-lg-end gap-2">
+        <div class="d-flex flex-nowrap align-items-center gap-2">
           <label class="small text-nowrap" for="devReanalyzeDays">{% trans "Period" %}</label>
-          <select id="devReanalyzeDays" class="form-select form-select-sm">
+          <select id="devReanalyzeDays" class="form-select form-select-sm w-auto">
             <option value="1">{% trans "1 day" %}</option>
             <option value="7" selected>{% trans "1 week" %}</option>
             <option value="30">{% trans "1 month" %}</option>
@@ -47,11 +47,11 @@
         </div>
         <form method="post" action="{% url 'gmail_assistant:reset_gmail_assistant' %}" onsubmit="return confirm('{% trans "Reset Gmail Assistant data for this account?" %}');">
           {% csrf_token %}
-          <button class="btn btn-outline-danger btn-sm">{% trans "Reset all data" %}</button>
+          <button class="btn btn-outline-danger btn-sm text-nowrap">{% trans "Reset all data" %}</button>
         </form>
         <form method="post" action="{% url 'gmail_assistant:reset_ai_daily_limit' %}" onsubmit="return confirm('{% trans "Reset today's AI limit for this account?" %}');">
           {% csrf_token %}
-          <button class="btn btn-outline-warning btn-sm">{% trans "Reset today's AI limit" %}</button>
+          <button class="btn btn-outline-warning btn-sm text-nowrap">{% trans "Reset today's AI limit" %}</button>
         </form>
       </div>
     </div>
