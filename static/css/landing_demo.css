@@ -1,39 +1,3 @@
-.landing-shell .landing-header__actions form > .btn,
-.landing-shell .landing-actions form > .btn {
-  border-color: rgba(124, 140, 255, 0.62);
-  color: #f1f3ff;
-  background: linear-gradient(135deg, rgba(111, 124, 255, 0.16), rgba(73, 214, 177, 0.06));
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.05);
-  font-weight: 700;
-  white-space: nowrap;
-  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-}
-
-.landing-shell .landing-header__actions form > .btn {
-  border-radius: 0.75rem;
-}
-
-.landing-shell .landing-actions form > .btn {
-  border-radius: 0.85rem;
-}
-
-.landing-shell .landing-header__actions form > .btn:hover,
-.landing-shell .landing-actions form > .btn:hover {
-  border-color: rgba(140, 152, 255, 0.95);
-  color: #fff;
-  background: linear-gradient(135deg, rgba(111, 124, 255, 0.3), rgba(73, 214, 177, 0.11));
-  box-shadow: 0 10px 28px rgba(64, 76, 170, 0.22);
-  transform: translateY(-1px);
-}
-
-.landing-shell .landing-header__actions form > .btn:focus-visible,
-.landing-shell .landing-actions form > .btn:focus-visible {
-  border-color: #929cff;
-  color: #fff;
-  background: rgba(111, 124, 255, 0.22);
-  box-shadow: 0 0 0 0.2rem rgba(124, 140, 255, 0.24);
-}
-
 html:has(.landing-shell),
 body:has(.landing-shell) {
   width: 100%;
@@ -198,12 +162,5 @@ body:has(.landing-shell) {
   .landing-shell .landing-preview__feature strong,
   .landing-shell .landing-preview__feature small {
     overflow-wrap: anywhere;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-shell .landing-header__actions form > .btn,
-  .landing-shell .landing-actions form > .btn {
-    transition: none;
   }
 }
