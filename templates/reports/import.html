@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
 
 {% block content %}
 <div class="container py-4" style="max-width: 920px;">
@@ -27,7 +27,7 @@
           <div class="fw-semibold mb-1">{% trans "Export" %}</div>
           <div class="text-muted small mb-3">{% trans "Download your applications data or a CSV template." %}</div>
           <div class="d-grid gap-2"><a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">⬇ {% trans "Export CSV" %}</a><a class="btn btn-outline-secondary" href="{% url 'reports:export' 'xlsx' %}">⬇ {% trans "Export XLSX" %}</a><a class="btn btn-outline-secondary" href="{% url 'reports:export' 'csv' %}">🧾 {% trans "CSV template" %}</a></div>
-          <div class="text-muted small mt-3">{% blocktrans %}Tip: for autosave/backups use{% endblocktrans %} <a href="{% url 'reports:drive_backups' %}">☁ <span class="d-none d-sm-inline">{% trans "Cloud backups." %}</span></a></div>
+          <div class="text-muted small mt-3">{% blocktrans %}Tip: for autosave/backups use{% endblocktrans %} <a href="{% url 'reports:drive_backups' %}"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> <span class="d-none d-sm-inline">{% trans "Cloud backups." %}</span></a></div>
         </div>
       </div>
     </div>

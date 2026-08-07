@@ -111,7 +111,7 @@
             <a href="{% url 'accounts:settings' %}?tab=telegram">{% trans "Manage" %}</a>
           </div>
           <a class="dashboard-connection" href="{% url 'accounts:settings' %}?tab=telegram">
-            <span aria-hidden="true">📨</span><span><strong>{% trans "Telegram bot" %}</strong><small>{% trans "Notifications" %}</small></span>
+            <span aria-hidden="true"><img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" alt=""></span><span><strong>{% trans "Telegram bot" %}</strong><small>{% trans "Notifications" %}</small></span>
             <b class="dashboard-status {% if telegram_connected %}is-active{% endif %}">{% if telegram_connected %}🟢{% else %}⚪{% endif %}</b>
           </a>
           <a class="dashboard-connection" href="{% url 'gmail_assistant:gmail_assistant' %}">
@@ -119,7 +119,7 @@
             <b class="dashboard-status {% if gmail_connected %}is-active{% endif %}">{% if gmail_connected %}&#128994;{% else %}&#9898;{% endif %}</b>
           </a>
           <a class="dashboard-connection" href="{% url 'reports:drive_backups' %}">
-            <span aria-hidden="true">☁️</span><span><strong>{% trans "Drive backups" %}</strong><small>{% if drive_auto_backup_enabled %}{% trans "Automatic" %}{% else %}{% trans "Manual" %}{% endif %}</small></span>
+            <span aria-hidden="true"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""></span><span><strong>{% trans "Drive backups" %}</strong><small>{% if drive_auto_backup_enabled %}{% trans "Automatic" %}{% else %}{% trans "Manual" %}{% endif %}</small></span>
             <b class="dashboard-status {% if drive_connected %}is-active{% endif %}">{% if drive_connected %}🟢{% else %}⚪{% endif %}</b>
           </a>
         </section>

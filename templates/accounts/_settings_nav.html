@@ -1,9 +1,9 @@
-{% load i18n %}
+{% load static i18n %}
 
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
     <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'telegram' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
-      <span aria-hidden="true">📨</span> {% trans "Telegram" %}
+      <img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" alt=""> {% trans "Telegram" %}
     </a>
   </li>
   <li class="nav-item">
@@ -18,7 +18,7 @@
   </li>
   <li class="nav-item">
     <a class="nav-link {% if request.resolver_match.url_name == 'drive_backups' %}active{% endif %}" href="{% url 'reports:drive_backups' %}">
-      <span aria-hidden="true">☁️</span> {% trans "Cloud backups" %}
+      <img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Cloud backups" %}
     </a>
   </li>
   <li class="nav-item">

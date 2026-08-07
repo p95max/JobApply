@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n systemd_timers %}
+{% load static i18n systemd_timers %}
 
 {% block content %}
 {% systemd_timer "jobapply-backup.timer" as backup_timer %}
@@ -81,11 +81,11 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-            <div class="fw-semibold">{% trans "Your Cloud Backups" %}</div>
+            <div class="fw-semibold"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Your Cloud Backups" %}</div>
             {% if drive_status.connected and drive_status.has_refresh_token %}
               <form method="post" action="{% url 'reports:drive_export' 'csv' %}">
                 {% csrf_token %}
-                <button class="btn btn-primary btn-sm" type="submit">☁ {% trans "Upload CSV" %}</button>
+                <button class="btn btn-primary btn-sm" type="submit"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Upload CSV" %}</button>
               </form>
             {% endif %}
           </div>

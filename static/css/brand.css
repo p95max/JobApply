@@ -8,3 +8,10 @@
   width: 100%;
   height: 100%;
 }
+.brand-service-icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  object-fit: contain;
+  vertical-align: -0.18em;
+}
