@@ -1,3 +1,31 @@
+.landing-shell .landing-header__actions form > .btn,
+.landing-shell .landing-actions form > .btn {
+  color: var(--bs-btn-color);
+  background-color: var(--bs-btn-bg);
+  background-image: none;
+  border-color: var(--bs-btn-border-color);
+  box-shadow: var(--bs-btn-box-shadow);
+  transform: none;
+}
+
+.landing-shell .landing-header__actions form > .btn:hover,
+.landing-shell .landing-actions form > .btn:hover {
+  color: var(--bs-btn-hover-color);
+  background-color: var(--bs-btn-hover-bg);
+  background-image: none;
+  border-color: var(--bs-btn-hover-border-color);
+  transform: none;
+}
+
+.landing-shell .landing-header__actions form > .btn:focus-visible,
+.landing-shell .landing-actions form > .btn:focus-visible {
+  color: var(--bs-btn-hover-color);
+  background-color: var(--bs-btn-hover-bg);
+  background-image: none;
+  border-color: var(--bs-btn-hover-border-color);
+  box-shadow: 0 0 0 .25rem rgba(var(--bs-btn-focus-shadow-rgb), .5);
+}
+
 html:has(.landing-shell),
 body:has(.landing-shell) {
   width: 100%;
