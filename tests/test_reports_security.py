@@ -5,6 +5,7 @@ import io
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from openpyxl import load_workbook
 
 from apps.applications.models import JobApplication
@@ -111,8 +112,8 @@ def test_import_accepts_exported_datetime_values(user):
 
     application = JobApplication.objects.get(user=user)
     assert result == {"created": 1, "updated": 0}
-    assert application.applied_at.date().isoformat() == "2026-08-07"
-    assert application.recruiter_reply_at.date().isoformat() == "2026-08-08"
+    assert timezone.localdate(application.applied_at).isoformat() == "2026-08-07"
+    assert timezone.localdate(application.recruiter_reply_at).isoformat() == "2026-08-08"
 
 
 @pytest.mark.django_db
