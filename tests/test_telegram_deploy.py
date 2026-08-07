@@ -122,6 +122,7 @@ def test_deploy_requires_confirmation_with_current_and_target_commit(monkeypatch
 def test_confirmed_deploy_is_one_time_and_owner_bound(monkeypatch):
     monkeypatch.setattr("apps.telegram_bot.deployments.current_queue_status", lambda: None)
     monkeypatch.setattr("apps.telegram_bot.deployments._deploy_commits", lambda branch: ("abc1234", "def5678"))
+    monkeypatch.setattr("apps.telegram_bot.deployments._commit_date", lambda revision: "2026-08-07T12:00:00+02:00")
     monkeypatch.setattr("apps.telegram_bot.deployments._claim_deploy_request", lambda: True)
     monkeypatch.setattr("apps.telegram_bot.deployments._start_deploy_service", lambda: True)
     prepared = prepare_deploy_request(
@@ -156,6 +157,21 @@ def test_confirmed_deploy_is_one_time_and_owner_bound(monkeypatch):
     assert prepared.request.status == TelegramDeployRequestStatus.QUEUED
     assert repeat.outcome == "already_processed"
     assert foreign.outcome == "not_found"
+
+
+@pytest.mark.django_db
+def test_deploy_confirmation_shows_dates_for_current_and_target_commits(monkeypatch):
+    monkeypatch.setattr("apps.telegram_bot.deployments.current_queue_status", lambda: None)
+    monkeypatch.setattr("apps.telegram_bot.deployments._deploy_commits", lambda branch: ("abc1234", "def5678"))
+    monkeypatch.setattr(
+        "apps.telegram_bot.deployments._commit_date",
+        lambda revision: {"HEAD": "2026-08-06T10:00:00+02:00", "def5678": "2026-08-07T11:00:00+02:00"}[revision],
+    )
+
+    prepared = prepare_deploy_request(telegram_user_id=200, chat_id=100, branch="master", ttl_seconds=300)
+
+    assert "Current: abc1234 · 2026-08-06T10:00:00+02:00" in prepared.message
+    assert "Target: def5678 · 2026-08-07T11:00:00+02:00" in prepared.message
 
 
 @pytest.mark.django_db

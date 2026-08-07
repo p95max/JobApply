@@ -45,9 +45,8 @@ def admin_text() -> str:
 
 
 def status_text(environment: str, snapshot: StatusSnapshot) -> str:
-    commit_line = f"🔖 Commit: <code>{escape(snapshot.commit_sha)}</code>"
-    if snapshot.commit_at is not None:
-        commit_line += f" · {escape(_format_dt(snapshot.commit_at))}"
+    commit_at = _format_dt(snapshot.commit_at)
+    commit_line = f"🔖 Commit: <code>{escape(snapshot.commit_sha)}</code> · {escape(commit_at)}"
 
     lines = [
         f"📊 <b>JobApply status · {escape(environment)}</b>",

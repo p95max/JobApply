@@ -70,8 +70,10 @@ echo "==> Fetching production branch: $BRANCH"
 sudo -u "$APP_USER" git -C "$APP_DIR" fetch origin "$BRANCH"
 current_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
 target_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short "origin/$BRANCH")"
-echo "==> Current commit: $current_commit"
-echo "==> Target commit:  $target_commit"
+current_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI HEAD)"
+target_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI "origin/$BRANCH")"
+echo "==> Current commit: $current_commit ($current_commit_date)"
+echo "==> Target commit:  $target_commit ($target_commit_date)"
 
 sudo -u "$APP_USER" git -C "$APP_DIR" merge-base --is-ancestor HEAD "origin/$BRANCH" || {
   echo "Refusing deploy: update is not fast-forward only." >&2
@@ -173,5 +175,6 @@ echo "==> Running HTTP health check"
 curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
 
 echo
-printf 'Deployment completed successfully at commit: '
-sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD
+final_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
+final_commit_date="$(sudo -u "$APP_USER" git -C "$APP_DIR" log -1 --format=%cI HEAD)"
+echo "Deployment completed successfully at commit: $final_commit ($final_commit_date)"

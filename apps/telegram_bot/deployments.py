@@ -63,6 +63,8 @@ def prepare_deploy_request(
     current_commit, target_commit = _deploy_commits(branch)
     if current_commit is None or target_commit is None:
         return DeployPreparation(None, "Could not read deploy commits. Check JobApply logs.", "failed")
+    current_commit_date = _commit_date("HEAD")
+    target_commit_date = _commit_date(target_commit)
     request = TelegramDeployRequest.objects.create(
         telegram_user_id=telegram_user_id,
         chat_id=chat_id,
@@ -73,8 +75,8 @@ def prepare_deploy_request(
     return DeployPreparation(
         request,
         "Deploy confirmation required.\n"
-        f"Current: {current_commit}\n"
-        f"Target: {target_commit}\n"
+        f"Current: {current_commit} · {current_commit_date}\n"
+        f"Target: {target_commit} · {target_commit_date}\n"
         "Confirm to queue the fixed production deploy.",
         "pending",
     )
@@ -139,6 +141,10 @@ def _deploy_commits(branch: str) -> tuple[str | None, str | None]:
     target = _git_output("ls-remote", "--exit-code", "origin", f"refs/heads/{branch}")
     target_sha = target.split()[0][:12] if target else ""
     return (current or None, target_sha or None)
+
+
+def _commit_date(revision: str) -> str:
+    return _git_output("show", "-s", "--format=%cI", revision) or "date unavailable"
 
 
 def _git_output(*args: str) -> str:
