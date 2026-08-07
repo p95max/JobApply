@@ -8,11 +8,9 @@
 {% endif %}
 <div class="container py-4">
   <div class="mb-4">
-    <h1 class="h3 mb-1">{% trans "Settings" %}</h1>
-    <p class="text-body-secondary mb-0">{% trans "Manage connected services and account integrations." %}</p>
+    <h1 class="h3 mb-1">{% trans "Cloud backups" %}</h1>
+    <p class="text-body-secondary mb-0">{% trans "Manage backups stored in your Google Drive." %}</p>
   </div>
-
-  {% include "accounts/_settings_nav.html" %}
 
   {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
