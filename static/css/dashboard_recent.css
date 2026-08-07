@@ -22,6 +22,57 @@
   outline-offset: -2px;
 }
 
+.dashboard-recent-cards {
+  display: grid;
+}
+
+.dashboard-recent-card {
+  display: grid;
+  gap: .55rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid rgba(150, 166, 190, .1);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-recent-card:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-recent-card:hover,
+.dashboard-recent-card:focus-visible {
+  color: inherit;
+  background: rgba(103, 223, 188, .06);
+  outline: none;
+}
+
+.dashboard-recent-card__top {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.dashboard-recent-card__top strong,
+.dashboard-recent-card__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-recent-card__top strong {
+  line-height: 1.3;
+}
+
+.dashboard-recent-card__title {
+  color: #dce3ec;
+  line-height: 1.35;
+}
+
+.dashboard-recent-card small {
+  color: #7f8b9b;
+}
+
 .dashboard-pill--applied { background: rgba(13, 110, 253, .13); color: #76a7ff; }
 .dashboard-pill--screen { background: rgba(111, 66, 193, .16); color: #ba9aff; }
 .dashboard-pill--replied { background: rgba(13, 202, 240, .14); color: #76e7ff; }
@@ -29,3 +80,13 @@
 .dashboard-pill--offer { background: rgba(25, 135, 84, .16); color: #78e0b3; }
 .dashboard-pill--rejected { background: rgba(220, 53, 69, .16); color: #ff8995; }
 .dashboard-pill--archived { background: rgba(108, 117, 125, .18); color: #b6bec8; }
+
+@media (max-width: 575.98px) {
+  .dashboard-recent-card__top {
+    align-items: center;
+  }
+
+  .dashboard-recent-card .dashboard-pill {
+    flex: 0 0 auto;
+  }
+}
