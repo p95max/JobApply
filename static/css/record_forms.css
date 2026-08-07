@@ -1,0 +1,81 @@
+.record-page {
+  min-height: calc(100vh - 62px);
+  padding: 2rem 1rem 4rem;
+  background: radial-gradient(circle at 78% 8%, rgba(75, 92, 196, .2), transparent 34%), #11161b;
+}
+
+.record-shell { width: min(920px, 100%); margin: 0 auto; }
+
+.record-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.45rem 1.6rem;
+  border: 1px solid rgba(150, 166, 190, .18);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(65, 86, 167, .27), rgba(26, 32, 45, .9) 58%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .16);
+}
+
+.record-hero__eyebrow {
+  display: block;
+  color: #aeb7ff;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.record-hero h1 { margin: .35rem 0; font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -.035em; }
+.record-hero p { margin: 0; color: #a9b4c3; }
+
+.record-form-card {
+  border: 1px solid rgba(150, 166, 190, .16);
+  border-radius: 22px;
+  background: rgba(18, 28, 42, .88);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .16);
+}
+
+.record-form-card .card-body { padding: clamp(1.25rem, 4vw, 2rem); }
+.record-form-card .form-label { color: #dce4ef; font-weight: 650; }
+.record-form-card .form-text { min-height: 1.3rem; color: #8e9bad; }
+.record-form-card .form-control,
+.record-form-card .form-select {
+  min-height: 42px;
+  border-color: rgba(170, 184, 207, .26);
+  background-color: rgba(10, 16, 27, .64);
+}
+.record-form-card textarea.form-control { min-height: 112px; }
+.record-form-card .form-control:focus,
+.record-form-card .form-select:focus {
+  border-color: rgba(124, 140, 255, .9);
+  box-shadow: 0 0 0 .22rem rgba(124, 140, 255, .16);
+}
+
+.record-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  align-items: center;
+  margin-top: 1.65rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(150, 166, 190, .14);
+}
+
+.record-form-note {
+  margin-top: 1.1rem;
+  padding: .8rem 1rem;
+  border-left: 3px solid rgba(124, 140, 255, .72);
+  border-radius: 0 10px 10px 0;
+  background: rgba(124, 140, 255, .08);
+  color: #aeb9c8;
+  font-size: .875rem;
+}
+
+@media (max-width: 600px) {
+  .record-page { padding: 1rem .75rem 3rem; }
+  .record-hero { align-items: stretch; flex-direction: column; padding: 1.25rem; }
+  .record-hero .btn { width: 100%; }
+}

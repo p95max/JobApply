@@ -1,82 +1,105 @@
-#interviews-page .table-wrap {
-  overflow-x: hidden;
+.interviews-page .dashboard-shell { width: min(1180px, 100%); }
+
+.interviews-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.45rem 1.6rem;
+  border: 1px solid rgba(150, 166, 190, .18);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(71, 112, 190, .25), rgba(26, 32, 45, .9) 58%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .16);
 }
 
-#interviews-page table {
-  width: 100%;
-  table-layout: auto !important;
-}
+.interviews-hero h1 { margin: .35rem 0; font-size: clamp(1.7rem, 3vw, 2.25rem); letter-spacing: -.035em; }
+.interviews-hero p { margin: 0; color: #a9b4c3; }
 
-#interviews-page th,
-#interviews-page td {
-  text-align: left !important;
-  padding-left: 12px !important;
-  white-space: normal !important;
-  word-wrap: break-word;
-  vertical-align: middle;
+.interviews-table-card { overflow: hidden; }
+.interviews-table-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.2rem 1.4rem;
+  border-bottom: 1px solid rgba(150, 166, 190, .12);
 }
-
-#interviews-page .js-interview-status.int-status-select {
-  --st-color: #6c757d;
-  --st-bg: rgba(108, 117, 125, 0.08);
-  border: 2px solid var(--st-color) !important;
-  background: var(--st-bg) !important;
+.interviews-table-card__header h2 { margin: 0 0 .25rem; font-size: 1.05rem; }
+.interviews-table-card__header p { margin: 0; color: #9da9b8; font-size: .875rem; }
+.interviews-count {
+  min-width: 2rem;
+  padding: .28rem .58rem;
   border-radius: 999px;
-  padding-left: 10px;
-  padding-right: 28px;
-  color: var(--st-color) !important;
-  background-image: none !important;
+  background: rgba(124, 140, 255, .17);
+  color: #b7c0ff;
+  font-size: .78rem;
+  font-weight: 800;
+  text-align: center;
 }
 
-#interviews-page .js-interview-status.int-status-select option {
-  background-color: #212529 !important;
-  color: #ffffff !important;
+.interviews-table { min-width: 880px; }
+.interviews-table > :not(caption) > * > * {
+  padding: 1rem 1.25rem;
+  border-color: rgba(150, 166, 190, .1);
+  background: transparent;
 }
-
-/* Основные состояния — применяются к .js-interview-status + .status-int-xxx */
-#interviews-page .js-interview-status.status-int-scheduled,
-#interviews-page .js-interview-status.status-int-planned,
-#interviews-page .js-interview-status.status-int-plan,
-#interviews-page .js-interview-status.status-int-schedule {
-  --st-color: #0d6efd;
-  --st-bg: rgba(13, 110, 253, 0.10);
-  border-color: var(--st-color) !important;
-  background: var(--st-bg) !important;
-  color: var(--st-color) !important;
+.interviews-table thead th {
+  color: #93a1b5;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
+.interviews-table td small { display: block; margin-top: .2rem; color: #98a5b5; }
+.interviews-table__row { transition: background .16s ease; }
+.interviews-table__row:hover { background: rgba(255, 255, 255, .035); }
+.interviews-table__row--scheduled { box-shadow: inset 3px 0 0 #4c8dff; }
+.interviews-table__row--done { box-shadow: inset 3px 0 0 #49c98b; }
+.interviews-table__row--canceled { box-shadow: inset 3px 0 0 #ef6475; }
+.interviews-table__status { width: 150px; }
+.interviews-application-link { color: #edf2ff; font-weight: 700; text-decoration: none; }
+.interviews-application-link:hover { color: #9eacff; text-decoration: underline; }
 
-#interviews-page .js-interview-status.status-int-done,
-#interviews-page .js-interview-status.status-int-complete,
-#interviews-page .js-interview-status.status-int-completed,
-#interviews-page .js-interview-status.status-int-finished {
-  --st-color: #198754;
-  --st-bg: rgba(25, 135, 84, 0.10);
-  border-color: var(--st-color) !important;
-  background: var(--st-bg) !important;
-  color: var(--st-color) !important;
+.interview-status-pill {
+  --status-color: #91a0b2;
+  --status-bg: rgba(145, 160, 178, .11);
+  min-width: 120px;
+  border-color: var(--status-color);
+  border-radius: 999px;
+  background-color: var(--status-bg);
+  color: var(--status-color);
+  font-size: .82rem;
+  font-weight: 700;
 }
+.interview-status-pill.status-int-scheduled { --status-color: #76a7ff; --status-bg: rgba(13, 110, 253, .13); }
+.interview-status-pill.status-int-done { --status-color: #78e0b3; --status-bg: rgba(25, 135, 84, .16); }
+.interview-status-pill.status-int-canceled { --status-color: #ff8995; --status-bg: rgba(220, 53, 69, .16); }
+.interview-status-pill option { background: #1a2230; color: #e8edf5; }
 
-#interviews-page .js-interview-status.status-int-canceled,
-#interviews-page .js-interview-status.status-int-cancelled,
-#interviews-page .js-interview-status.status-int-no_show,
-#interviews-page .js-interview-status.status-int-noshow {
-  --st-color: #dc3545;
-  --st-bg: rgba(220, 53, 69, 0.10);
-  border-color: var(--st-color) !important;
-  background: var(--st-bg) !important;
-  color: var(--st-color) !important;
+.interviews-empty {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 2.2rem;
 }
-
-.print-only {
-  display: none !important;
+.interviews-empty__icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(124, 140, 255, .16);
+  font-size: 1.7rem;
 }
+.interviews-empty h2 { margin: 0 0 .35rem; font-size: 1.12rem; }
+.interviews-empty p { margin: 0 0 1rem; color: #9da9b8; }
 
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  .print-only {
-    display: inline !important;
-  }
+.print-only { display: none !important; }
+@media print { .no-print { display: none !important; } .print-only { display: inline !important; } }
+@media (max-width: 600px) {
+  .interviews-hero { align-items: stretch; flex-direction: column; padding: 1.25rem; }
+  .interviews-hero .btn { width: 100%; }
+  .interviews-table-card__header { padding: 1rem; }
+  .interviews-empty { align-items: flex-start; padding: 1.4rem; }
 }

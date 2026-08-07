@@ -1,34 +1,36 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
-{% block content %}
-<div class="container mt-4" style="max-width: 920px;">
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/record_forms.css' %}?v=1">
+{% endblock %}
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h1 class="h4 mb-1">
+{% block content %}
+<main class="record-page">
+  <section class="record-shell">
+    <header class="record-hero">
+      <div>
+        <span class="record-hero__eyebrow">{% trans "Application tracker" %}</span>
+        <h1>
         {% if mode == "edit" %}
           {% trans "Edit application" %}
         {% else %}
           {% trans "New application" %}
         {% endif %}
-      </h1>
-      <div class="text-body-secondary small">
+        </h1>
+        <p>
         {% if mode == "edit" %}
           {% trans "Update fields and save changes." %}
         {% else %}
           {% trans "Fill in details and create a record." %}
         {% endif %}
+        </p>
       </div>
-    </div>
+      <a class="btn btn-outline-light" href="{% url 'applications:list' %}">{% trans "Back" %}</a>
+    </header>
 
-    <a class="btn btn-outline-secondary" href="{% url 'applications:list' %}">
-      {% trans "Back" %}
-    </a>
-  </div>
-
-  <div class="card border-0 shadow-sm glass-card">
-    <div class="card-body p-4">
+    <section class="card record-form-card">
+      <div class="card-body">
 
       {% if form.non_field_errors %}
         <div class="alert alert-danger">
@@ -68,7 +70,7 @@
           {% endfor %}
         </div>
 
-        <div class="d-flex flex-wrap gap-2 mt-4">
+        <div class="record-form-actions">
           <button class="btn btn-primary" type="submit">
             {% if mode == "edit" %}
               {% trans "Save changes" %}
@@ -88,9 +90,8 @@
           </a>
         </div>
       </form>
-
-    </div>
-  </div>
-
-</div>
+      </div>
+    </section>
+  </section>
+</main>
 {% endblock %}

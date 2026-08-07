@@ -26,9 +26,6 @@ document.addEventListener("change", async (e) => {
   );
   el.classList.add(`status-int-${status}`);
 
-  if (!el.classList.contains("int-status-select")) {
-    el.classList.add("int-status-select");
-  }
 });
 
 function getCookie(name) {
