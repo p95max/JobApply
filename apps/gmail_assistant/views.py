@@ -105,6 +105,10 @@ def gmail_assistant(request):
     ai_daily_used = ai_policy.daily_usage(user=request.user)
     ai_daily_remaining = max(0, ai_policy.daily_limit - ai_daily_used)
     bulk_create_candidate_count = len(eligible_bulk_create_proposals(user=request.user))
+    unlinked_pending_count = proposal_queryset.filter(
+        status=ProposalStatus.PENDING,
+        application__isnull=True,
+    ).count()
     next_automatic_check_at = None
     if (
         django_settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED
@@ -146,6 +150,7 @@ def gmail_assistant(request):
             "ai_confidence_threshold": django_settings.GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD,
             "bulk_create_candidate_count": bulk_create_candidate_count,
             "bulk_create_min_confidence": BULK_CREATE_MIN_CONFIDENCE,
+            "unlinked_pending_count": unlinked_pending_count,
         },
     )
 
@@ -203,7 +208,13 @@ def bulk_create_gmail_applications(request):
             request,
             _("%(count)d suggestions could not be created and remain pending.") % {"count": result.failed},
         )
-    if not any((result.created, result.skipped_as_possible_duplicate, result.failed)):
+    if result.linked_for_review:
+        messages.info(
+            request,
+            _("%(count)d remaining suggestions were linked to exact application matches for review.")
+            % {"count": result.linked_for_review},
+        )
+    if not any((result.created, result.skipped_as_possible_duplicate, result.failed, result.linked_for_review)):
         messages.info(request, _("There are no eligible AI suggestions to create."))
     return redirect("gmail_assistant:gmail_assistant")
 

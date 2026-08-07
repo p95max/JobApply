@@ -411,6 +411,85 @@ def test_bulk_create_only_creates_eligible_high_confidence_ai_proposals(client, 
 
 
 @pytest.mark.django_db
+def test_bulk_create_rematches_remaining_exact_pending_proposals(client, proposal):
+    proposal.application = None
+    proposal.proposal_type = ProposalType.CREATE_APPLICATION
+    proposal.changes = {
+        "application": {
+            "operation": "create",
+            "title": "AI Developer",
+            "company": "Example AI GmbH",
+            "source": "other",
+            "status": "applied",
+            "applied_at": timezone.now().isoformat(),
+        }
+    }
+    proposal.analysis.classifier = AnalysisClassifier.AI
+    proposal.analysis.confidence = 90
+    proposal.analysis.save(update_fields=["classifier", "confidence"])
+    proposal.save(update_fields=["application", "proposal_type", "changes"])
+    rejection_message = GmailMessage.objects.create(
+        user=proposal.user,
+        message_id="message-rejection",
+        thread_id="thread-rejection",
+        received_at=timezone.now(),
+        subject="Application update",
+    )
+    rejection_analysis = GmailAnalysis.objects.create(
+        user=proposal.user,
+        message=rejection_message,
+        event_type=GmailEventType.REJECTION,
+        is_job_related=True,
+        extracted_data={"company": "Example AI GmbH", "position_title": "AI Developer"},
+    )
+    rejection = ApplicationUpdateProposal.objects.create(
+        user=proposal.user,
+        message=rejection_message,
+        analysis=rejection_analysis,
+        proposal_type=ProposalType.UPDATE_APPLICATION,
+        changes={"application": {"status": {"old": None, "new": "rejected"}}},
+        match_method="unmatched",
+    )
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:bulk_create_gmail_applications"), follow=True)
+
+    created = JobApplication.objects.get(user=proposal.user, title="AI Developer", company="Example AI GmbH")
+    rejection.refresh_from_db()
+    rejection_message.refresh_from_db()
+    assert response.status_code == 200
+    assert rejection.status == ProposalStatus.PENDING
+    assert rejection.application_id == created.pk
+    assert rejection.match_method == "exact_company_title"
+    assert rejection_message.application_id == created.pk
+    assert b"1 remaining suggestions were linked to exact application matches for review." in response.content
+
+
+@pytest.mark.django_db
+def test_recheck_links_rematches_existing_pending_proposals_without_creating(client, proposal):
+    application = proposal.application
+    proposal.application = None
+    proposal.match_method = "unmatched"
+    proposal.match_score = 0
+    proposal.analysis.extracted_data = {
+        "company": application.company,
+        "position_title": application.title,
+    }
+    proposal.analysis.save(update_fields=["extracted_data"])
+    proposal.save(update_fields=["application", "match_method", "match_score"])
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:bulk_create_gmail_applications"), follow=True)
+
+    proposal.refresh_from_db()
+    assert response.status_code == 200
+    assert proposal.status == ProposalStatus.PENDING
+    assert proposal.application_id == application.pk
+    assert proposal.match_method == "exact_company_title"
+    assert b"1 remaining suggestions were linked to exact application matches for review." in response.content
+
+
+@pytest.mark.django_db
 def test_bulk_create_leaves_possible_duplicates_pending(client, proposal):
     existing_application = proposal.application
     proposal.application = None

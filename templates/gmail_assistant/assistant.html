@@ -110,6 +110,19 @@
             {% blocktrans with count=bulk_create_candidate_count %}Create {{ count }} applications{% endblocktrans %}
           </button>
         </form>
+      {% elif unlinked_pending_count %}
+        <form
+          class="small border-top mt-3 pt-3 d-flex flex-wrap justify-content-between align-items-center gap-3"
+          method="post"
+          action="{% url 'gmail_assistant:bulk_create_gmail_applications' %}"
+        >
+          {% csrf_token %}
+          <div>
+            <strong>{% trans "Recheck pending application links" %}</strong>
+            <div>{% blocktrans with count=unlinked_pending_count %}Try to link {{ count }} pending suggestions to an exact application match. No proposal will be accepted automatically.{% endblocktrans %}</div>
+          </div>
+          <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">{% trans "Recheck links" %}</button>
+        </form>
       {% endif %}
 
       <div class="small mt-3 d-grid gap-1">

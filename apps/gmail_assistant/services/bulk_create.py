@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from django.utils import timezone
+
 from apps.applications.models import JobApplication
 from apps.gmail_assistant.models import (
     AnalysisClassifier,
@@ -9,10 +11,12 @@ from apps.gmail_assistant.models import (
     ProposalStatus,
     ProposalType,
 )
+from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal
 
 
 BULK_CREATE_MIN_CONFIDENCE = 75
+_EXACT_REMATCH_METHODS = frozenset({"thread_id", "external_application_id", "exact_company_title"})
 
 
 @dataclass(frozen=True)
@@ -20,6 +24,7 @@ class BulkCreateResult:
     created: int
     skipped_as_possible_duplicate: int
     failed: int
+    linked_for_review: int
 
 
 def eligible_bulk_create_proposals(*, user):
@@ -66,7 +71,52 @@ def bulk_create_eligible_proposals(*, user) -> BulkCreateResult:
             failed += 1
         else:
             created += 1
-    return BulkCreateResult(created, skipped_as_possible_duplicate, failed)
+    linked_for_review = rematch_pending_proposals(user=user)
+    return BulkCreateResult(created, skipped_as_possible_duplicate, failed, linked_for_review)
+
+
+def rematch_pending_proposals(*, user) -> int:
+    """Link only unambiguous exact matches; proposals always remain pending for review."""
+    pending = (
+        ApplicationUpdateProposal.objects.filter(
+            user=user,
+            status=ProposalStatus.PENDING,
+            application__isnull=True,
+        )
+        .select_related("message", "analysis")
+        .order_by("message_id", "pk")
+    )
+    rematched_message_ids: set[int] = set()
+    linked = 0
+    for proposal in pending:
+        if proposal.message_id in rematched_message_ids:
+            continue
+        rematched_message_ids.add(proposal.message_id)
+        match = match_for_message(
+            user=user,
+            message=proposal.message,
+            extracted_data=proposal.analysis.extracted_data,
+        )
+        candidate = match.suggested
+        if candidate is None or candidate.method not in _EXACT_REMATCH_METHODS:
+            continue
+        now = timezone.now()
+        linked += ApplicationUpdateProposal.objects.filter(
+            user=user,
+            message_id=proposal.message_id,
+            analysis_id=proposal.analysis_id,
+            status=ProposalStatus.PENDING,
+            application__isnull=True,
+        ).update(
+            application=candidate.application,
+            match_score=candidate.score,
+            match_method=candidate.method,
+            updated_at=now,
+        )
+        if proposal.message.application_id is None:
+            proposal.message.application = candidate.application
+            proposal.message.save(update_fields=["application", "updated_at"])
+    return linked
 
 
 def _has_valid_create_changes(proposal: ApplicationUpdateProposal) -> bool:
