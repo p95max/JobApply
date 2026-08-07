@@ -116,8 +116,38 @@
     {% endfor %}
   </div>
 
+  {% if selected_status == 'pending' %}
+    <section class="card mb-3" aria-label="{% trans 'Filter pending suggestions' %}">
+      <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-7">
+            <label class="form-label small mb-1" for="pendingSearch">{% trans "Search pending suggestions" %}</label>
+            <input id="pendingSearch" class="form-control" type="search" placeholder="{% trans 'Search subject, company or role' %}">
+          </div>
+          <div class="col-12 col-md-5">
+            <label class="form-label small mb-1" for="pendingTypeFilter">{% trans "Show" %}</label>
+            <select id="pendingTypeFilter" class="form-select">
+              <option value="all">{% trans "All pending suggestions" %}</option>
+              <option value="needs_link">{% trans "Needs application link" %}</option>
+              <option value="myself_sent">{% trans "Sent by me" %}</option>
+              <option value="application">{% trans "Application confirmations" %}</option>
+              <option value="interview">{% trans "Interviews" %}</option>
+              <option value="rejection">{% trans "Rejections" %}</option>
+              <option value="action">{% trans "Actions required" %}</option>
+            </select>
+          </div>
+        </div>
+        <div class="small text-muted mt-2" id="pendingFilterCount" aria-live="polite"></div>
+      </div>
+    </section>
+  {% endif %}
+
   {% for group in proposal_groups %}
-    <section class="card mb-3 {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}">
+    <section class="card mb-3 js-pending-card {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
+      data-event="{{ group.analysis.event_type }}"
+      data-direction="{{ group.message.direction }}"
+      data-match="{% if group.representative.application_id %}linked{% else %}unmatched{% endif %}"
+      data-proposal-types="{% for proposal in group.proposals %}{{ proposal.proposal_type }} {% endfor %}">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start gap-3">
           <div class="min-w-0">
@@ -151,6 +181,9 @@
   {% empty %}
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}
+  {% if selected_status == 'pending' and proposal_groups %}
+    <p class="text-muted d-none" id="pendingFilterEmpty">{% trans "No pending suggestions match these filters." %}</p>
+  {% endif %}
 
   <section class="card mt-4">
     <div class="card-body">
@@ -220,8 +253,51 @@
   const syncNewButton = document.getElementById("syncNewGmail");
   const optionalReanalysisDays = document.querySelector("[data-dev-reanalysis-days]");
   const optionalReanalysisButton = document.querySelector("[data-dev-reanalysis-button]");
+  const pendingSearch = document.getElementById("pendingSearch");
+  const pendingTypeFilter = document.getElementById("pendingTypeFilter");
+  const pendingCards = Array.from(document.querySelectorAll(".js-pending-card"));
+  const pendingFilterCount = document.getElementById("pendingFilterCount");
+  const pendingFilterEmpty = document.getElementById("pendingFilterEmpty");
+
+  function filterPendingCards() {
+    if (!pendingSearch || !pendingTypeFilter) return;
+    const query = pendingSearch.value.trim().toLocaleLowerCase();
+    const selectedType = pendingTypeFilter.value;
+    const applicationEvents = new Set([
+      "application_confirmation_required", "application_sent", "application_received",
+    ]);
+    const interviewEvents = new Set(["interview_invitation", "interview_rescheduled", "interview_cancelled"]);
+    let visible = 0;
+
+    pendingCards.forEach((card) => {
+      const eventType = card.dataset.event;
+      const isSelfSent = card.dataset.direction === "outbound";
+      const hasAction = (card.dataset.proposalTypes || "").includes("action_required");
+      const typeMatches = (
+        selectedType === "all" ||
+        (selectedType === "needs_link" && card.dataset.match === "unmatched") ||
+        (selectedType === "myself_sent" && isSelfSent) ||
+        (selectedType === "application" && applicationEvents.has(eventType) && !isSelfSent) ||
+        (selectedType === "interview" && interviewEvents.has(eventType)) ||
+        (selectedType === "rejection" && eventType === "rejection") ||
+        (selectedType === "action" && hasAction)
+      );
+      const searchMatches = !query || card.textContent.toLocaleLowerCase().includes(query);
+      const matches = typeMatches && searchMatches;
+      card.classList.toggle("d-none", !matches);
+      if (matches) visible += 1;
+    });
+
+    if (pendingFilterCount) {
+      pendingFilterCount.textContent = `${visible} / ${pendingCards.length} {% trans "pending suggestions shown" %}`;
+    }
+    pendingFilterEmpty?.classList.toggle("d-none", visible !== 0);
+  }
 
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
+  pendingSearch?.addEventListener("input", filterPendingCards);
+  pendingTypeFilter?.addEventListener("change", filterPendingCards);
+  filterPendingCards();
 
   async function syncGmail(days, reanalyze = false, includeSent = false) {
     const syncModal = document.getElementById("gmailSyncPeriodModal");

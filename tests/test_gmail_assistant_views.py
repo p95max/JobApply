@@ -88,6 +88,19 @@ def test_assistant_lists_newest_email_first(client, proposal):
 
 
 @pytest.mark.django_db
+def test_pending_assistant_cards_include_client_side_filters(client, proposal):
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_assistant"))
+
+    assert response.status_code == 200
+    assert b'id="pendingSearch"' in response.content
+    assert b'id="pendingTypeFilter"' in response.content
+    assert b'data-event="general_update"' in response.content
+    assert b'data-match="linked"' in response.content
+
+
+@pytest.mark.django_db
 def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
     proposal.status = ProposalStatus.ACCEPTED
     proposal.save(update_fields=["status"])
