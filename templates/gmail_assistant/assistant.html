@@ -82,21 +82,20 @@
             <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
             <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
           </div>
+        </div>
+        <details class="w-100 border-top mt-2 pt-2">
+          <summary class="small text-muted">{% trans "Advanced automation" %}</summary>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" name="auto_apply_enabled" value="1" id="autoApplyEnabled" {% if settings.auto_apply_enabled %}checked{% endif %} {% if not settings.ai_enabled %}disabled{% endif %}>
             <label class="form-check-label" for="autoApplyEnabled">{% trans "Automatically accept trusted updates" %}</label>
           </div>
-        </div>
+          <small class="d-block text-muted mt-1">{% trans "Only exact application matches and low-risk updates with AI confidence of at least 95% are accepted automatically." %}</small>
+        </details>
       </form>
-
-      <div class="alert alert-warning small mt-3 mb-0" role="alert">
-        <strong>{% trans "Auto-apply can make mistakes." %}</strong>
-        {% trans "Only AI suggestions with AI confidence ≥ 95%, an exact verified application match, and a low-risk status update are accepted automatically. Rejections, offers, interviews, actions, new applications, and uncertain matches always stay pending." %}
-      </div>
 
       {% if bulk_create_candidate_count %}
         <form
-          class="alert alert-info small mt-3 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-3"
+          class="small border-top mt-3 pt-3 d-flex flex-wrap justify-content-between align-items-center gap-3"
           method="post"
           action="{% url 'gmail_assistant:bulk_create_gmail_applications' %}"
           onsubmit="return confirm('{% blocktrans with count=bulk_create_candidate_count threshold=bulk_create_min_confidence %}Create {{ count }} new applications from AI suggestions with confidence of at least {{ threshold }}%? Details may be inaccurate or duplicate an existing application. Continue only if you accept this risk.{% endblocktrans %}');"
@@ -105,7 +104,7 @@
           <div>
             <strong>{% trans "Create high-confidence applications" %}</strong>
             <div>{% blocktrans with count=bulk_create_candidate_count threshold=bulk_create_min_confidence %}Create {{ count }} new applications from AI suggestions with confidence of at least {{ threshold }}%.{% endblocktrans %}</div>
-            <div class="text-muted">{% trans "Risk: details can be wrong or duplicate an existing application. Rejections, interviews, and actions are never included." %}</div>
+            <a class="small" href="#automation-risks">{% trans "Risks and limits" %}</a>
           </div>
           <button type="submit" class="btn btn-primary btn-sm text-nowrap">
             {% blocktrans with count=bulk_create_candidate_count %}Create {{ count }} applications{% endblocktrans %}
@@ -249,6 +248,10 @@
       <details class="mb-2">
         <summary class="fw-semibold">{% trans "Why is a proposal unmatched?" %}</summary>
         <p class="text-muted mb-0 mt-2">{% trans "The email could not be matched to one application with enough confidence. Assign an application manually before accepting a status update." %}</p>
+      </details>
+      <details class="mb-2" id="automation-risks">
+        <summary class="fw-semibold">{% trans "What are the automation risks and limits?" %}</summary>
+        <p class="text-muted mb-0 mt-2">{% trans "Batch creation uses only AI suggestions with confidence of at least 75%, but details can still be wrong or duplicate an existing application. Possible duplicates remain pending. Rejections, interviews, and actions are never included." %}</p>
       </details>
       <details>
         <summary class="fw-semibold">{% trans "What is sent to AI?" %}</summary>
