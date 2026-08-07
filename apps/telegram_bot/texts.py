@@ -143,7 +143,8 @@ def health_text(environment: str, snapshot: HealthSnapshot) -> str:
 def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
     migration_status = "unknown" if snapshot.pending_migrations < 0 else str(snapshot.pending_migrations)
     unit_icons = {"active": "🟢", "failed": "🔴", "inactive": "⚪"}
-    has_failed_unit = any(state != "active" for _unit, state in snapshot.unit_states)
+    unavailable_units = tuple(unit for unit, state in snapshot.unit_states if state != "active")
+    has_failed_unit = bool(unavailable_units)
     has_stale_worker = any(worker.is_stale for worker in snapshot.health.worker_heartbeats)
     has_critical_issue = not snapshot.health.database_ok or snapshot.pending_migrations > 0 or has_failed_unit
     has_warning = snapshot.is_dirty or snapshot.pending_migrations < 0 or has_stale_worker or bool(snapshot.worker_errors)
@@ -169,5 +170,11 @@ def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
     if snapshot.worker_errors:
         lines.extend(["", "⚠️ <b>Recent worker errors</b>"])
         lines.extend(f"<pre><code>{escape(error)}</code></pre>" for error in snapshot.worker_errors)
+    if unavailable_units:
+        lines.extend(["", "🛠 <b>Check on server</b>"])
+        lines.extend(
+            f"<code>journalctl -u {escape(unit)} -n 100 --no-pager</code>"
+            for unit in unavailable_units
+        )
     lines.extend(["", f"{overall_icon} <b>Overall: {overall_label}</b>"])
     return "\n".join(lines)

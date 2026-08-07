@@ -217,4 +217,5 @@ def test_doctor_marks_failed_systemd_units_and_reports_overall_state():
 
     assert "🟢 jobapply-web.service: <b>active</b>" in text
     assert "🔴 jobapply-backup.service: <b>failed</b>" in text
+    assert "<code>journalctl -u jobapply-backup.service -n 100 --no-pager</code>" in text
     assert "🔴 <b>Overall: ACTION REQUIRED</b>" in text
