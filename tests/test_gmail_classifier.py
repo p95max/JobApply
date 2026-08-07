@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus
 from apps.gmail_assistant.models import GmailEventType
+from apps.gmail_assistant.services import classifier
 from apps.gmail_assistant.services.classifier import classify, classify_event
 from apps.gmail_assistant.services.status_policy import proposed_status, should_set_recruiter_reply_at
 from apps.gmail_stats.services.direction import determine_direction
@@ -47,6 +48,13 @@ def test_classifier_does_not_treat_broad_words_as_job_events(text):
 def test_legacy_classifier_keeps_dashboard_categories():
     assert classify("Interview invitation", "for your application").detected_type == "invite"
     assert classify("Application has been received", "thank you").detected_type == "auto_ack"
+
+
+def test_classifier_phrase_groups_are_loaded_from_editable_json_file():
+    phrases = classifier._phrases()
+
+    assert "unfortunately" in phrases["rejection"]
+    assert "absage" in phrases["rejection"]
 
 
 @pytest.mark.parametrize(

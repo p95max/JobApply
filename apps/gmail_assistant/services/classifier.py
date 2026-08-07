@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 
 from apps.gmail_assistant.models import GmailEventType
 
@@ -21,15 +24,7 @@ class RuleClassification:
     evidence: tuple[str, ...]
 
 
-_JOB_CONTEXT_TERMS = (
-    "bewerbung",
-    "application",
-    "position",
-    "stelle",
-    "vacancy",
-    "job opportunity",
-    "kandidatur",
-)
+_PHRASES_PATH = Path(__file__).with_name("classifier_phrases.json")
 
 _LEGACY_TYPE_BY_EVENT = {
     GmailEventType.APPLICATION_RECEIVED: "auto_ack",
@@ -40,6 +35,19 @@ _LEGACY_TYPE_BY_EVENT = {
     GmailEventType.NOISE: "noise",
     GmailEventType.UNKNOWN: "unknown",
 }
+
+
+@lru_cache(maxsize=1)
+def _phrases() -> dict[str, tuple[str, ...]]:
+    """Load editable German and English classifier phrases from JSON."""
+    with _PHRASES_PATH.open(encoding="utf-8") as source:
+        value = json.load(source)
+    if not isinstance(value, dict) or not all(
+        isinstance(group, str) and isinstance(terms, list) and all(isinstance(term, str) for term in terms)
+        for group, terms in value.items()
+    ):
+        raise ValueError("classifier_phrases.json must map phrase groups to lists of strings")
+    return {group: tuple(term.casefold() for term in terms) for group, terms in value.items()}
 
 
 def _normalize(text: str) -> str:
@@ -63,133 +71,58 @@ def _result(
 def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassification:
     """Classify a Gmail message with deterministic, explainable job-email rules."""
     content = _normalize(" ".join((subject or "", snippet or "", text or "")))
-    context = _matching_terms(content, _JOB_CONTEXT_TERMS)
+    phrases = _phrases()
+    context = _matching_terms(content, phrases["job_context"])
 
-    noise = _matching_terms(content, ("newsletter", "job alert", "unsubscribe", "marketing", "rabatt"))
+    noise = _matching_terms(content, phrases["noise"])
     if noise:
         return _result(GmailEventType.NOISE, 90, noise, False)
 
-    withdrawal = _matching_terms(
-        content,
-        (
-            "withdrawal confirmed",
-            "application withdrawal confirmed",
-            "application withdrawn",
-            "bewerbung zurückgezogen",
-        ),
-    )
+    withdrawal = _matching_terms(content, phrases["withdrawal"])
     if withdrawal:
         return _result(GmailEventType.WITHDRAWAL_CONFIRMATION, 95, withdrawal)
 
-    rejection = _matching_terms(
-        content,
-        (
-            "absage",
-            "nicht berücksichtigen",
-            "haben uns für andere kandidaten entschieden",
-            "unfortunately",
-            "we regret",
-            "other candidates",
-            "cannot offer you",
-        ),
-    )
+    rejection = _matching_terms(content, phrases["rejection"])
     if context and rejection:
         return _result(GmailEventType.REJECTION, 92, context + rejection)
 
-    offer = _matching_terms(content, ("job offer", "offer for the position", "angebot für die position"))
+    offer = _matching_terms(content, phrases["offer"])
     if offer:
         return _result(GmailEventType.OFFER, 94, offer)
 
-    cancellation = _matching_terms(
-        content,
-        (
-            "interview cancelled",
-            "interview canceled",
-            "gespräch wurde abgesagt",
-            "gespräch abgesagt",
-            "termin abgesagt",
-        ),
-    )
+    cancellation = _matching_terms(content, phrases["interview_cancelled"])
     if cancellation:
         return _result(GmailEventType.INTERVIEW_CANCELLED, 94, cancellation)
 
-    reschedule = _matching_terms(
-        content,
-        ("interview rescheduled", "reschedule the interview", "termin verschieben", "gespräch verschieben"),
-    )
+    reschedule = _matching_terms(content, phrases["interview_rescheduled"])
     if reschedule:
         return _result(GmailEventType.INTERVIEW_RESCHEDULED, 94, reschedule)
 
-    invitation = _matching_terms(
-        content,
-        (
-            "interview invitation",
-            "invite you to an interview",
-            "einladung zum vorstellungsgespräch",
-            "einladung zu einem gespräch",
-            "interview termin",
-        ),
-    )
+    invitation = _matching_terms(content, phrases["interview_invitation"])
     if invitation:
         return _result(GmailEventType.INTERVIEW_INVITATION, 92, invitation)
 
-    screening = _matching_terms(content, ("phone screen", "telefoninterview", "initial screening"))
+    screening = _matching_terms(content, phrases["screening"])
     if screening:
         return _result(GmailEventType.SCREENING, 88, screening)
 
-    documents = _matching_terms(
-        content,
-        ("please send your documents", "documents requested", "bitte senden sie ihre unterlagen", "lebenslauf nachreichen"),
-    )
+    documents = _matching_terms(content, phrases["documents_requested"])
     if documents:
         return _result(GmailEventType.DOCUMENTS_REQUESTED, 88, documents)
 
-    confirmation_required = _matching_terms(
-        content,
-        (
-            "confirm your application",
-            "confirm your email",
-            "bewerbung bestätigen",
-            "bestätigen sie ihre bewerbung",
-            "e-mail adresse bestätigen",
-        ),
-    )
+    confirmation_required = _matching_terms(content, phrases["application_confirmation_required"])
     if confirmation_required:
         return _result(GmailEventType.APPLICATION_CONFIRMATION_REQUIRED, 90, confirmation_required)
 
-    application_sent = _matching_terms(
-        content,
-        (
-            "application submitted",
-            "application has been submitted",
-            "application sent",
-            "bewerbung wurde versendet",
-        ),
-    )
+    application_sent = _matching_terms(content, phrases["application_sent"])
     if application_sent:
         return _result(GmailEventType.APPLICATION_SENT, 88, application_sent)
 
-    received = _matching_terms(
-        content,
-        (
-            "we received your application",
-            "application has been received",
-            "eingangsbestätigung",
-            "haben ihre bewerbung erhalten",
-        ),
-    )
+    received = _matching_terms(content, phrases["application_received"])
     if received:
         return _result(GmailEventType.APPLICATION_RECEIVED, 86, received)
 
-    update = _matching_terms(
-        content,
-        (
-            "update on your application",
-            "rückmeldung zu ihrer bewerbung",
-            "we will get back to you",
-            "bewerbung wird geprüft",
-        ),
-    )
+    update = _matching_terms(content, phrases["general_update"])
     if context and update:
         return _result(GmailEventType.GENERAL_UPDATE, 75, context + update)
 

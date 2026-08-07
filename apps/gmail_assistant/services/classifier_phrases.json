@@ -1,0 +1,16 @@
+{
+  "job_context": ["bewerbung", "application", "position", "stelle", "vacancy", "job opportunity", "kandidatur"],
+  "noise": ["newsletter", "job alert", "unsubscribe", "marketing", "rabatt"],
+  "withdrawal": ["withdrawal confirmed", "application withdrawal confirmed", "application withdrawn", "bewerbung zurückgezogen"],
+  "rejection": ["absage", "nicht berücksichtigen", "haben uns für andere kandidaten entschieden", "unfortunately", "we regret", "other candidates", "cannot offer you"],
+  "offer": ["job offer", "offer for the position", "angebot für die position"],
+  "interview_cancelled": ["interview cancelled", "interview canceled", "gespräch wurde abgesagt", "gespräch abgesagt", "termin abgesagt"],
+  "interview_rescheduled": ["interview rescheduled", "reschedule the interview", "termin verschieben", "gespräch verschieben"],
+  "interview_invitation": ["interview invitation", "invite you to an interview", "einladung zum vorstellungsgespräch", "einladung zu einem gespräch", "interview termin"],
+  "screening": ["phone screen", "telefoninterview", "initial screening"],
+  "documents_requested": ["please send your documents", "documents requested", "bitte senden sie ihre unterlagen", "lebenslauf nachreichen"],
+  "application_confirmation_required": ["confirm your application", "confirm your email", "bewerbung bestätigen", "bestätigen sie ihre bewerbung", "e-mail adresse bestätigen"],
+  "application_sent": ["application submitted", "application has been submitted", "application sent", "bewerbung wurde versendet"],
+  "application_received": ["we received your application", "application has been received", "eingangsbestätigung", "haben ihre bewerbung erhalten"],
+  "general_update": ["update on your application", "rückmeldung zu ihrer bewerbung", "we will get back to you", "bewerbung wird geprüft"]
+}
