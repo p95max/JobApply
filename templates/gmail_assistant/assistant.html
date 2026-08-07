@@ -73,11 +73,22 @@
             · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
           </small>
         </div>
-        <div class="form-check form-switch ms-auto">
-          <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
-          <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
+        <div class="ms-auto">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
+          </div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" name="auto_apply_enabled" value="1" id="autoApplyEnabled" {% if settings.auto_apply_enabled %}checked{% endif %} {% if not settings.ai_enabled %}disabled{% endif %}>
+            <label class="form-check-label" for="autoApplyEnabled">{% trans "Automatically accept trusted updates" %}</label>
+          </div>
         </div>
       </form>
+
+      <div class="alert alert-warning small mt-3 mb-0" role="alert">
+        <strong>{% trans "Auto-apply can make mistakes." %}</strong>
+        {% trans "Only AI suggestions with AI confidence ≥ 95%, an exact verified application match, and a low-risk status update are accepted automatically. Rejections, offers, interviews, actions, new applications, and uncertain matches always stay pending." %}
+      </div>
 
       <div class="small mt-3 d-grid gap-1">
         <div class="{% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
@@ -255,6 +266,7 @@
 <script>
   const settingsForm = document.getElementById("aiAnalysisSettings");
   const toggle = document.getElementById("aiEnabled");
+  const autoApplyToggle = document.getElementById("autoApplyEnabled");
   const progress = document.getElementById("aiAnalysisProgress");
   const progressSpinner = document.getElementById("aiAnalysisSpinner");
   const progressText = document.getElementById("aiAnalysisProgressText");
@@ -313,7 +325,12 @@
     }
   }
 
-  toggle.addEventListener("change", () => settingsForm.requestSubmit());
+  toggle.addEventListener("change", () => {
+    if (!toggle.checked) autoApplyToggle.checked = false;
+    autoApplyToggle.disabled = !toggle.checked;
+    settingsForm.requestSubmit();
+  });
+  autoApplyToggle.addEventListener("change", () => settingsForm.requestSubmit());
   pendingSearch?.addEventListener("input", filterPendingCards);
   pendingTypeFilter?.addEventListener("change", filterPendingCards);
   pendingSort?.addEventListener("change", filterPendingCards);

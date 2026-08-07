@@ -282,10 +282,22 @@ def ignore_gmail_proposal(request, pk: int):
 def gmail_assistant_settings(request):
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
     enabled = "ai_enabled" in request.POST
+    auto_apply_enabled = enabled and "auto_apply_enabled" in request.POST
     assistant_settings.ai_enabled = enabled
+    assistant_settings.auto_apply_enabled = auto_apply_enabled
     if enabled and assistant_settings.ai_consent_at is None:
         assistant_settings.ai_consent_at = timezone.now()
-    assistant_settings.save(update_fields=["ai_enabled", "ai_consent_at", "updated_at"])
+    if auto_apply_enabled and assistant_settings.auto_apply_consent_at is None:
+        assistant_settings.auto_apply_consent_at = timezone.now()
+    assistant_settings.save(
+        update_fields=[
+            "ai_enabled",
+            "ai_consent_at",
+            "auto_apply_enabled",
+            "auto_apply_consent_at",
+            "updated_at",
+        ]
+    )
     messages.success(request, _("AI analysis setting updated."))
     return redirect("gmail_assistant:gmail_assistant")
 

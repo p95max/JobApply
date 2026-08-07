@@ -384,6 +384,24 @@ def test_enabling_ai_analysis_only_saves_the_setting(client, proposal):
 
 
 @pytest.mark.django_db
+def test_auto_apply_setting_requires_enabled_ai_analysis(client, proposal):
+    client.force_login(proposal.user)
+
+    client.post(
+        reverse("gmail_assistant:gmail_assistant_settings"),
+        {"ai_enabled": "1", "auto_apply_enabled": "1"},
+    )
+    settings = GmailAssistantSettings.objects.get(user=proposal.user)
+    assert settings.auto_apply_enabled is True
+    assert settings.auto_apply_consent_at is not None
+
+    client.post(reverse("gmail_assistant:gmail_assistant_settings"), {"auto_apply_enabled": "1"})
+    settings.refresh_from_db()
+    assert settings.ai_enabled is False
+    assert settings.auto_apply_enabled is False
+
+
+@pytest.mark.django_db
 def test_disabling_ai_analysis_uses_absent_checkbox_value(client, proposal):
     GmailAssistantSettings.objects.create(user=proposal.user, ai_enabled=True)
     client.force_login(proposal.user)

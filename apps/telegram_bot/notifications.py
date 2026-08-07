@@ -14,13 +14,24 @@ from .models import TelegramDelivery, TelegramDeliveryStatus
 logger = logging.getLogger(__name__)
 
 
-def _target_chat_id(config: TelegramConfig) -> int | None:
+def _target_chat_id(config: TelegramConfig, *, recipient_email: str | None = None) -> int | None:
+    if recipient_email:
+        linked_chat_id = resolve_linked_chat_id(recipient_email)
+        if linked_chat_id is not None:
+            return linked_chat_id
+        if recipient_email.casefold() != config.owner_email.casefold():
+            return None
     return resolve_linked_chat_id(config.owner_email) or config.default_chat_id
 
 
-def send_notification(text: str, *, config: TelegramConfig | None = None) -> bool:
+def send_notification(
+    text: str,
+    *,
+    recipient_email: str | None = None,
+    config: TelegramConfig | None = None,
+) -> bool:
     config = config or TelegramConfig.from_env()
-    chat_id = _target_chat_id(config)
+    chat_id = _target_chat_id(config, recipient_email=recipient_email)
     if not config.enabled or not config.notifications_enabled or chat_id is None:
         return False
 
@@ -40,10 +51,11 @@ def send_notification_once(
     event_key: str,
     event_type: str,
     text: str,
+    recipient_email: str | None = None,
     config: TelegramConfig | None = None,
 ) -> bool:
     config = config or TelegramConfig.from_env()
-    chat_id = _target_chat_id(config)
+    chat_id = _target_chat_id(config, recipient_email=recipient_email)
     if not config.enabled or not config.notifications_enabled or chat_id is None:
         return False
 

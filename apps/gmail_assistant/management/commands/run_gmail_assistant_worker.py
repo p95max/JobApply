@@ -49,6 +49,25 @@ class Command(BaseCommand):
             ),
         )
 
+    def _notify_summary(self, assistant_settings: GmailAssistantSettings, result: dict[str, int]) -> None:
+        proposals = result.get("proposals_created", 0)
+        auto_applied = result.get("auto_applied", 0)
+        if not proposals and not auto_applied:
+            return
+        manual_review = result.get("manual_review_required", max(0, proposals - auto_applied))
+        event_key = f"gmail_assistant_summary:{assistant_settings.user_id}:{timezone.now().isoformat()}"
+        send_notification_once(
+            event_key=event_key,
+            event_type="gmail_assistant_summary",
+            recipient_email=assistant_settings.user.email,
+            text=(
+                "📨 <b>Gmail Assistant update</b>\n\n"
+                f"🤖 AI analyzed: <b>{result.get('analyzed_by_ai', 0)}</b> emails\n"
+                f"📝 Manual review needed: <b>{manual_review}</b> suggestions\n"
+                f"✅ Automatically accepted: <b>{auto_applied}</b> trusted updates"
+            ),
+        )
+
     def _tick(self, *, force: bool = False):
         if not force and not settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED:
             return
@@ -67,6 +86,7 @@ class Command(BaseCommand):
                     days=180,
                     max_results_each=500,
                 )
+                self._notify_summary(assistant_settings, result)
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"user={assistant_settings.user_id} Gmail Assistant sync complete: {result}"

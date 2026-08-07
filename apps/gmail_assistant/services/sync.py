@@ -19,6 +19,7 @@ from apps.gmail_assistant.services.ai_analyzer import (
     SanitizedEmail,
 )
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_email_text
+from apps.gmail_assistant.services.auto_apply import auto_apply_trusted_proposals
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
 from apps.gmail_assistant.services.proposal_builder import build_proposals
@@ -175,7 +176,7 @@ def _update_message_status(*, message: GmailMessage, status: str, error: str = "
 
 
 def _assistant_settings(user: Any) -> GmailAssistantSettings | None:
-    return GmailAssistantSettings.objects.filter(user=user).only("ai_enabled").first()
+    return GmailAssistantSettings.objects.filter(user=user).only("ai_enabled", "auto_apply_enabled").first()
 
 
 def _record_rule_fallback(
@@ -311,6 +312,8 @@ def sync_gmail_messages_for_user(
         "ai_limit_reached": 0,
         "ai_low_confidence": 0,
         "ai_fallbacks": 0,
+        "auto_applied": 0,
+        "manual_review_required": 0,
         "proposals_created": 0,
         "unmatched": 0,
     }
@@ -500,6 +503,11 @@ def sync_gmail_messages_for_user(
             )
             proposals = build_proposals(message=message, analysis=analysis, match=match)
             counters["proposals_created"] += len(proposals)
+            auto_applied = 0
+            if assistant_settings and assistant_settings.auto_apply_enabled:
+                auto_applied = auto_apply_trusted_proposals(proposals=proposals, user=user)
+                counters["auto_applied"] += auto_applied
+            counters["manual_review_required"] += max(0, len(proposals) - auto_applied)
             counters["unmatched"] += int(match.is_unmatched)
             _update_message_status(
                 message=message,

@@ -55,3 +55,19 @@ def test_send_notification_once_records_safe_error(monkeypatch):
     assert delivery.attempts == 1
     assert delivery.error == "RuntimeError"
     assert "secret" not in delivery.error
+
+
+@pytest.mark.django_db
+def test_notification_for_an_unlinked_user_is_not_sent_to_the_owner(monkeypatch):
+    monkeypatch.setattr("apps.telegram_bot.notifications.resolve_linked_chat_id", lambda email: None)
+
+    delivered = send_notification_once(
+        event_key="gmail:summary:1",
+        event_type="gmail_assistant_summary",
+        text="Summary",
+        recipient_email="user@example.com",
+        config=_config(),
+    )
+
+    assert delivered is False
+    assert TelegramDelivery.objects.count() == 0

@@ -264,6 +264,81 @@ def test_ai_pipeline_uses_fake_analyzer_and_creates_pending_proposals(django_use
 
 
 @pytest.mark.django_db
+def test_auto_apply_accepts_only_high_confidence_safe_application_updates(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    application = JobApplication.objects.create(user=user, company="Example GmbH", title="Python Developer")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True, auto_apply_enabled=True)
+
+    class UpdateAnalyzer(FakeAnalyzer):
+        def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
+            return AIExtraction(
+                is_job_related=True,
+                event_type="general_update",
+                company="Example GmbH",
+                position_title="Python Developer",
+                location=None,
+                external_application_id=None,
+                proposed_status="replied",
+                recruiter_name=None,
+                recruiter_email="recruiter@example.org",
+                summary="The recruiter will get back to the applicant.",
+                action_required=False,
+                action_text=None,
+                deadline_at=None,
+                interview=None,
+                confidence=95,
+                evidence=("Update on the application",),
+            )
+
+    result = sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=FakeGmailClient(
+            {
+                "message-1": message(
+                    sender="recruiter@example.org",
+                    subject="Update on your application",
+                    text="We will get back to you about your application.",
+                )
+            }
+        ),
+        ai_analyzer=UpdateAnalyzer(),
+    )
+
+    application.refresh_from_db()
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert result["auto_applied"] == 1
+    assert result["manual_review_required"] == 0
+    assert proposal.status == ProposalStatus.ACCEPTED
+    assert application.status == "replied"
+    assert proposal.review_note.startswith("Automatically accepted: AI confidence 95%")
+
+
+@pytest.mark.django_db
+def test_auto_apply_keeps_high_confidence_interviews_pending(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    JobApplication.objects.create(user=user, company="Example GmbH", title="Python Developer")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True, auto_apply_enabled=True)
+
+    result = sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=FakeGmailClient(
+            {
+                "message-1": message(
+                    sender="recruiter@example.org",
+                    subject="Interview invitation",
+                    text="We would like to invite you to an interview for your application.",
+                )
+            }
+        ),
+        ai_analyzer=FakeAnalyzer(),
+    )
+
+    assert result["auto_applied"] == 0
+    assert result["manual_review_required"] == 3
+    assert ApplicationUpdateProposal.objects.filter(user=user, status=ProposalStatus.PENDING).count() == 3
+
+
+@pytest.mark.django_db
 def test_first_ai_opt_in_reanalyzes_previously_synced_messages(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     client = FakeGmailClient(
