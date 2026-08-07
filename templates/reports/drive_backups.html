@@ -2,8 +2,10 @@
 {% load static i18n systemd_timers %}
 
 {% block content %}
-{% systemd_timer "jobapply-backup.timer" as backup_timer %}
-{% systemd_timer "jobapply-neon-sync.timer" as neon_timer %}
+{% if show_server_operations %}
+  {% systemd_timer "jobapply-backup.timer" as backup_timer %}
+  {% systemd_timer "jobapply-neon-sync.timer" as neon_timer %}
+{% endif %}
 <div class="container py-4">
   <div class="mb-4">
     <h1 class="h3 mb-1">{% trans "Settings" %}</h1>
@@ -153,9 +155,10 @@
             {% endif %}
           {% endif %}
 
-          <hr class="my-3">
+          {% if show_server_operations %}
+            <hr class="my-3">
 
-          <div class="d-flex align-items-start gap-3">
+            <div class="d-flex align-items-start gap-3">
             <div class="fs-4" aria-hidden="true">🛡️</div>
             <div class="flex-grow-1">
               <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -211,7 +214,8 @@
                 {% trans "This server recovery copy is separate from the personal Google Drive backups above. The schedule runs on the VPS even when this page is closed." %}
               </div>
             </div>
-          </div>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>

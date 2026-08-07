@@ -4,6 +4,7 @@ import csv
 import io
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from openpyxl import load_workbook
@@ -145,6 +146,17 @@ def test_user_can_enable_personal_automatic_drive_backups(client, user, monkeypa
 
     assert response.status_code == 302
     assert CloudBackupSettings.objects.get(user=user).enabled is True
+
+
+@pytest.mark.django_db
+@override_settings(TELEGRAM_OWNER_EMAIL="owner@example.com")
+def test_server_backup_schedule_is_hidden_from_regular_users(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("reports:drive_backups"))
+
+    assert response.status_code == 200
+    assert b"Server backup schedule" not in response.content
 
 
 def test_drive_restore_metadata_must_describe_a_small_csv_in_the_backup_folder():

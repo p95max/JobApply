@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
@@ -38,6 +39,12 @@ from .services import (
 
 logger = logging.getLogger(__name__)
 GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
+
+
+def _is_server_operations_owner(user) -> bool:
+    owner_email = settings.TELEGRAM_OWNER_EMAIL.strip().casefold()
+    user_email = str(getattr(user, "email", "") or "").strip().casefold()
+    return bool(owner_email and user_email == owner_email)
 
 
 def _google_app() -> SocialApp:
@@ -191,6 +198,7 @@ def drive_backups(request):
             "error": error,
             "auto_backup_enabled": bool(getattr(settings_obj, "enabled", False)),
             "auto_backup_last_run_at": getattr(settings_obj, "last_run_at", None),
+            "show_server_operations": _is_server_operations_owner(request.user),
         },
     )
 
