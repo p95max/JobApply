@@ -75,7 +75,12 @@ if (( status == 0 )); then
   fi
   send_telegram "$(printf '%s <b>JobApply deploy finished</b>\n\n📦 Result: <b>%s</b>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>' "$icon" "$result" "$end_commit" "$duration")"
 else
-  send_telegram "$(printf '❌ <b>JobApply deploy failed</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>journalctl -u jobapply-deploy.service -n 100 --no-pager</code></pre>' "$status" "$end_commit" "$duration")"
+  failed_tests="$(sed -nE 's/^FAILED ([^ ]+).*/• \1/p' "$LOG_FILE" | head -n 5 || true)"
+  if [[ -n "$failed_tests" ]]; then
+    send_telegram "$(printf '❌ <b>JobApply deploy failed: TESTS FAILED</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n<b>Failed tests:</b>\n%s\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$duration" "$failed_tests")"
+  else
+    send_telegram "$(printf '❌ <b>JobApply deploy failed</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$duration")"
+  fi
 fi
 
 exit "$status"
