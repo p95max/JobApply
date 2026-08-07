@@ -48,8 +48,8 @@
             <span class="dashboard-section-icon">🤖</span>
             <h2>{% trans "Gmail Assistant" %}</h2>
           </div>
-          <span class="dashboard-status {% if gmail_assistant_active %}is-active{% endif %}">
-            {% if gmail_assistant_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+          <span class="dashboard-status {% if gmail_assistant_active %}is-active{% endif %}" aria-label="{% if gmail_assistant_active %}{% trans 'Gmail Assistant active' %}{% else %}{% trans 'Gmail Assistant inactive' %}{% endif %}">
+            {% if gmail_assistant_active %}&#128994;{% else %}&#9898;{% endif %}
           </span>
         </div>
 

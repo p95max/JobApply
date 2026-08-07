@@ -65,6 +65,7 @@ def test_dashboard_shows_user_metrics_only(client):
     assert "Telegram bot" in content
     assert "Gmail" in content
     assert "Drive backups" in content
+    assert "Gmail Assistant inactive" in content
     assert response.context["telegram_connected"] is False
     assert response.context["gmail_connected"] is False
     assert response.context["drive_connected"] is False
