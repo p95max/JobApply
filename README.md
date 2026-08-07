@@ -269,10 +269,11 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://your-domain.example
 DJANGO_SITE_DOMAIN=your-domain.example
 DJANGO_USE_X_FORWARDED_HOST=1
 DJANGO_SECURE_PROXY_SSL_HEADER=1
-ALLOWED_ACCOUNT_EMAILS=allowed-user@example.com
+# Leave empty to allow any Google account. To restrict access, provide a comma-separated list.
+ALLOWED_ACCOUNT_EMAILS=
 ```
 
-`ALLOWED_ACCOUNT_EMAILS` is fail-closed when set: only listed Google accounts may sign in.
+`ALLOWED_ACCOUNT_EMAILS` is optional. When empty, any Google account may sign in. When set, only the comma-separated listed accounts may sign in.
 
 ### Safe deploys
 

@@ -34,11 +34,11 @@ class NoSignupAccountAdapter(DefaultAccountAdapter):
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
-    """Allow Google authentication only for explicitly allow-listed emails."""
+    """Allow public Google sign-in unless an email allow-list is configured."""
 
     def _is_allowed(self, sociallogin) -> bool:
         allowed_emails = _allowed_account_emails()
-        return bool(allowed_emails and _social_email(sociallogin) in allowed_emails)
+        return not allowed_emails or _social_email(sociallogin) in allowed_emails
 
     def is_open_for_signup(self, request, sociallogin):
         return self._is_allowed(sociallogin)
