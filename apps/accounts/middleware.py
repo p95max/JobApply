@@ -3,7 +3,7 @@ from __future__ import annotations
 from allauth.socialaccount.models import SocialAccount
 from django.contrib import messages
 from django.db.utils import ProgrammingError
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 
@@ -61,11 +61,13 @@ class ConsentRequiredMiddleware:
 
 
 class DemoUserRestrictionsMiddleware:
-    """Keep Google-connected features unavailable in the temporary demo workspace."""
+    """Render safe previews for demo users and block all connected-service actions."""
 
-    RESTRICTED_PATH_PREFIXES = (
+    OAUTH_PATH_PREFIXES = (
         "/accounts/google/",
         "/accounts/social/",
+    )
+    PREVIEW_PATH_PREFIXES = (
         "/gmail_stats/",
         "/reports/",
         "/app/settings/",
@@ -78,7 +80,9 @@ class DemoUserRestrictionsMiddleware:
         if not request.user.is_authenticated:
             return self.get_response(request)
 
-        if not any(request.path.startswith(prefix) for prefix in self.RESTRICTED_PATH_PREFIXES):
+        is_oauth_path = any(request.path.startswith(prefix) for prefix in self.OAUTH_PATH_PREFIXES)
+        is_preview_path = any(request.path.startswith(prefix) for prefix in self.PREVIEW_PATH_PREFIXES)
+        if not is_oauth_path and not is_preview_path:
             return self.get_response(request)
 
         try:
@@ -94,8 +98,22 @@ class DemoUserRestrictionsMiddleware:
         if not is_demo_user:
             return self.get_response(request)
 
-        messages.info(
-            request,
-            "Sign in with Google to use Gmail, reports, backups and other connected services.",
-        )
+        if is_preview_path and request.method == "GET":
+            return render(
+                request,
+                "guest/service_preview.html",
+                {"preview_kind": self._preview_kind(request.path)},
+            )
+
+        messages.info(request, "Sign in with Google to use this connected service.")
         return redirect("dashboard")
+
+    @staticmethod
+    def _preview_kind(path: str) -> str:
+        if "/gmail/assistant/" in path:
+            return "assistant"
+        if path.startswith("/gmail_stats/"):
+            return "gmail"
+        if path.startswith("/reports/"):
+            return "reports"
+        return "connections"

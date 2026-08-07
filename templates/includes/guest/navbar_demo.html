@@ -4,7 +4,8 @@
   <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span></a>
   <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="{% url 'applications:list' %}"><span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span></a>
   <a class="app-nav-link {% if request.path|slice:':12' == '/interviews/' %}is-active{% endif %}" href="{% url 'interviews:list' %}"><span aria-hidden="true">🗓️</span><span>{% trans "Interviews" %}</span></a>
-  <span class="app-nav-link app-nav-link--disabled" title="{% trans 'Sign in with Google to unlock Gmail Assistant, reports and backups' %}" aria-disabled="true"><span aria-hidden="true">🔒</span><span>{% trans "Google tools" %}</span></span>
+  <a class="app-nav-link app-nav-link--preview {% if '/gmail_stats/' in request.path %}is-active{% endif %}" href="{% url 'gmail_assistant:gmail_assistant' %}" title="{% trans 'Demo preview — sign in with Google to connect Gmail' %}"><span aria-hidden="true">✨</span><span>{% trans "Gmail Assistant" %}</span></a>
+  <a class="app-nav-link app-nav-link--preview {% if '/reports/' in request.path %}is-active{% endif %}" href="{% url 'reports:statistics' %}" title="{% trans 'Demo preview — sign in with Google to unlock reports and backups' %}"><span aria-hidden="true">📊</span><span>{% trans "Reports" %}</span></a>
 </div>
 
 <div class="app-navigation__actions">

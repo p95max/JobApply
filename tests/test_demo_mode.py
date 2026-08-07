@@ -25,20 +25,37 @@ def test_guest_can_start_temporary_demo_and_use_manual_workspace(client):
     dashboard = client.get(reverse("dashboard"))
     application_form = client.get(reverse("applications:create"))
 
-    assert b"Demo mode" in dashboard.content
+    assert b"Sign in with Google" in dashboard.content
     assert b"Gmail Assistant" in dashboard.content
     assert application_form.status_code == 200
 
 
 @pytest.mark.django_db
 @override_settings(TURNSTILE_ENABLED=False)
-def test_guest_cannot_open_google_connected_features(client):
+def test_guest_can_open_safe_connected_service_previews(client):
     client.post(reverse("accounts:start_demo"))
 
-    response = client.get(reverse("gmail_assistant:gmail_assistant"))
+    assistant = client.get(reverse("gmail_assistant:gmail_assistant"))
+    reports = client.get(reverse("reports:statistics"))
 
-    assert response.status_code == 302
-    assert response.url == reverse("dashboard")
+    assert assistant.status_code == 200
+    assert b"Gmail Assistant preview" in assistant.content
+    assert reports.status_code == 200
+    assert b"Reports preview" in reports.content
+
+
+@pytest.mark.django_db
+@override_settings(TURNSTILE_ENABLED=False)
+def test_guest_cannot_start_google_oauth_or_post_to_connected_services(client):
+    client.post(reverse("accounts:start_demo"))
+
+    oauth = client.get("/accounts/google/login/")
+    connected_action = client.post(reverse("gmail_assistant:gmail_assistant_settings"))
+
+    assert oauth.status_code == 302
+    assert oauth.url == reverse("dashboard")
+    assert connected_action.status_code == 302
+    assert connected_action.url == reverse("dashboard")
 
 
 @pytest.mark.django_db

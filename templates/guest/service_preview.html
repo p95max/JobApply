@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/guest_service_preview.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<main class="dashboard-page guest-preview-page">
+  <section class="dashboard-shell">
+    <header class="guest-preview-hero">
+      <span class="dashboard-eyebrow">{% trans "Demo preview" %}</span>
+      {% if preview_kind == "assistant" %}
+        <h1>{% trans "Gmail Assistant preview" %}</h1>
+        <p>{% trans "See how email suggestions are reviewed before an application is changed." %}</p>
+      {% elif preview_kind == "gmail" %}
+        <h1>{% trans "Gmail statistics preview" %}</h1>
+        <p>{% trans "See response, interview and rejection trends from a connected mailbox." %}</p>
+      {% elif preview_kind == "reports" %}
+        <h1>{% trans "Reports preview" %}</h1>
+        <p>{% trans "See application analytics, exports and AI usage summaries." %}</p>
+      {% else %}
+        <h1>{% trans "Connections preview" %}</h1>
+        <p>{% trans "See the services that can be connected to a full JobApply account." %}</p>
+      {% endif %}
+      <form method="post" action="{% url 'accounts:start_full_login' %}">
+        {% csrf_token %}
+        <button class="app-signin-action" type="submit">{% trans "Sign in with Google for full access" %}</button>
+      </form>
+    </header>
+
+    {% if preview_kind == "assistant" %}
+      <section class="guest-preview-card guest-preview-card--assistant" aria-label="{% trans 'Gmail Assistant demo interface' %}">
+        <div class="guest-preview-card__header">
+          <div><span>✨</span><strong>{% trans "Pending suggestions" %}</strong><small>{% trans "Demo data — no mailbox is connected" %}</small></div>
+          <span class="guest-preview-badge">3 {% trans "examples" %}</span>
+        </div>
+        <div class="guest-preview-suggestion"><span>✉️</span><div><strong>{% trans "Application received" %}</strong><small>{% trans "A new application can be created after review." %}</small></div><button disabled>{% trans "Review" %}</button></div>
+        <div class="guest-preview-suggestion"><span>📅</span><div><strong>{% trans "Interview invitation" %}</strong><small>{% trans "An interview proposal stays pending until you confirm it." %}</small></div><button disabled>{% trans "Review" %}</button></div>
+        <div class="guest-preview-suggestion"><span>⚡</span><div><strong>{% trans "Action required" %}</strong><small>{% trans "Required steps are extracted from the email." %}</small></div><button disabled>{% trans "Review" %}</button></div>
+      </section>
+    {% elif preview_kind == "gmail" %}
+      <section class="guest-preview-stats" aria-label="{% trans 'Gmail statistics demo interface' %}">
+        <article><span>{% trans "Responses" %}</span><strong>12</strong><small>{% trans "All detected replies" %}</small></article>
+        <article class="is-danger"><span>{% trans "Rejections" %}</span><strong>3</strong><small>{% trans "Detected by email analysis" %}</small></article>
+        <article class="is-success"><span>{% trans "Interviews" %}</span><strong>2</strong><small>{% trans "Invitation or reschedule" %}</small></article>
+      </section>
+    {% elif preview_kind == "reports" %}
+      <section class="guest-preview-stats" aria-label="{% trans 'Reports demo interface' %}">
+        <article><span>{% trans "Applications" %}</span><strong>24</strong><small>{% trans "Tracked in your workspace" %}</small></article>
+        <article class="is-success"><span>{% trans "Response rate" %}</span><strong>42%</strong><small>{% trans "Based on current statuses" %}</small></article>
+        <article><span>{% trans "AI usage" %}</span><strong>18</strong><small>{% trans "Emails analyzed this month" %}</small></article>
+      </section>
+    {% else %}
+      <section class="guest-preview-card guest-preview-connections">
+        <div><span>✉️</span><strong>{% trans "Gmail" %}</strong><small>{% trans "Read-only email analysis" %}</small><b>{% trans "Not connected" %}</b></div>
+        <div><span>✈️</span><strong>{% trans "Telegram bot" %}</strong><small>{% trans "Personal notifications" %}</small><b>{% trans "Not connected" %}</b></div>
+        <div><span>◩</span><strong>{% trans "Drive backups" %}</strong><small>{% trans "Manual and automatic backups" %}</small><b>{% trans "Not connected" %}</b></div>
+      </section>
+    {% endif %}
+
+    <p class="guest-preview-note">🔒 {% trans "This is a safe, read-only preview. Google, Gmail, Telegram, Drive, AI and report actions remain inactive until you sign in." %}</p>
+  </section>
+</main>
+{% endblock %}
