@@ -46,7 +46,7 @@
           <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a>
           <form method="post" action="{% url 'accounts:start_demo' %}">
             {% csrf_token %}
-            <a class="btn btn-outline-light btn-lg" type="submit">{% trans "Try demo without Google" %}</a>
+            <button type="submit" class="btn btn-outline-light btn-lg">{% trans "Try demo without Google" %}</button>
           </form>
           <a class="btn btn-outline-light btn-lg" href="#features">{% trans "Explore features" %}</a>
         </div>

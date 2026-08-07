@@ -117,6 +117,10 @@ body:has(.landing-shell) main {
   margin-top: 2rem;
 }
 
+.landing-actions form {
+  display: contents;
+}
+
 .landing-actions .btn,
 .landing-cta .btn {
   border-radius: 0.85rem;
@@ -559,7 +563,6 @@ body:has(.landing-shell) main {
   }
 
   .landing-actions > a,
-  .landing-actions > form,
   .landing-actions .btn {
     width: 100%;
     min-width: 0;
