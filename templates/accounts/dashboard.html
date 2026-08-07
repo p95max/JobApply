@@ -3,6 +3,7 @@
 
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
 {% endblock %}
 
@@ -137,11 +138,12 @@
             <thead><tr><th>{% trans "Company" %}</th><th>{% trans "Position" %}</th><th>{% trans "Status" %}</th><th>{% trans "Updated" %}</th></tr></thead>
             <tbody>
               {% for application in recent_applications %}
-                <tr>
-                  <td><strong>{{ application.company }}</strong></td>
-                  <td>{{ application.title }}</td>
-                  <td><span class="dashboard-pill">{{ application.get_status_display }}</span></td>
-                  <td>{{ application.updated_at|date:"d.m.Y" }}</td>
+                {% url 'applications:detail' application.pk as application_url %}
+                <tr class="dashboard-recent__row js-dashboard-application-row" data-href="{{ application_url }}" tabindex="0">
+                  <td><a class="dashboard-recent__link" href="{{ application_url }}"><strong>{{ application.company }}</strong></a></td>
+                  <td><a class="dashboard-recent__link" href="{{ application_url }}">{{ application.title }}</a></td>
+                  <td><a class="dashboard-recent__link" href="{{ application_url }}"><span class="dashboard-pill">{{ application.get_status_display }}</span></a></td>
+                  <td><a class="dashboard-recent__link" href="{{ application_url }}">{{ application.updated_at|date:"d.m.Y" }}</a></td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -153,4 +155,20 @@
     </section>
   </section>
 </main>
+{% endblock %}
+
+{% block page_scripts %}
+  <script>
+    document.addEventListener("click", (event) => {
+      const row = event.target.closest(".js-dashboard-application-row");
+      if (row && !event.target.closest("a")) window.location.assign(row.dataset.href);
+    });
+    document.addEventListener("keydown", (event) => {
+      const row = event.target.closest(".js-dashboard-application-row");
+      if (row && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        window.location.assign(row.dataset.href);
+      }
+    });
+  </script>
 {% endblock %}

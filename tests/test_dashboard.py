@@ -58,6 +58,8 @@ def test_dashboard_shows_user_metrics_only(client):
     assert "Example GmbH" in content
     assert "Python Developer" in content
     assert "Hidden GmbH" not in content
+    assert f'href="/applications/{application.pk}/"' in content
+    assert "js-dashboard-application-row" in content
     assert response.context["active_application_count"] == 1
     assert response.context["upcoming_interview_count"] == 1
     assert "Telegram bot" in content
