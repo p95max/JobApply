@@ -52,6 +52,28 @@
               <div class="alert alert-success" role="alert">
                 {% trans "Status: Google Drive connected." %}
               </div>
+              <div class="border rounded p-3 mb-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                  <div>
+                    <div class="fw-semibold">{% trans "Automatic personal backups" %}</div>
+                    <div class="small text-body-secondary">
+                      {% if auto_backup_enabled %}
+                        {% trans "Your applications are saved to this Drive folder every 5 minutes." %}
+                        {% if auto_backup_last_run_at %}<br>{% trans "Last automatic backup" %}: {{ auto_backup_last_run_at|date:"d.m.Y H:i" }}{% endif %}
+                      {% else %}
+                        {% trans "Off. Enable it to save your applications to this Drive folder every 5 minutes." %}
+                      {% endif %}
+                    </div>
+                  </div>
+                  <form method="post" action="{% url 'reports:toggle_auto_backup' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="enabled" value="{% if auto_backup_enabled %}0{% else %}1{% endif %}">
+                    <button class="btn btn-sm {% if auto_backup_enabled %}btn-outline-secondary{% else %}btn-success{% endif %}" type="submit">
+                      {% if auto_backup_enabled %}{% trans "Disable automatic backups" %}{% else %}{% trans "Enable automatic backups" %}{% endif %}
+                    </button>
+                  </form>
+                </div>
+              </div>
               <div class="d-grid gap-2">
                 <form method="post" action="{% url 'reports:drive_disconnect' %}" onsubmit="return confirm('{% trans 'Disable Google Drive backups? Your Google sign-in will remain connected.' %}')">
                   {% csrf_token %}
@@ -85,7 +107,7 @@
             {% if drive_status.connected and drive_status.has_refresh_token %}
               <form method="post" action="{% url 'reports:drive_export' 'csv' %}">
                 {% csrf_token %}
-                <button class="btn btn-primary btn-sm" type="submit"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Upload CSV" %}</button>
+                <button class="btn btn-primary btn-sm" type="submit" title="{% trans 'Save a snapshot of your applications to Google Drive now. It does not enable automatic backups.' %}" aria-label="{% trans 'Save a backup manually to Google Drive' %}"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Save backup manually" %}</button>
               </form>
             {% endif %}
           </div>
@@ -144,7 +166,7 @@
               </div>
 
               <div class="border rounded p-3 mb-2 small">
-                <div class="fw-semibold mb-2">{% trans "PostgreSQL backup and Google Drive upload" %}</div>
+                <div class="fw-semibold mb-2">{% trans "VPS recovery database backup" %}</div>
                 <div class="d-grid gap-1 text-muted">
                   <div>
                     {% if backup_timer.last_successful %}✅{% else %}⚠️{% endif %}
@@ -186,7 +208,7 @@
               </div>
 
               <div class="small text-muted">
-                {% trans "The schedule runs on the VPS even when this page is closed. It is configured by the jobapply-backup.timer and jobapply-neon-sync.timer systemd units." %}
+                {% trans "This server recovery copy is separate from the personal Google Drive backups above. The schedule runs on the VPS even when this page is closed." %}
               </div>
             </div>
           </div>

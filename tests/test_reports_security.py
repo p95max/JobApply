@@ -10,6 +10,7 @@ from openpyxl import load_workbook
 
 from apps.applications.models import JobApplication
 from apps.reports.drive import DriveError, _validate_backup_metadata
+from apps.reports.models import CloudBackupSettings
 from apps.reports.services import (
     EXPECTED_IMPORT_HEADERS,
     ImportValidationError,
@@ -124,8 +125,26 @@ def test_drive_mutations_reject_get_requests(client, user):
         reverse("reports:drive_export", args=["csv"]),
         reverse("reports:drive_restore", args=["file-id"]),
         reverse("reports:drive_disconnect"),
+        reverse("reports:toggle_auto_backup"),
     ):
         assert client.get(url).status_code == 405
+
+
+@pytest.mark.django_db
+def test_user_can_enable_personal_automatic_drive_backups(client, user, monkeypatch):
+    import apps.reports.views as reports_views
+
+    monkeypatch.setattr(
+        reports_views,
+        "get_drive_status",
+        lambda _user: {"connected": True, "has_refresh_token": True},
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("reports:toggle_auto_backup"), {"enabled": "1"})
+
+    assert response.status_code == 302
+    assert CloudBackupSettings.objects.get(user=user).enabled is True
 
 
 def test_drive_restore_metadata_must_describe_a_small_csv_in_the_backup_folder():

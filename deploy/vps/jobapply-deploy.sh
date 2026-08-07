@@ -143,6 +143,7 @@ services=(
   jobapply-web.service
   jobapply-gmail-assistant.service
   jobapply-gmail-worker.service
+  jobapply-drive-backup-worker.service
   jobapply-telegram-bot.service
 )
 installed_services=()

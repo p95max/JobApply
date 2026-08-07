@@ -190,6 +190,7 @@ def drive_backups(request):
             "backups": backups,
             "error": error,
             "auto_backup_enabled": bool(getattr(settings_obj, "enabled", False)),
+            "auto_backup_last_run_at": getattr(settings_obj, "last_run_at", None),
         },
     )
 

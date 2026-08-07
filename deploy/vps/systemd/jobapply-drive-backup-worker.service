@@ -1,0 +1,19 @@
+[Unit]
+Description=JobApply personal Google Drive backup worker
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+Environment="PATH=/opt/jobapply/.venv/bin"
+EnvironmentFile=/opt/jobapply/.env
+ExecStart=/opt/jobapply/.venv/bin/python manage.py run_backup_worker
+Restart=always
+RestartSec=15
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
