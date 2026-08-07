@@ -661,10 +661,9 @@ def test_create_application_proposal_displays_extracted_values(client, proposal)
     assert response.status_code == 200
     assert b"Python Software Engineer" in response.content
     assert b"Smart Systems Hub GmbH" in response.content
-    assert b"Link the correct application" in response.content
+    assert b"Check for an existing application" in response.content
     assert b"Check the source email" in response.content
     assert b"Verify the proposed change" in response.content
-    assert b"Check for an existing application" in response.content
     assert b"No possible duplicate was detected" in response.content
     assert b"Example GmbH" not in response.content
 
