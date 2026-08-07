@@ -49,6 +49,10 @@
           {% csrf_token %}
           <button class="btn btn-outline-danger btn-sm">{% trans "Reset all data" %}</button>
         </form>
+        <form method="post" action="{% url 'gmail_assistant:reset_ai_daily_limit' %}" onsubmit="return confirm('{% trans "Reset today's AI limit for this account?" %}');">
+          {% csrf_token %}
+          <button class="btn btn-outline-warning btn-sm">{% trans "Reset today's AI limit" %}</button>
+        </form>
       </div>
     </div>
   {% endif %}

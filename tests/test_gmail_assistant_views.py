@@ -249,6 +249,7 @@ def test_write_endpoints_reject_get_requests(client, proposal):
         reverse("gmail_assistant:reject_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_assistant:ignore_gmail_proposal", args=[proposal.pk]),
         reverse("gmail_assistant:gmail_assistant_settings"),
+        reverse("gmail_assistant:reset_ai_daily_limit"),
         reverse("gmail_assistant:reset_gmail_assistant"),
     ]
 
@@ -278,6 +279,20 @@ def test_dev_reset_endpoint_is_hidden_without_dev_tools(client, proposal):
     response = client.post(reverse("gmail_assistant:reset_gmail_assistant"))
 
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
+def test_dev_can_reset_only_own_daily_ai_limit(client, proposal):
+    GmailAssistantSettings.objects.create(user=proposal.user)
+    client.force_login(proposal.user)
+
+    response = client.post(reverse("gmail_assistant:reset_ai_daily_limit"), follow=True)
+
+    assistant_settings = GmailAssistantSettings.objects.get(user=proposal.user)
+    assert response.status_code == 200
+    assert assistant_settings.ai_daily_usage_reset_at is not None
+    assert b"Today's AI limit was reset" in response.content
 
 
 @pytest.mark.django_db

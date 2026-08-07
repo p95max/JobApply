@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-import pytest
+from datetime import timedelta
 
+import pytest
+from django.utils import timezone
+
+from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis, GmailAssistantSettings
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_email_text
+from apps.gmail_stats.models import GmailMessage
 
 
 @pytest.mark.parametrize(
@@ -45,3 +50,23 @@ def test_policy_uses_safe_defaults_for_invalid_values(monkeypatch):
     assert policy.daily_limit == 50
     assert policy.confidence_threshold == 100
     assert policy.rules_fallback_enabled is False
+
+
+@pytest.mark.django_db
+def test_daily_usage_excludes_ai_analyses_before_a_user_reset(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    message = GmailMessage.objects.create(
+        user=user,
+        message_id="message-1",
+        thread_id="thread-1",
+        received_at=timezone.now(),
+    )
+    GmailAnalysis.objects.create(
+        user=user,
+        message=message,
+        classifier=AnalysisClassifier.AI,
+        analyzed_at=timezone.now() - timedelta(minutes=1),
+    )
+    GmailAssistantSettings.objects.create(user=user, ai_daily_usage_reset_at=timezone.now())
+
+    assert AIUsagePolicy.from_environment().daily_usage(user=user) == 0

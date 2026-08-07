@@ -313,3 +313,15 @@ def reset_gmail_assistant(request):
         _("Dev reset completed: %(messages)d Gmail messages and %(applications)d applications removed.") % result,
     )
     return redirect("gmail_assistant:gmail_assistant")
+
+
+@login_required
+@require_POST
+def reset_ai_daily_limit(request):
+    if not has_dev_tools_access(user=request.user):
+        raise Http404
+    assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
+    assistant_settings.ai_daily_usage_reset_at = timezone.now()
+    assistant_settings.save(update_fields=["ai_daily_usage_reset_at", "updated_at"])
+    messages.success(request, _("Today's AI limit was reset for this user."))
+    return redirect("gmail_assistant:gmail_assistant")

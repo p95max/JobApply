@@ -50,13 +50,21 @@ class AIUsagePolicy:
         # require Django initialization or pytest-django.
         from django.utils import timezone
 
-        from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis
+        from apps.gmail_assistant.models import AnalysisClassifier, GmailAnalysis, GmailAssistantSettings
 
-        return GmailAnalysis.objects.filter(
+        queryset = GmailAnalysis.objects.filter(
             user=user,
             classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
             analyzed_at__date=timezone.localdate(),
-        ).count()
+        )
+        reset_at = (
+            GmailAssistantSettings.objects.filter(user=user)
+            .values_list("ai_daily_usage_reset_at", flat=True)
+            .first()
+        )
+        if reset_at is not None:
+            queryset = queryset.filter(analyzed_at__gte=reset_at)
+        return queryset.count()
 
     def has_capacity(self, *, user: Any, reserved: int = 0) -> bool:
         return self.daily_limit > 0 and self.daily_usage(user=user) + reserved < self.daily_limit

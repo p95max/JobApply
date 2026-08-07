@@ -20,5 +20,6 @@ urlpatterns = [
     path("gmail/assistant/proposals/<int:pk>/reject/", views.reject_gmail_proposal, name="reject_gmail_proposal"),
     path("gmail/assistant/proposals/<int:pk>/ignore/", views.ignore_gmail_proposal, name="ignore_gmail_proposal"),
     path("gmail/assistant/settings/", views.gmail_assistant_settings, name="gmail_assistant_settings"),
+    path("gmail/assistant/reset-ai-limit/", views.reset_ai_daily_limit, name="reset_ai_daily_limit"),
     path("gmail/assistant/reset/", views.reset_gmail_assistant, name="reset_gmail_assistant"),
 ]

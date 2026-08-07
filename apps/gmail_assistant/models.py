@@ -148,6 +148,7 @@ class GmailAssistantSettings(models.Model):
     ai_consent_at = models.DateTimeField(null=True, blank=True)
     auto_apply_enabled = models.BooleanField(default=False)
     auto_apply_consent_at = models.DateTimeField(null=True, blank=True)
+    ai_daily_usage_reset_at = models.DateTimeField(null=True, blank=True)
     last_successful_run_at = models.DateTimeField(null=True, blank=True)
     last_error_at = models.DateTimeField(null=True, blank=True)
     last_error_message = models.TextField(blank=True)
