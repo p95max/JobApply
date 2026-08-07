@@ -224,7 +224,7 @@ def _company_from_recipient_domain(recipients: list[str]) -> tuple[str, str] | N
         if len(parts) < 2 or not parts[0]:
             continue
         label = " ".join(
-            part.upper() if len(part) <= 4 else part.capitalize()
+            part.upper() if len(part) <= 3 else part.capitalize()
             for part in re.split(r"[-_]", parts[0])
             if part
         )
