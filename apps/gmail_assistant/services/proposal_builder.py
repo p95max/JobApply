@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from apps.gmail_assistant.services.application_matcher import normalize_company, normalize_position
@@ -26,26 +29,22 @@ _INTERVIEW_EVENTS = {
     GmailEventType.INTERVIEW_CANCELLED,
 }
 _MANUAL_ASSIGNMENT_EVENTS = {GmailEventType.REJECTION}
-_OPTIONAL_NUDGE_SENDERS = {"indeed.com"}
-_OPTIONAL_NUDGE_PHRASES = (
-    "heben sie sich mit einer kurzen nachricht",
-    "mit einer kurzen nachricht ihr interesse bestätigen",
-    "senden sie eine kurze nachricht, um ihr interesse zu bestätigen",
-    "send a short message to confirm your interest",
-    "stand out with a short message",
-)
-_JOB_PLATFORM_COMPANIES = frozenset(
-    {
-        "arbeitsagentur",
-        "indeed",
-        "indeed ireland operations limited",
-        "stepstone",
-        "stepstone deutschland",
-        "xing",
-        "linkedin",
-        "glassdoor",
-    }
-)
+_RULES_PATH = Path(__file__).with_name("proposal_rules.json")
+
+
+@lru_cache(maxsize=1)
+def _rules() -> dict[str, tuple[str, ...]]:
+    """Load editable job-board rules without mixing them into code logic."""
+    with _RULES_PATH.open(encoding="utf-8") as source:
+        value = json.load(source)
+    required_groups = {"optional_nudge_senders", "optional_nudge_phrases", "job_platform_companies"}
+    if (
+        not isinstance(value, dict)
+        or set(value) != required_groups
+        or not all(isinstance(terms, list) and all(isinstance(term, str) for term in terms) for terms in value.values())
+    ):
+        raise ValueError("proposal_rules.json must contain the expected lists of strings")
+    return {group: tuple(term.casefold() for term in terms) for group, terms in value.items()}
 
 
 def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[ApplicationUpdateProposal]:
@@ -206,9 +205,10 @@ def _is_action_required(*, message: Any, event_type: str, extracted: dict[str, A
 
 
 def _is_optional_job_board_nudge(*, message: Any, extracted: dict[str, Any]) -> bool:
+    rules = _rules()
     sender = str(getattr(message, "from_email", "") or "").lower()
     sender_domain = sender.rsplit("@", 1)[-1] if "@" in sender else sender
-    if sender_domain not in _OPTIONAL_NUDGE_SENDERS:
+    if sender_domain not in rules["optional_nudge_senders"]:
         return False
     combined = " ".join(
         str(value or "").lower()
@@ -218,7 +218,7 @@ def _is_optional_job_board_nudge(*, message: Any, extracted: dict[str, Any]) -> 
             extracted.get("action_text"),
         )
     )
-    return any(phrase in combined for phrase in _OPTIONAL_NUDGE_PHRASES)
+    return any(phrase in combined for phrase in rules["optional_nudge_phrases"])
 
 
 def _action_changes(extracted: dict[str, Any]) -> dict[str, Any]:
@@ -303,7 +303,7 @@ def _can_create_application(extracted: dict[str, Any]) -> bool:
 
 
 def _is_job_platform(company: str) -> bool:
-    return normalize_company(company) in {normalize_company(value) for value in _JOB_PLATFORM_COMPANIES}
+    return normalize_company(company) in {normalize_company(value) for value in _rules()["job_platform_companies"]}
 
 
 def _pending_create_duplicate(*, message: Any, changes: dict[str, Any]) -> ApplicationUpdateProposal | None:

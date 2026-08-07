@@ -1,0 +1,20 @@
+{
+  "optional_nudge_senders": ["indeed.com"],
+  "optional_nudge_phrases": [
+    "heben sie sich mit einer kurzen nachricht",
+    "mit einer kurzen nachricht ihr interesse bestätigen",
+    "senden sie eine kurze nachricht, um ihr interesse zu bestätigen",
+    "send a short message to confirm your interest",
+    "stand out with a short message"
+  ],
+  "job_platform_companies": [
+    "arbeitsagentur",
+    "indeed",
+    "indeed ireland operations limited",
+    "stepstone",
+    "stepstone deutschland",
+    "xing",
+    "linkedin",
+    "glassdoor"
+  ]
+}
