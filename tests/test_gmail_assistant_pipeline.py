@@ -156,6 +156,32 @@ def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_us
 
 
 @pytest.mark.django_db
+def test_manual_sent_import_recognizes_compound_initiativbewerbung_subject(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+
+    class SentQueryClient(FakeGmailClient):
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            return list(self.messages)
+
+    client = SentQueryClient(
+        {
+            "initiative": message(
+                sender="user@example.com",
+                recipient="bewerbung@sigma-chemnitz.de",
+                subject="Initiativbewerbung als Junior Python Backend Developer",
+                text="Hiermit bewerbe ich mich als Junior Python Backend Developer.",
+            )
+        }
+    )
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, include_sent=True)
+
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert proposal.changes["application"]["title"] == "Junior Python Backend Developer"
+    assert proposal.changes["application"]["company"] == "Sigma Chemnitz"
+
+
+@pytest.mark.django_db
 def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     client = FakeGmailClient(

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 _REPLY_SUBJECT_RE = re.compile(r"^\s*(?:re|aw|fw|fwd)\s*:", re.IGNORECASE)
 _DIRECT_APPLICATION_SUBJECT_RE = re.compile(
-    r"^\s*(?:(?:initiativ|erneute)\s+)?(?:bewerbung|application)(?:\s+(?:als|for))?\s+(?P<title>.+?)\s*$",
+    r"^\s*(?:(?:(?:initiativ|erneute)\s*)?bewerbung|application)(?:\s+(?:als|for))?\s+(?P<title>.+?)\s*$",
     re.IGNORECASE,
 )
 
