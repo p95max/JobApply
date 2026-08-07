@@ -19,11 +19,6 @@ KNOWN_UNITS = (
     "jobapply-telegram-bot.service",
 )
 
-# These are Type=oneshot jobs started by a systemd timer.  After a successful
-# run systemd correctly reports them as "inactive"; that is not an outage.
-SCHEDULED_ONESHOT_UNITS = frozenset({"jobapply-backup.service"})
-
-
 @dataclass(frozen=True)
 class HealthSnapshot:
     database_ok: bool

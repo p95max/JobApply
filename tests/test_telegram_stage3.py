@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from django.utils import timezone
@@ -222,7 +222,14 @@ def test_doctor_marks_failed_systemd_units_and_reports_overall_state():
 
 
 def test_doctor_treats_inactive_scheduled_backup_as_healthy():
-    health = HealthSnapshot(True, 512, ())
+    successful_backup = HeartbeatStatus(
+        "backup_worker",
+        timezone.now(),
+        False,
+        "",
+        datetime(2026, 8, 7, 8, 48, tzinfo=timezone.utc),
+    )
+    health = HealthSnapshot(True, 512, (successful_backup,))
     doctor = DoctorSnapshot(
         health,
         "master",
@@ -234,6 +241,6 @@ def test_doctor_treats_inactive_scheduled_backup_as_healthy():
 
     text = doctor_text("PRODUCTION", doctor)
 
-    assert "⚪ jobapply-backup.service: <b>inactive (scheduled)</b>" in text
+    assert "✅ jobapply-backup.service: <b>last backup successful · 07.08.2026 10:48</b>" in text
     assert "journalctl -u jobapply-backup.service" not in text
     assert "🟢 <b>Overall: HEALTHY</b>" in text

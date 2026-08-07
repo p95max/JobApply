@@ -18,6 +18,7 @@ class HeartbeatStatus:
     last_seen_at: datetime | None
     is_stale: bool
     last_error_message: str
+    last_success_at: datetime | None = None
 
 
 def record_heartbeat(
@@ -55,4 +56,5 @@ def get_heartbeat_status(worker_name: str, *, grace_multiplier: int = 2) -> Hear
         last_seen_at=heartbeat.last_seen_at,
         is_stale=timezone.now() > stale_after,
         last_error_message=heartbeat.last_error_message,
+        last_success_at=heartbeat.last_success_at,
     )

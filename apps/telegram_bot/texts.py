@@ -4,7 +4,7 @@ from html import escape
 
 from django.utils import timezone
 
-from .diagnostics import DoctorSnapshot, HealthSnapshot, SCHEDULED_ONESHOT_UNITS
+from .diagnostics import DoctorSnapshot, HealthSnapshot
 from .deployments import deploy_callback_data
 from .selectors import ApplicationSummary, StatusSnapshot
 
@@ -146,12 +146,21 @@ def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
     unavailable_units = tuple(
         unit
         for unit, state in snapshot.unit_states
-        if state != "active" and not (unit in SCHEDULED_ONESHOT_UNITS and state == "inactive")
+        if state != "active" and not (unit == "jobapply-backup.service" and state == "inactive")
+    )
+    backup_heartbeat = next(
+        (item for item in snapshot.health.worker_heartbeats if item.worker_name == "backup_worker"),
+        None,
     )
     has_failed_unit = bool(unavailable_units)
+    has_failed_backup = bool(backup_heartbeat and backup_heartbeat.last_error_message)
     has_stale_worker = any(worker.is_stale for worker in snapshot.health.worker_heartbeats)
-    has_critical_issue = not snapshot.health.database_ok or snapshot.pending_migrations > 0 or has_failed_unit
-    has_warning = snapshot.is_dirty or snapshot.pending_migrations < 0 or has_stale_worker or bool(snapshot.worker_errors)
+    has_critical_issue = (
+        not snapshot.health.database_ok or snapshot.pending_migrations > 0 or has_failed_unit or has_failed_backup
+    )
+    has_warning = (
+        snapshot.is_dirty or snapshot.pending_migrations < 0 or has_stale_worker or bool(snapshot.worker_errors)
+    )
     if has_critical_issue:
         overall_icon, overall_label = "🔴", "ACTION REQUIRED"
     elif has_warning:
@@ -168,9 +177,17 @@ def doctor_text(environment: str, snapshot: DoctorSnapshot) -> str:
         "⚙️ <b>Systemd units</b>",
     ]
     for unit, state in snapshot.unit_states:
+        if unit == "jobapply-backup.service":
+            if state == "failed" or (backup_heartbeat and backup_heartbeat.last_error_message):
+                icon, label = "🔴", "last backup failed"
+            elif backup_heartbeat and backup_heartbeat.last_success_at:
+                icon = "⚠️" if backup_heartbeat.is_stale else "✅"
+                label = f"last backup successful · {_format_dt(backup_heartbeat.last_success_at)}"
+            else:
+                icon, label = "⚪", "last backup not recorded"
+            lines.append(f"{icon} {escape(unit)}: <b>{escape(label)}</b>")
+            continue
         label = state
-        if unit in SCHEDULED_ONESHOT_UNITS and state == "inactive":
-            label = "inactive (scheduled)"
         lines.append(f"{unit_icons.get(state, '⚠️')} {escape(unit)}: <b>{escape(label)}</b>")
     if snapshot.worker_errors:
         lines.extend(["", "⚠️ <b>Recent worker errors</b>"])
