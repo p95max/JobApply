@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import UserProfile
-from apps.applications.models import JobApplication
+from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import (
     AnalysisClassifier,
     ApplicationUpdateProposal,
@@ -684,3 +684,52 @@ def test_review_page_shows_sender_excerpt_and_requires_link_for_action(client, p
     assert b"Complete the requested confirmation." in response.content
     assert b"https://example.org/confirm" in response.content
     assert b"Complete step 4 before accepting this proposal." in response.content
+
+
+@pytest.mark.django_db
+def test_unmatched_rejection_can_create_a_rejected_application(client, proposal):
+    proposal.application = None
+    proposal.analysis.event_type = GmailEventType.REJECTION
+    proposal.analysis.extracted_data = {
+        "company": "CHECK24",
+        "position_title": "Junior Software Developer",
+        "location": "Dresden",
+    }
+    proposal.analysis.save(update_fields=["event_type", "extracted_data"])
+    proposal.save(update_fields=["application"])
+    client.force_login(proposal.user)
+
+    detail = client.get(reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk]))
+    response = client.post(
+        reverse("gmail_assistant:create_rejected_application_for_proposal", args=[proposal.pk]),
+        {"title": "Junior Software Developer", "company": "CHECK24", "location": "Dresden"},
+    )
+
+    proposal.refresh_from_db()
+    application = proposal.application
+    assert detail.status_code == 200
+    assert b"Create rejected application" in detail.content
+    assert response.status_code == 302
+    assert proposal.status == ProposalStatus.ACCEPTED
+    assert proposal.match_method == "manual_created_immediate_rejection"
+    assert proposal.match_score == 100
+    assert application.status == ApplicationStatus.REJECTED
+    assert application.recruiter_reply_at == proposal.message.received_at
+    assert "original application date is unknown" in application.notes
+    proposal.message.refresh_from_db()
+    assert proposal.message.application_id == application.pk
+
+
+@pytest.mark.django_db
+def test_documents_request_explains_that_action_stays_pending_after_linking(client, proposal):
+    proposal.application = None
+    proposal.proposal_type = ProposalType.ACTION_REQUIRED
+    proposal.analysis.event_type = GmailEventType.DOCUMENTS_REQUESTED
+    proposal.analysis.save(update_fields=["event_type"])
+    proposal.save(update_fields=["application", "proposal_type"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk]))
+
+    assert response.status_code == 200
+    assert b"required action remains pending" in response.content

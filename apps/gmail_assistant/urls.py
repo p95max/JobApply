@@ -22,6 +22,11 @@ urlpatterns = [
         create_application_view.create_application_for_proposal,
         name="create_application_for_proposal",
     ),
+    path(
+        "gmail/assistant/proposals/<int:pk>/create-rejected-application/",
+        create_application_view.create_rejected_application_for_proposal,
+        name="create_rejected_application_for_proposal",
+    ),
     path("gmail/assistant/proposals/<int:pk>/reject/", views.reject_gmail_proposal, name="reject_gmail_proposal"),
     path("gmail/assistant/proposals/<int:pk>/ignore/", views.ignore_gmail_proposal, name="ignore_gmail_proposal"),
     path("gmail/assistant/settings/", views.gmail_assistant_settings, name="gmail_assistant_settings"),
