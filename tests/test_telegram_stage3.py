@@ -219,3 +219,21 @@ def test_doctor_marks_failed_systemd_units_and_reports_overall_state():
     assert "🔴 jobapply-backup.service: <b>failed</b>" in text
     assert "<code>journalctl -u jobapply-backup.service -n 100 --no-pager</code>" in text
     assert "🔴 <b>Overall: ACTION REQUIRED</b>" in text
+
+
+def test_doctor_treats_inactive_scheduled_backup_as_healthy():
+    health = HealthSnapshot(True, 512, ())
+    doctor = DoctorSnapshot(
+        health,
+        "master",
+        False,
+        0,
+        (),
+        (("jobapply-web.service", "active"), ("jobapply-backup.service", "inactive")),
+    )
+
+    text = doctor_text("PRODUCTION", doctor)
+
+    assert "⚪ jobapply-backup.service: <b>inactive (scheduled)</b>" in text
+    assert "journalctl -u jobapply-backup.service" not in text
+    assert "🟢 <b>Overall: HEALTHY</b>" in text
