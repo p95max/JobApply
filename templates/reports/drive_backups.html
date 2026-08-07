@@ -54,18 +54,43 @@
               <div class="alert alert-success" role="alert">
                 {% trans "Status: Google Drive connected." %}
               </div>
-              <div class="border rounded p-3 mb-3">
+              <div class="border border-success-subtle bg-success-subtle rounded-3 p-3 mb-3">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                   <div>
-                    <div class="fw-semibold">{% trans "Automatic personal backups" %}</div>
-                    <div class="small text-body-secondary">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <span class="rounded-circle bg-success d-inline-block" style="width: .65rem; height: .65rem;" aria-hidden="true"></span>
+                      <span class="fw-semibold">{% trans "Automatic personal backups" %}</span>
+                      {% if auto_backup_enabled %}
+                        <span class="badge rounded-pill text-bg-success">{% trans "Active" %}</span>
+                      {% endif %}
+                    </div>
+                    <div class="small text-body-secondary mb-3">
                       {% if auto_backup_enabled %}
                         {% blocktrans with interval=auto_backup_interval_display %}Your applications are saved to this Drive folder every {{ interval }}.{% endblocktrans %}
-                        {% if auto_backup_last_run_at %}<br>{% trans "Last automatic backup" %}: {{ auto_backup_last_run_at|date:"d.m.Y H:i" }}{% endif %}
                       {% else %}
                         {% blocktrans with interval=auto_backup_interval_display %}Off. Enable it to save your applications to this Drive folder every {{ interval }}.{% endblocktrans %}
                       {% endif %}
                     </div>
+                    {% if auto_backup_enabled %}
+                      <div class="row g-2 small">
+                        <div class="col-sm-6">
+                          <div class="bg-body bg-opacity-50 border rounded-2 px-2 py-2 h-100">
+                            <div class="text-body-secondary text-uppercase fw-semibold" style="font-size: .7rem; letter-spacing: .04em;">{% trans "Last saved" %}</div>
+                            <div class="fw-semibold mt-1">
+                              {% if auto_backup_last_run_at %}{{ auto_backup_last_run_at|date:"d.m.Y H:i" }}{% else %}{% trans "Not yet" %}{% endif %}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-sm-6">
+                          <div class="bg-body bg-opacity-50 border rounded-2 px-2 py-2 h-100">
+                            <div class="text-body-secondary text-uppercase fw-semibold" style="font-size: .7rem; letter-spacing: .04em;">{% trans "Next backup" %}</div>
+                            <div class="fw-semibold mt-1">
+                              {% if auto_backup_next_run_at %}{{ auto_backup_next_run_at|date:"d.m.Y H:i" }}{% else %}{% trans "Within the next 5 minutes" %}{% endif %}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
                   </div>
                   <form method="post" action="{% url 'reports:toggle_auto_backup' %}">
                     {% csrf_token %}

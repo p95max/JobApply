@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -52,6 +53,12 @@ def _personal_backup_interval_display() -> str:
     if seconds % 3600 == 0:
         return f"{seconds // 3600} hours"
     return f"{seconds // 60} minutes"
+
+
+def _next_personal_backup_at(last_run_at):
+    if not last_run_at:
+        return None
+    return last_run_at + timedelta(seconds=settings.PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS)
 
 
 def _google_app() -> SocialApp:
@@ -205,6 +212,7 @@ def drive_backups(request):
             "error": error,
             "auto_backup_enabled": bool(getattr(settings_obj, "enabled", False)),
             "auto_backup_last_run_at": getattr(settings_obj, "last_run_at", None),
+            "auto_backup_next_run_at": _next_personal_backup_at(getattr(settings_obj, "last_run_at", None)),
             "auto_backup_interval_display": _personal_backup_interval_display(),
             "show_server_operations": _is_server_operations_owner(request.user),
         },
