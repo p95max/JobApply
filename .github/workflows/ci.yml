@@ -26,7 +26,7 @@ jobs:
         ports:
           - 5432:5432
     env:
-      DJANGO_SECRET_KEY: ci-secret-key
+      DJANGO_SECRET_KEY: ci-only-not-a-secret-0123456789-abcdefghijklmnopqrstuvwxyz-abcdef
       DJANGO_DEBUG: "0"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       POSTGRES_DB: jobapply
