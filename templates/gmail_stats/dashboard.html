@@ -11,6 +11,8 @@
 <div id="gmailStatsConfig" data-stats-url="{% url 'gmail_stats:gmail_stats_api' %}"></div>
 
 <div class="container py-4 service-page">
+  {% include "reports/_reports_nav.html" %}
+
   <section class="service-hero mb-4">
     <div>
       <div class="service-eyebrow">📬 {% trans "Email analytics" %}</div>

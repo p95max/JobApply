@@ -1,0 +1,10 @@
+{% load i18n %}
+
+<nav class="nav nav-tabs mb-4" aria-label="{% trans 'Reports navigation' %}">
+  <a class="nav-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'reports:statistics' %}">
+    <span aria-hidden="true">📈</span> {% trans "Application statistics" %}
+  </a>
+  <a class="nav-link {% if request.resolver_match.url_name == 'gmail_dashboard' %}active{% endif %}" href="{% url 'gmail_stats:gmail_dashboard' %}">
+    <span aria-hidden="true">📨</span> {% trans "Gmail statistics" %}
+  </a>
+</nav>
