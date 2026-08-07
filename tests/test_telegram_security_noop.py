@@ -69,6 +69,10 @@ def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
         )
     ]
 
+    handle_update(update, client, _config())
+
+    assert len(client.calls) == 1
+
 
 @pytest.mark.django_db
 def test_linked_user_is_allowed_and_receives_only_their_gmail_summary(monkeypatch):

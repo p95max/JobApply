@@ -48,9 +48,10 @@ def test_set_commands_publishes_client_and_admin_scopes():
             "timeout": 10,
         },
     ]
-    assert [item["command"] for item in CLIENT_COMMANDS] == ["help", "gmail", "applications"]
+    assert [item["command"] for item in CLIENT_COMMANDS] == ["help", "ping", "gmail", "applications"]
     assert [item["command"] for item in ADMIN_COMMANDS] == [
         "help",
+        "ping",
         "gmail",
         "applications",
         "admin",

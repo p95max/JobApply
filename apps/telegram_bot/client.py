@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 CLIENT_COMMANDS: tuple[dict[str, str], ...] = (
     {"command": "help", "description": "Show user commands"},
+    {"command": "ping", "description": "Check whether the bot is online"},
     {"command": "gmail", "description": "Show pending email events"},
     {"command": "applications", "description": "Show application statistics"},
 )

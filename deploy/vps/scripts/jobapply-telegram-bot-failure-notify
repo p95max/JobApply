@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+STATE_FILE="${JOBAPPLY_TELEGRAM_FAILURE_ALERT_STATE_FILE:-/run/jobapply/telegram-bot-failure-alerted}"
+COOLDOWN_SECONDS="${TELEGRAM_BOT_FAILURE_ALERT_COOLDOWN_SECONDS:-900}"
+TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+CHAT_ID="${TELEGRAM_DEFAULT_CHAT_ID:-}"
+
+if [[ ! "$COOLDOWN_SECONDS" =~ ^[0-9]+$ ]]; then
+  COOLDOWN_SECONDS=900
+fi
+
+now="$(date +%s)"
+if [[ -f "$STATE_FILE" ]]; then
+  last_alert="$(stat -c %Y "$STATE_FILE" 2>/dev/null || echo 0)"
+  if (( now - last_alert < COOLDOWN_SECONDS )); then
+    exit 0
+  fi
+fi
+
+touch "$STATE_FILE"
+
+if [[ -z "$TOKEN" || -z "$CHAT_ID" ]]; then
+  echo "Telegram bot failure notification skipped: token or chat ID is missing." >&2
+  exit 0
+fi
+
+curl --fail --silent --show-error \
+  --max-time 10 \
+  --data-urlencode "chat_id=$CHAT_ID" \
+  --data-urlencode "text=⚠️ <b>JobApply Telegram bot is unavailable</b>\n\nThe service has failed and is restarting automatically.\n\nCheck on the server:\n<code>journalctl -u jobapply-telegram-bot.service -n 100 --no-pager</code>" \
+  --data-urlencode "parse_mode=HTML" \
+  "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+  >/dev/null || echo "Telegram bot failure notification delivery failed." >&2

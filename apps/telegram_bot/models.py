@@ -99,7 +99,7 @@ class TelegramDeployRequest(models.Model):
         indexes = [
             models.Index(
                 fields=("telegram_user_id", "chat_id", "status"),
-                name="telegram_bo_telegram_5b5bd0_idx",
+                name="tg_deploy_usr_chat_status_idx",
             )
         ]
 

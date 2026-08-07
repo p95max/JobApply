@@ -1,0 +1,15 @@
+[Unit]
+Description=Notify owner when the JobApply Telegram bot fails
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jobapply
+Group=jobapply
+EnvironmentFile=/opt/jobapply/.env
+RuntimeDirectory=jobapply
+RuntimeDirectoryMode=0750
+ExecStart=/usr/local/bin/jobapply-telegram-bot-failure-notify
+NoNewPrivileges=true
+PrivateTmp=true

@@ -25,6 +25,7 @@ def help_text(environment: str, *, is_admin: bool) -> str:
         "",
         "<b>Available commands</b>",
         "ℹ️ /help — available commands",
+        "🟢 /ping — check whether the bot is online",
         "📨 /gmail — pending Gmail proposals",
         "📋 /applications — application statistics",
     ]

@@ -2,6 +2,7 @@
 Description=JobApply Telegram Bot
 After=network-online.target postgresql.service
 Wants=network-online.target
+OnFailure=jobapply-telegram-bot-failure.service
 
 [Service]
 Type=simple

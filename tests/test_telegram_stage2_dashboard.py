@@ -66,6 +66,14 @@ def test_gmail_command_includes_gmail_assistant_link_without_buttons(monkeypatch
     assert client.calls[1][2] is None
 
 
+def test_ping_confirms_that_bot_is_online():
+    client = FakeClient()
+
+    handle_update(_update("/ping"), client, _config())
+
+    assert client.calls == [(10, "🟢 JobApply bot is online.", None)]
+
+
 def test_applications_command_includes_hidden_web_link(monkeypatch):
     client = FakeClient()
     monkeypatch.setattr(

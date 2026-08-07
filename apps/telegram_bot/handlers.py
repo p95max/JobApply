@@ -32,6 +32,8 @@ from .texts import (
 
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
+UNLINKED_REPLY_LIMIT = 1
+UNLINKED_REPLY_WINDOW_SECONDS = 300
 
 
 class CommandTimedOut(Exception):
@@ -272,10 +274,21 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
 
     if not is_update_allowed(update, config):
         if (message.get("chat") or {}).get("type") == "private":
+            user_id = _user_id(update)
+            chat_id = _chat_id(update)
+            if is_rate_limited(
+                user_id=user_id,
+                chat_id=chat_id,
+                limit=UNLINKED_REPLY_LIMIT,
+                window_seconds=UNLINKED_REPLY_WINDOW_SECONDS,
+            ):
+                logger.info("Throttled Telegram linking instruction")
+                return
             client.send_message(
-                _chat_id(update),
+                chat_id,
                 "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send /link <code> or paste the code here.",
             )
+            _record_audit(user_id, chat_id, "link_instruction", "not_linked", time.monotonic())
             return
         logger.warning("Rejected unauthorized Telegram update")
         return
@@ -314,6 +327,8 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         with _command_timeout():
             if text in {"/start", "/help"}:
                 reply = help_text(config.environment_label, is_admin=_is_owner(user_id, chat_id, config))
+            elif text == "/ping":
+                reply = "🟢 JobApply bot is online."
             elif text == "/admin":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "This command is available only to the bot owner."
