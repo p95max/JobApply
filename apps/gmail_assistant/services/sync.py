@@ -224,9 +224,11 @@ def sync_gmail_messages_for_user(
     candidate_days = _candidate_days(user=user, requested_days=days)
     ids = set(gmail_client.list_message_ids(build_candidate_query(candidate_days), max_results=max_results_each))
     if include_sent:
+        # Sent import is a user-requested historical backfill. Unlike the
+        # incremental inbox scan, it must honour the selected period exactly.
         ids.update(
             gmail_client.list_message_ids(
-                build_sent_applications_query(candidate_days),
+                build_sent_applications_query(days),
                 max_results=max_results_each,
             )
         )

@@ -116,6 +116,7 @@ class MissingKeyAnalyzer(FakeAnalyzer):
 def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+    GmailSyncState.objects.create(user=user, last_synced_at=datetime.now(timezone.utc))
 
     class SentQueryClient(FakeGmailClient):
         def __init__(self, messages):
@@ -141,12 +142,13 @@ def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_us
         user=user,
         gmail_client=client,
         ai_analyzer=FakeAnalyzer(),
+        days=30,
         include_sent=True,
     )
 
     analysis = GmailAnalysis.objects.get(user=user)
     proposal = ApplicationUpdateProposal.objects.get(user=user)
-    assert any("in:sent" in query for query in client.queries)
+    assert any("in:sent" in query and "newer_than:30d" in query for query in client.queries)
     assert result["outbound_imported"] == 1
     assert analysis.event_type == GmailEventType.APPLICATION_SENT
     assert analysis.message.direction == "outbound"
