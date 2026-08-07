@@ -69,6 +69,9 @@
         {% if proposal.proposal_type == "create_application" %}
           <div class="proposal-change-row"><strong>{% trans "Job title" %}:</strong> {{ proposal.changes.application.title }}</div>
           <div class="proposal-change-row"><strong>{% trans "Company" %}:</strong> {{ proposal.changes.application.company }}</div>
+          {% if proposal.analysis.extracted_data.company_source == 'recipient_domain' %}
+            <div class="small text-warning mb-2">{% trans "Company was derived from the recipient email domain. Verify or edit it before accepting." %}</div>
+          {% endif %}
           <div class="proposal-change-row"><strong>{% trans "Location" %}:</strong> {{ proposal.changes.application.location|default:"—" }}</div>
           <div class="proposal-change-row"><strong>{% trans "Source" %}:</strong> {{ proposal.changes.application.source }}</div>
           <div class="proposal-change-row"><strong>{% trans "Status" %}:</strong> {{ proposal.changes.application.status }}</div>

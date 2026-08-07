@@ -46,7 +46,7 @@ def _event_tone(event_type: str) -> str:
 
 
 def _proposal_event_label(proposal: ApplicationUpdateProposal) -> str:
-    if proposal.message.direction == "outbound":
+    if proposal.analysis.extracted_data.get("sent_kind") == "direct_application":
         return "myself_sent"
     return proposal.analysis.get_event_type_display()
 

@@ -146,6 +146,7 @@
     <section class="card mb-3 js-pending-card {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
       data-event="{{ group.analysis.event_type }}"
       data-direction="{{ group.message.direction }}"
+      data-myself-sent="{% if group.analysis.extracted_data.sent_kind == 'direct_application' %}true{% else %}false{% endif %}"
       data-match="{% if group.representative.application_id %}linked{% else %}unmatched{% endif %}"
       data-proposal-types="{% for proposal in group.proposals %}{{ proposal.proposal_type }} {% endfor %}">
       <div class="card-body">
@@ -155,7 +156,7 @@
             <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
           </div>
           <span class="badge flex-shrink-0 {% if group.analysis.event_type == 'rejection' %}bg-danger{% elif group.analysis.event_type in technical_event_types %}bg-primary{% elif group.analysis.event_type in interview_event_types %}bg-success{% elif group.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-            {% if group.message.direction == 'outbound' %}myself_sent{% else %}{% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}{% endif %}
+            {% if group.analysis.extracted_data.sent_kind == 'direct_application' %}myself_sent{% else %}{% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}{% endif %}
           </span>
         </div>
 
@@ -271,7 +272,7 @@
 
     pendingCards.forEach((card) => {
       const eventType = card.dataset.event;
-      const isSelfSent = card.dataset.direction === "outbound";
+      const isSelfSent = card.dataset.myselfSent === "true";
       const hasAction = (card.dataset.proposalTypes || "").includes("action_required");
       const typeMatches = (
         selectedType === "all" ||

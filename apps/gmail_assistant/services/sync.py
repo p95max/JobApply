@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -27,6 +28,12 @@ from apps.gmail_stats.services.direction import determine_direction
 from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
 
 logger = logging.getLogger(__name__)
+
+_REPLY_SUBJECT_RE = re.compile(r"^\s*(?:re|aw|fw|fwd)\s*:", re.IGNORECASE)
+_DIRECT_APPLICATION_SUBJECT_RE = re.compile(
+    r"^\s*(?:(?:initiativ|erneute)\s+)?(?:bewerbung|application)(?:\s+(?:als|for))?\s+(?P<title>.+?)\s*$",
+    re.IGNORECASE,
+)
 
 
 def _internal_date_to_dt(internal_date_ms: str | int | None) -> datetime:
@@ -177,13 +184,14 @@ def _record_rule_fallback(
     message: GmailMessage,
     rule: RuleClassification,
     reason: str,
+    extracted_data: dict[str, Any] | None = None,
 ) -> GmailAnalysis:
     return _record_analysis(
         user=user,
         message=message,
         rule=rule,
         classifier=AnalysisClassifier.RULE,
-        extracted_data=_rule_data(rule, fallback_reason=reason),
+        extracted_data=extracted_data or _rule_data(rule, fallback_reason=reason),
     )
 
 
@@ -198,6 +206,49 @@ def _outbound_application_rule(rule: RuleClassification) -> RuleClassification:
         confidence=max(rule.confidence, 80),
         evidence=rule.evidence or ("sent by mailbox owner",),
     )
+
+
+def _is_direct_sent_application(*, subject: str, text: str, rule: RuleClassification) -> bool:
+    """Exclude replies and follow-ups from the explicit Sent import."""
+    if not rule.is_job_related or _REPLY_SUBJECT_RE.match(subject or ""):
+        return False
+    return bool(_DIRECT_APPLICATION_SUBJECT_RE.match(subject or "")) or "hiermit bewerbe ich mich" in (text or "").casefold()
+
+
+def _company_from_recipient_domain(recipients: list[str]) -> tuple[str, str] | None:
+    for recipient in recipients:
+        if "@" not in recipient:
+            continue
+        domain = recipient.rsplit("@", 1)[-1].strip().casefold()
+        parts = domain.split(".")
+        if len(parts) < 2 or not parts[0]:
+            continue
+        label = " ".join(
+            part.upper() if len(part) <= 4 else part.capitalize()
+            for part in re.split(r"[-_]", parts[0])
+            if part
+        )
+        if label:
+            return label, domain
+    return None
+
+
+def _sent_application_data(base: dict[str, Any], *, subject: str, recipients: list[str]) -> dict[str, Any]:
+    """Add review-only direct-email hints when the email omits employer metadata."""
+    data = dict(base)
+    data["sent_kind"] = "direct_application"
+    title_match = _DIRECT_APPLICATION_SUBJECT_RE.match(subject or "")
+    if not data.get("position_title") and title_match:
+        data["position_title"] = title_match.group("title").strip()
+    if not data.get("company"):
+        company = _company_from_recipient_domain(recipients)
+        if company:
+            data["company"], domain = company
+            data["company_source"] = "recipient_domain"
+            evidence = list(data.get("evidence") or [])
+            evidence.append(f"Recipient domain: {domain}")
+            data["evidence"] = evidence[:3]
+    return data
 
 
 def _safe_fallback_error(analysis: GmailAnalysis) -> str:
@@ -274,6 +325,17 @@ def sync_gmail_messages_for_user(
         message_ids = ids | cached_message_ids
     else:
         message_ids = ids - existing
+        if include_sent:
+            # Retry previously imported Sent messages that produced no review
+            # proposal (for example, because an older analyzer missed company).
+            message_ids |= set(
+                GmailMessage.objects.filter(
+                    user=user,
+                    direction=GmailDirection.OUTBOUND,
+                    received_at__gte=datetime.now(timezone.utc) - timedelta(days=days),
+                    processing_status=GmailProcessingStatus.ANALYZED,
+                ).values_list("message_id", flat=True)
+            )
     for message_id in message_ids:
         try:
             raw = gmail_client.get_message_full(message_id)
@@ -284,7 +346,12 @@ def sync_gmail_messages_for_user(
                 profile_email=profile_email,
             )
             rule = classify_event(parsed.subject, str(raw.get("snippet") or ""), parsed.text)
-            if direction == GmailDirection.OUTBOUND and include_sent:
+            is_manual_sent_application = (
+                direction == GmailDirection.OUTBOUND
+                and include_sent
+                and _is_direct_sent_application(subject=parsed.subject, text=parsed.text, rule=rule)
+            )
+            if is_manual_sent_application:
                 rule = _outbound_application_rule(rule)
             message, created = _store_message(
                 user=user,
@@ -296,7 +363,7 @@ def sync_gmail_messages_for_user(
             )
             counters["created"] += int(created)
 
-            if direction == GmailDirection.OUTBOUND and not include_sent:
+            if direction == GmailDirection.OUTBOUND and not is_manual_sent_application:
                 _update_message_status(message=message, status=GmailProcessingStatus.IGNORED)
                 counters["outbound_ignored"] += 1
                 continue
@@ -338,15 +405,22 @@ def sync_gmail_messages_for_user(
                         ),
                     )
                     requires_manual_review = policy.requires_manual_review(result.confidence)
+                    extracted_data = _ai_data(
+                        result,
+                        requires_manual_review=requires_manual_review,
+                    )
+                    if is_manual_sent_application:
+                        extracted_data = _sent_application_data(
+                            extracted_data,
+                            subject=parsed.subject,
+                            recipients=parsed.to_emails,
+                        )
                     analysis = _record_analysis(
                         user=user,
                         message=message,
                         rule=rule,
                         classifier=AnalysisClassifier.AI,
-                        extracted_data=_ai_data(
-                            result,
-                            requires_manual_review=requires_manual_review,
-                        ),
+                        extracted_data=extracted_data,
                         event_type=("application_sent" if direction == GmailDirection.OUTBOUND else result.event_type),
                         confidence=result.confidence,
                         is_job_related=(True if direction == GmailDirection.OUTBOUND else result.is_job_related),
@@ -374,6 +448,15 @@ def sync_gmail_messages_for_user(
                         message=message,
                         rule=rule,
                         reason=type(error).__name__,
+                        extracted_data=(
+                            _sent_application_data(
+                                _rule_data(rule, fallback_reason=type(error).__name__),
+                                subject=parsed.subject,
+                                recipients=parsed.to_emails,
+                            )
+                            if is_manual_sent_application
+                            else None
+                        ),
                     )
                     counters["analyses_created"] += 1
                     counters["analyzed_by_rules"] += 1
@@ -396,6 +479,15 @@ def sync_gmail_messages_for_user(
                     message=message,
                     rule=rule,
                     reason=reason,
+                    extracted_data=(
+                        _sent_application_data(
+                            _rule_data(rule, fallback_reason=reason),
+                            subject=parsed.subject,
+                            recipients=parsed.to_emails,
+                        )
+                        if is_manual_sent_application
+                        else None
+                    ),
                 )
                 counters["analyses_created"] += 1
                 counters["analyzed_by_rules"] += 1

@@ -115,7 +115,6 @@ class MissingKeyAnalyzer(FakeAnalyzer):
 @pytest.mark.django_db
 def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
-    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
     GmailSyncState.objects.create(user=user, last_synced_at=datetime.now(timezone.utc))
 
     class SentQueryClient(FakeGmailClient):
@@ -131,7 +130,7 @@ def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_us
         {
             "sent-application": message(
                 sender="user@example.com",
-                recipient="recruiter@example.org",
+                recipient="jobs@doma-personal.de",
                 subject="Application for Python Developer",
                 text="I would like to apply for the Python Developer position.",
             )
@@ -141,7 +140,6 @@ def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_us
     result = sync_gmail_messages_for_user(
         user=user,
         gmail_client=client,
-        ai_analyzer=FakeAnalyzer(),
         days=30,
         include_sent=True,
     )
@@ -153,6 +151,8 @@ def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_us
     assert analysis.event_type == GmailEventType.APPLICATION_SENT
     assert analysis.message.direction == "outbound"
     assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
+    assert proposal.changes["application"]["company"] == "Doma Personal"
+    assert proposal.changes["application"]["title"] == "Python Developer"
 
 
 @pytest.mark.django_db
