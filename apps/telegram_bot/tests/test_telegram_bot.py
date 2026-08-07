@@ -50,7 +50,8 @@ def test_unknown_user_is_rejected():
 
 
 def test_help_text_escapes_environment():
-    assert "&lt;prod&gt;" in help_text("<prod>", is_admin=False)
+    assert "&lt;prod&gt;" in help_text("<prod>", is_admin=True)
+    assert "prod" not in help_text("<prod>", is_admin=False)
 
 
 def legacy_test_deploy_is_rejected_for_non_owner():

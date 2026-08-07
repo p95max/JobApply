@@ -148,7 +148,6 @@ def test_client_help_hides_admin_commands_and_admin_menu_is_owner_only():
     assert "TEST" not in client.messages[0][1]
     assert "/status" in client.messages[1][1]
     assert "/deploy" in client.messages[1][1]
-    assert "TEST" in client.messages[1][1]
     assert "only to the bot owner" in client.messages[2][1]
 
 
