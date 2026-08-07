@@ -20,7 +20,7 @@ def root(request):
 
 
 def google_only_login(request):
-    next_url = request.GET.get("next", "/")
+    next_url = request.GET.get("next", "/dashboard/")
     return redirect(f"{reverse('google_login_gate')}?next={next_url}")
 
 

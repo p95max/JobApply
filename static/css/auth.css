@@ -1,0 +1,42 @@
+body:has(.auth-page) {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(80, 96, 255, .16), transparent 28rem),
+    radial-gradient(circle at 82% 25%, rgba(39, 197, 158, .1), transparent 24rem),
+    #10151c;
+}
+
+.auth-page {
+  display: grid;
+  min-height: calc(100vh - 118px);
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  width: min(100%, 480px);
+  padding: clamp(1.75rem, 5vw, 2.5rem);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 1rem;
+  background: rgba(31, 36, 42, .94);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .28);
+}
+
+.auth-card--wide { width: min(100%, 580px); }
+
+.auth-brand { display: flex; align-items: center; gap: .7rem; margin-bottom: 2rem; font-size: 1.15rem; font-weight: 800; }
+.auth-brand img { width: 40px; height: 40px; }
+.auth-eyebrow { color: #8c96ff; font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.auth-intro h1, .auth-card h1 { margin: .6rem 0 0; font-size: clamp(1.6rem, 4vw, 2.15rem); letter-spacing: -.03em; }
+.auth-intro p, .auth-copy, .auth-note { color: #b5bcc7; line-height: 1.55; }
+.auth-intro p { margin: .75rem 0 1.6rem; }
+.auth-form { display: grid; gap: 1rem; }
+.auth-turnstile { display: flex; justify-content: center; }
+.auth-primary-button { min-height: 48px; border-radius: .65rem; font-weight: 700; }
+.auth-note { margin: 1.25rem 0 0; font-size: .86rem; }
+.auth-actions { display: grid; gap: .75rem; margin-top: 1.5rem; }
+.auth-actions .btn { min-height: 46px; border-radius: .65rem; font-weight: 700; }
+
+@media (max-width: 575.98px) {
+  .auth-page { min-height: calc(100vh - 105px); padding: 1rem; }
+  .auth-card { padding: 1.5rem; }
+}

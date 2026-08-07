@@ -1,23 +1,17 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
+
+{% block navbar %}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="{% static 'css/auth.css' %}?v=1">{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6">
-      <div class="card border-secondary shadow-sm">
-        <div class="card-body p-4 p-md-5 text-center">
-          <h1 class="h3 mb-3">{% trans "Create your account" %}</h1>
-          <p class="text-body-secondary mb-4">
-            {% trans "JobApply uses Google sign-in. A new account is created automatically the first time you continue with Google." %}
-          </p>
-
-          <a class="btn btn-primary" href="/accounts/google/login/">
-            {% trans "Continue with Google" %}
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+<main class="auth-page">
+  <section class="auth-card text-center">
+    <div class="auth-brand justify-content-center"><img src="{% static 'img/jobapply-mark.svg' %}" alt="" width="40" height="40"><span>JobApply</span></div>
+    <span class="auth-eyebrow">{% trans "Welcome" %}</span>
+    <h1>{% trans "Create your account" %}</h1>
+    <p class="auth-copy mt-3">{% trans "JobApply uses Google sign-in. A new account is created automatically the first time you continue with Google." %}</p>
+    <div class="auth-actions"><a class="btn btn-primary auth-primary-button" href="/accounts/google/login/">{% trans "Continue with Google" %}</a></div>
+  </section>
+</main>
 {% endblock %}

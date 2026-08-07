@@ -140,6 +140,9 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_ADAPTER = "apps.accounts.adapters.NoSignupAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
+# The Google button is already an explicit consent action in our UI. Do not
+# show allauth's second generic "Continue" page before redirecting to Google.
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
