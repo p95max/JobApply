@@ -68,16 +68,16 @@
       <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
         <div>
-          <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
-          <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
-          <small class="d-block text-muted mt-1">
-            {% trans "Model" %}: <code>{{ ai_model_name }}</code>
-            · {% trans "Daily AI email limit (per user)" %}: {{ ai_daily_limit }} {% trans "emails" %}
-            · {% trans "Used today" %}: {{ ai_daily_used }}
-            · {% trans "Remaining today" %}: {{ ai_daily_remaining }}
-            · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
-          </small>
-          <a class="small d-inline-block mt-1" href="{% url 'gmail_assistant:token_usage' %}">{% trans "Token usage" %}</a>
+          <small class="d-block text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
+          <div class="d-flex flex-wrap align-items-center gap-2 mt-2 small">
+            <span class="badge rounded-pill text-bg-info">🕒 {% trans "Auto-check" %}: {% blocktrans with minutes=auto_sync_interval_minutes %}every {{ minutes }} min{% endblocktrans %}</span>
+            <span class="badge rounded-pill text-bg-secondary">{% trans "Model" %}: {{ ai_model_name }}</span>
+            <span class="badge rounded-pill text-bg-dark" title="{% trans 'Daily AI email limit (per user)' %}">{% trans "Daily limit" %}: {{ ai_daily_limit }}</span>
+            <span class="badge rounded-pill text-bg-warning">{% trans "Used" %}: {{ ai_daily_used }}</span>
+            <span class="badge rounded-pill text-bg-success">{% trans "Remaining" %}: {{ ai_daily_remaining }}</span>
+            <span class="badge rounded-pill text-bg-primary">{% trans "Review below" %}: {{ ai_confidence_threshold }}%</span>
+            <a class="badge rounded-pill text-bg-light text-decoration-none" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage" %}</a>
+          </div>
         </div>
         <div class="ms-auto">
           <div class="form-check form-switch">
