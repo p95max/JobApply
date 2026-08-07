@@ -64,9 +64,23 @@
 
   <section class="service-info-card">
     <div class="service-info-card__icon" aria-hidden="true">ℹ️</div>
-    <div>
-      <div class="fw-semibold mb-1">{% trans "Tokens and limits" %}</div>
-      <p class="text-body-secondary mb-0">{% trans "Token usage, costs and your daily AI email limit remain in Gmail Assistant, next to the controls that use them." %}</p>
+    <div class="w-100">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div class="fw-semibold">{% trans "Tokens and limits" %}</div>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage details" %}</a>
+      </div>
+      <div class="d-flex flex-wrap gap-2 small">
+        <span class="badge rounded-pill text-bg-secondary">{% trans "Model" %}: {{ ai_model_name }}</span>
+        <span class="badge rounded-pill text-bg-dark">{% trans "Daily limit" %}: {{ ai_daily_limit }}</span>
+        <span class="badge rounded-pill text-bg-warning">{% trans "Used today" %}: {{ ai_daily_used }}</span>
+        <span class="badge rounded-pill text-bg-success">{% trans "Remaining" %}: {{ ai_daily_remaining }}</span>
+        <span class="badge rounded-pill text-bg-primary">{% trans "Requests" %}: {{ token_usage.requests }}</span>
+        <span class="badge rounded-pill text-bg-info">{% trans "Tokens" %}: {{ token_usage.total_tokens }}</span>
+        {% if token_usage.estimated_cost_usd is not None %}
+          <span class="badge rounded-pill text-bg-light">{% trans "Estimated cost" %}: ${{ token_usage.estimated_cost_usd|floatformat:6 }}</span>
+        {% endif %}
+      </div>
+      <p class="small text-body-secondary mb-0 mt-2">{% blocktrans with days=days %}Token totals and estimated cost cover the selected {{ days }}-day period. The daily email limit is per user and resets each day.{% endblocktrans %}</p>
     </div>
   </section>
 </div>

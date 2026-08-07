@@ -23,6 +23,8 @@ from apps.gmail_assistant.models import (
     GmailAnalysis,
     ProposalStatus,
 )
+from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
+from apps.gmail_assistant.services.token_usage import load_token_usage
 
 from .drive import (
     DriveError,
@@ -147,6 +149,8 @@ def ai_statistics(request):
         status: proposals.filter(status=status).count()
         for status in ProposalStatus.values
     }
+    ai_policy = AIUsagePolicy.from_environment()
+    ai_daily_used = ai_policy.daily_usage(user=request.user)
 
     return render(
         request,
@@ -158,6 +162,11 @@ def ai_statistics(request):
             "analysis_rules": analysis_totals["rules"] or 0,
             "average_confidence": round(analysis_totals["average_confidence"] or 0),
             "proposal_counts": proposal_counts,
+            "token_usage": load_token_usage(user=request.user, days=days),
+            "ai_daily_limit": ai_policy.daily_limit,
+            "ai_daily_used": ai_daily_used,
+            "ai_daily_remaining": max(0, ai_policy.daily_limit - ai_daily_used),
+            "ai_model_name": settings.OPENAI_EMAIL_MODEL,
         },
     )
 
