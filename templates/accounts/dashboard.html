@@ -2,8 +2,8 @@
 {% load static i18n %}
 
 {% block page_css %}
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
-  <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=2">
   <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_guest.css' %}?v=1">
 {% endblock %}
@@ -148,7 +148,21 @@
         <a href="/applications/">{% trans "View all" %}</a>
       </div>
       {% if recent_applications %}
-        <div class="dashboard-table-wrap">
+        <div class="dashboard-recent-cards d-md-none">
+          {% for application in recent_applications %}
+            {% url 'applications:detail' application.pk as application_url %}
+            <a class="dashboard-recent-card" href="{{ application_url }}">
+              <span class="dashboard-recent-card__top">
+                <strong>{{ application.company }}</strong>
+                <span class="dashboard-pill dashboard-pill--{{ application.status }}">{{ application.get_status_display }}</span>
+              </span>
+              <span class="dashboard-recent-card__title">{{ application.title }}</span>
+              <small>{% trans "Updated" %} · {{ application.updated_at|date:"d.m.Y" }}</small>
+            </a>
+          {% endfor %}
+        </div>
+
+        <div class="dashboard-table-wrap d-none d-md-block">
           <table class="table dashboard-table">
             <thead><tr><th>{% trans "Company" %}</th><th>{% trans "Position" %}</th><th>{% trans "Status" %}</th><th>{% trans "Updated" %}</th></tr></thead>
             <tbody>
