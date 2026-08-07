@@ -160,7 +160,12 @@ def test_manual_sent_import_recognizes_compound_initiativbewerbung_subject(djang
     user = django_user_model.objects.create_user("user", email="user@example.com")
 
     class SentQueryClient(FakeGmailClient):
+        def __init__(self, messages):
+            super().__init__(messages)
+            self.queries = []
+
         def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            self.queries.append(query)
             return list(self.messages)
 
     client = SentQueryClient(
@@ -177,6 +182,7 @@ def test_manual_sent_import_recognizes_compound_initiativbewerbung_subject(djang
     sync_gmail_messages_for_user(user=user, gmail_client=client, include_sent=True)
 
     proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert any("initiativbewerbung" in query for query in client.queries)
     assert proposal.changes["application"]["title"] == "Junior Python Backend Developer"
     assert proposal.changes["application"]["company"] == "Sigma Chemnitz"
 
