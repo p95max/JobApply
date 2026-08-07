@@ -5,15 +5,18 @@
 
   if (!header || !toggle || !panel) return;
 
+  const setOpenState = (open) => {
+    header.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    document.body.classList.toggle("app-menu-open", open && window.matchMedia("(max-width: 899.98px)").matches);
+  };
+
   const closeMenu = () => {
-    header.classList.remove("is-open");
-    toggle.setAttribute("aria-expanded", "false");
+    setOpenState(false);
   };
 
   toggle.addEventListener("click", () => {
-    const open = toggle.getAttribute("aria-expanded") !== "true";
-    header.classList.toggle("is-open", open);
-    toggle.setAttribute("aria-expanded", String(open));
+    setOpenState(toggle.getAttribute("aria-expanded") !== "true");
   });
 
   panel.addEventListener("click", (event) => {
