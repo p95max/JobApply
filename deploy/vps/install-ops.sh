@@ -14,6 +14,7 @@ cd "$PROJECT_DIR"
 
 sudo install -m 0644 deploy/vps/systemd/jobapply-*.service deploy/vps/systemd/jobapply-*.timer "$SYSTEMD_DIR/"
 sudo install -o root -g jobapply -m 0750 deploy/vps/scripts/jobapply-* "$BIN_DIR/"
+sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-run-background-job.sh "$BIN_DIR/jobapply-run-background-job.sh"
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy.sh /usr/local/sbin/jobapply-deploy
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy-notify.sh "$BIN_DIR/jobapply-deploy-notify.sh"
 sudo install -m 0440 deploy/vps/sudoers/jobapply-telegram /etc/sudoers.d/jobapply-telegram
