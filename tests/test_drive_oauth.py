@@ -13,7 +13,7 @@ class FakeOAuthSession:
 
 
 class FakeFlow:
-    def __init__(self, returned_scope: str):
+    def __init__(self, returned_scope: object):
         self.oauth2session = FakeOAuthSession([DRIVE_SCOPE])
         self.oauth2session.token["scope"] = returned_scope
         self.credentials = object()
@@ -23,8 +23,15 @@ class FakeFlow:
         self.authorization_response = authorization_response
 
 
-def test_incremental_drive_consent_accepts_previously_granted_scopes():
-    flow = FakeFlow(f"https://www.googleapis.com/auth/gmail.readonly {DRIVE_SCOPE} openid")
+@pytest.mark.parametrize(
+    "returned_scope",
+    (
+        f"https://www.googleapis.com/auth/gmail.readonly {DRIVE_SCOPE} openid",
+        ["https://www.googleapis.com/auth/gmail.readonly", DRIVE_SCOPE, "openid"],
+    ),
+)
+def test_incremental_drive_consent_accepts_previously_granted_scopes(returned_scope):
+    flow = FakeFlow(returned_scope)
 
     credentials = _fetch_drive_credentials(flow, "https://example.test/callback?code=abc")
 

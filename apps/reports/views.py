@@ -72,7 +72,8 @@ def _fetch_drive_credentials(flow: Flow, authorization_response: str):
     # incremental response as a scope-change warning.
     flow.oauth2session.scope = None
     flow.fetch_token(authorization_response=authorization_response)
-    granted_scopes = set(str(flow.oauth2session.token.get("scope") or "").split())
+    raw_scopes = flow.oauth2session.token.get("scope") or ()
+    granted_scopes = set(raw_scopes.split()) if isinstance(raw_scopes, str) else set(raw_scopes)
     if DRIVE_SCOPE not in granted_scopes:
         raise RuntimeError("Google did not grant the required Google Drive permission.")
     return flow.credentials
