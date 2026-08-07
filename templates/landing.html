@@ -20,6 +20,10 @@
       </a>
       <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
         <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
+        <form method="post" action="{% url 'accounts:start_demo' %}">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">{% trans "Live demo" %}</button>
+        </form>
         <form action="{% url 'set_language' %}" method="post" class="app-language-form">
           {% csrf_token %}
           <input name="next" type="hidden" value="{{ request.get_full_path }}">

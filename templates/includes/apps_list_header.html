@@ -8,9 +8,12 @@
     {% endif %}
   </div>
 
-  <button type="button" class="btn btn-outline-secondary js-print" data-print-url="?{{ base_qs }}&print=1">
-    🖨️ {% trans "Print" %}
-  </button>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{% url 'applications:create' %}">＋ {% trans "Add application" %}</a>
+    <button type="button" class="btn btn-outline-secondary js-print" data-print-url="?{{ base_qs }}&print=1">
+      🖨️ {% trans "Print" %}
+    </button>
+  </div>
 </div>
 
 <details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or month or sort != '-applied_at' %} open{% endif %}>

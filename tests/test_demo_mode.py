@@ -11,8 +11,10 @@ from apps.accounts.models import UserProfile
 @pytest.mark.django_db
 @override_settings(TURNSTILE_ENABLED=False)
 def test_guest_can_start_temporary_demo_and_use_manual_workspace(client):
+    landing = client.get(reverse("landing"))
     response = client.post(reverse("accounts:start_demo"))
 
+    assert b"Live demo" in landing.content
     assert response.status_code == 302
     assert response.url == reverse("dashboard")
     user_id = client.session.get("_auth_user_id")
