@@ -61,6 +61,8 @@ def test_dashboard_shows_user_metrics_only(client):
     assert response.context["active_application_count"] == 1
     assert response.context["upcoming_interview_count"] == 1
     assert "Telegram bot" in content
+    assert "Gmail" in content
     assert "Drive backups" in content
     assert response.context["telegram_connected"] is False
+    assert response.context["gmail_connected"] is False
     assert response.context["drive_connected"] is False

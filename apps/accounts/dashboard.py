@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
+from allauth.socialaccount.models import SocialToken
 
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import (
@@ -48,6 +49,10 @@ def dashboard(request):
     drive_status = get_drive_status(request.user)
     backup_settings = CloudBackupSettings.objects.filter(user=request.user).only("enabled").first()
     drive_connected = bool(drive_status.get("connected") and drive_status.get("has_refresh_token"))
+    gmail_connected = SocialToken.objects.filter(
+        account__user=request.user,
+        account__provider="google",
+    ).exclude(token="").exists()
 
     return render(
         request,
@@ -71,6 +76,7 @@ def dashboard(request):
                 else None
             ),
             "telegram_connected": bool(profile and profile.telegram_chat_id),
+            "gmail_connected": gmail_connected,
             "drive_connected": drive_connected,
             "drive_auto_backup_enabled": bool(backup_settings and backup_settings.enabled),
         },
