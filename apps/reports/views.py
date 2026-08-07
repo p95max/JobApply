@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
 from google_auth_oauthlib.flow import Flow
@@ -20,14 +20,21 @@ from .drive import (
     SCOPE as DRIVE_SCOPE,
     TOKEN_URI,
     disconnect_drive,
-    download_file,
+    download_backup_file,
     ensure_jobapply_folder,
     get_drive_status,
     list_backups,
     upload_backup,
 )
 from .models import CloudBackupSettings
-from .services import build_stats, export_csv, export_xlsx, import_csv
+from .services import (
+    ImportValidationError,
+    MAX_IMPORT_BYTES,
+    build_stats,
+    export_csv,
+    export_xlsx,
+    import_csv,
+)
 
 logger = logging.getLogger(__name__)
 GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
@@ -98,16 +105,21 @@ def export_report(request, fmt: str):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def import_view(request):
     if request.method == "POST":
         f = request.FILES.get("file")
         if not f:
             return render(request, "reports/import.html", {"error": "No file uploaded."})
+        if f.size > MAX_IMPORT_BYTES:
+            return render(request, "reports/import.html", {"error": "The CSV file is too large."})
 
         try:
             raw = f.read()
             result = import_csv(request.user, raw)
             return render(request, "reports/import.html", {"result": result})
+        except ImportValidationError as error:
+            return render(request, "reports/import.html", {"error": str(error)})
         except Exception:
             logger.exception("import_view failed user=%s filename=%s", request.user.id, getattr(f, "name", ""))
             return render(request, "reports/import.html", {"error": "Import failed. Check the file format and try again."})
@@ -169,6 +181,7 @@ def drive_backups(request):
 
 
 @login_required
+@require_POST
 def drive_export(request, fmt: str):
     if fmt != "csv":
         return redirect("reports:drive_backups")
@@ -203,15 +216,19 @@ def drive_export(request, fmt: str):
 
 
 @login_required
+@require_POST
 def drive_restore(request, file_id: str):
     try:
-        raw = download_file(request.user, file_id)
+        raw = download_backup_file(request.user, file_id)
         result = import_csv(request.user, raw)
         messages.success(request, "Restore completed.")
         return render(request, "reports/import.html", {"result": result})
     except DriveError as e:
         logger.exception("drive_restore DriveError user=%s code=%s file_id=%s", request.user.id, getattr(e, "code", ""), file_id)
         messages.error(request, str(e))
+        return redirect("reports:drive_backups")
+    except ImportValidationError as error:
+        messages.error(request, str(error))
         return redirect("reports:drive_backups")
     except Exception:
         logger.exception("drive_restore failed user=%s file_id=%s", request.user.id, file_id)
@@ -276,10 +293,11 @@ def drive_callback(request):
 
 
 @login_required
+@require_POST
 def drive_disconnect(request):
     try:
         disconnect_drive(request.user)
-        messages.success(request, "Google Drive backups disconnected.")
+        messages.success(request, "Google Drive backups disabled. Your Google sign-in remains connected.")
     except Exception:
         logger.exception("drive_disconnect failed user=%s", request.user.id)
         messages.error(request, "Could not disconnect Google Drive. Try again.")

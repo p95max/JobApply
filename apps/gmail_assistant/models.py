@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -71,6 +72,13 @@ class GmailAnalysis(models.Model):
             models.CheckConstraint(condition=models.Q(confidence__lte=100), name="gmail_analysis_confidence_lte_100"),
         ]
 
+    def clean(self):
+        super().clean()
+        if self.user_id and self.message_id and self.message.user_id != self.user_id:
+            raise ValidationError(
+                {"message": "The Gmail message must belong to the analysis user."}
+            )
+
 
 class ApplicationUpdateProposal(models.Model):
     """A user-reviewed application or interview update proposed from Gmail."""
@@ -112,6 +120,20 @@ class ApplicationUpdateProposal(models.Model):
                 name="application_proposal_match_score_lte_100",
             ),
         ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.user_id and self.message_id and self.message.user_id != self.user_id:
+            errors["message"] = "The Gmail message must belong to the proposal user."
+        if self.user_id and self.analysis_id and self.analysis.user_id != self.user_id:
+            errors["analysis"] = "The Gmail analysis must belong to the proposal user."
+        if self.message_id and self.analysis_id and self.analysis.message_id != self.message_id:
+            errors["analysis"] = "The Gmail analysis must belong to the proposal message."
+        if self.user_id and self.application_id and self.application.user_id != self.user_id:
+            errors["application"] = "The application must belong to the proposal user."
+        if errors:
+            raise ValidationError(errors)
 
 
 class GmailAssistantSettings(models.Model):

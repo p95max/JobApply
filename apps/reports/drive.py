@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 SCOPE = "https://www.googleapis.com/auth/drive.file"
+BACKUP_MIME_TYPE = "text/csv"
+BACKUP_MAX_BYTES = 2 * 1024 * 1024
 
 
 class DriveError(RuntimeError):
@@ -225,6 +227,49 @@ def download_file(user, file_id: str) -> bytes:
         return buf.getvalue()
 
     return _wrap_drive_call("download_file", _do)
+
+
+def download_backup_file(user, file_id: str) -> bytes:
+    """Download only a CSV backup from the current user's JobApply Drive folder."""
+
+    def _do():
+        service = _service(user)
+        folder_id = ensure_jobapply_folder(user, root_name="JobApply", subfolder="backups")
+        metadata = service.files().get(
+            fileId=file_id,
+            fields="id,name,mimeType,size,parents",
+        ).execute()
+        _validate_backup_metadata(metadata, folder_id)
+
+        req = service.files().get_media(fileId=file_id)
+        buf = io.BytesIO()
+        downloader = MediaIoBaseDownload(buf, req)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        return buf.getvalue()
+
+    return _wrap_drive_call("download_backup_file", _do)
+
+
+def _validate_backup_metadata(metadata: dict, folder_id: str) -> None:
+    name = str(metadata.get("name") or "")
+    mime_type = str(metadata.get("mimeType") or "")
+    parents = metadata.get("parents") or []
+    try:
+        size = int(metadata.get("size") or 0)
+    except (TypeError, ValueError) as error:
+        raise DriveError("Backup metadata is invalid.", code="invalid_backup") from error
+
+    if folder_id not in parents:
+        raise DriveError(
+            "The selected file is not in your JobApply backup folder.",
+            code="invalid_backup",
+        )
+    if not name.lower().endswith(".csv") or mime_type != BACKUP_MIME_TYPE:
+        raise DriveError("Only JobApply CSV backups can be restored.", code="invalid_backup")
+    if size < 1 or size > BACKUP_MAX_BYTES:
+        raise DriveError("The selected backup has an invalid size.", code="invalid_backup")
 
 
 def disconnect_drive(user) -> None:
