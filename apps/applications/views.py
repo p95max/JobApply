@@ -7,7 +7,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import JobApplicationForm
 from .models import JobApplication
+from apps.gmail_assistant.models import AnalysisClassifier, ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_stats.models import GmailMessage
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,15 @@ def list_applications(request):
     PER_PAGE_MAX = 50
 
     try:
-        qs = JobApplication.objects.filter(user=request.user)
+        ai_processed_proposals = ApplicationUpdateProposal.objects.filter(
+            user=request.user,
+            application_id=OuterRef("pk"),
+            status=ProposalStatus.ACCEPTED,
+            analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
+        )
+        qs = JobApplication.objects.filter(user=request.user).annotate(
+            has_ai_processed_proposal=Exists(ai_processed_proposals)
+        )
 
         q = (request.GET.get("q") or "").strip()
         status = (request.GET.get("status") or "").strip()
@@ -246,6 +255,12 @@ def update_status(request, pk: int):
 def application_detail(request, pk: int):
     try:
         app = get_object_or_404(JobApplication, pk=pk, user=request.user)
+        ai_processed = ApplicationUpdateProposal.objects.filter(
+            user=request.user,
+            application=app,
+            status=ProposalStatus.ACCEPTED,
+            analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
+        ).exists()
         gmail_messages = (
             GmailMessage.objects.filter(user=request.user)
             .filter(Q(application=app) | Q(proposals__application=app))
@@ -260,6 +275,7 @@ def application_detail(request, pk: int):
             "applications/detail.html",
             {
                 "app": app,
+                "ai_processed": ai_processed,
                 "gmail_messages": gmail_messages,
                 "rejection_at": rejection_message.received_at if rejection_message else None,
             },

@@ -25,11 +25,6 @@
     </div>
   </div>
 
-  <div class="nav nav-pills gap-2 mb-4">
-    <a class="btn btn-sm btn-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">📨 {% trans "Suggestions" %}</a>
-    <a class="btn btn-sm btn-outline-secondary" href="{% url 'gmail_assistant:token_usage' %}">🪙 {% trans "Token usage" %}</a>
-  </div>
-
   {% if dev_tools_enabled %}
     <div class="alert alert-warning py-2 px-3 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2" role="alert">
       <span class="small flex-grow-1">{% trans "Dev tools: reset this account's Gmail data and applications. Google stays connected." %}</span>
@@ -57,7 +52,14 @@
     </div>
   {% endif %}
 
-  <div class="card mb-4">
+  <details class="card mb-4 border-info bg-info-subtle" open>
+    <summary class="card-header bg-info-subtle d-flex justify-content-between align-items-center gap-3">
+      <span>
+        <span class="fw-semibold">{% trans "AI analysis" %}</span>
+        <small class="d-block text-muted">{% trans "Optional Gmail intelligence and automation settings" %}</small>
+      </span>
+      <span class="small text-muted text-nowrap">{% trans "Show or hide" %}</span>
+    </summary>
     <div class="card-body">
       <div id="aiAnalysisProgress" class="alert alert-info d-none d-flex align-items-center gap-2" role="status">
         <span id="aiAnalysisSpinner" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
@@ -66,7 +68,6 @@
       <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="d-flex flex-wrap gap-3 align-items-center">
         {% csrf_token %}
         <div>
-          <div class="fw-semibold">{% trans "AI analysis" %}</div>
           <small class="text-muted">{% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}</small>
           <small class="d-block text-muted">{% blocktrans with minutes=auto_sync_interval_minutes %}When enabled, new Gmail messages are checked automatically about every {{ minutes }} minutes.{% endblocktrans %}</small>
           <small class="d-block text-muted mt-1">
@@ -76,6 +77,7 @@
             · {% trans "Remaining today" %}: {{ ai_daily_remaining }}
             · {% trans "Review below" %}: {{ ai_confidence_threshold }}%
           </small>
+          <a class="small d-inline-block mt-1" href="{% url 'gmail_assistant:token_usage' %}">{% trans "Token usage" %}</a>
         </div>
         <div class="ms-auto">
           <div class="form-check form-switch">
@@ -152,7 +154,7 @@
         </div>
       {% endif %}
     </div>
-  </div>
+  </details>
 
   <div class="nav nav-pills gap-2 mb-3">
     {% for filter in proposal_status_filters %}

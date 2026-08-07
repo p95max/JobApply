@@ -592,6 +592,23 @@ def test_application_detail_shows_only_its_gmail_metadata(client, proposal):
 
 
 @pytest.mark.django_db
+def test_applications_mark_accepted_ai_processed_proposals(client, proposal):
+    proposal.status = ProposalStatus.ACCEPTED
+    proposal.save(update_fields=["status"])
+    proposal.analysis.classifier = AnalysisClassifier.AI
+    proposal.analysis.save(update_fields=["classifier"])
+    client.force_login(proposal.user)
+
+    listing = client.get(reverse("applications:list"))
+    detail = client.get(reverse("applications:detail", args=[proposal.application.pk]))
+
+    assert listing.status_code == 200
+    assert detail.status_code == 200
+    assert "🤖 AI" in listing.content.decode()
+    assert "🤖 AI" in detail.content.decode()
+
+
+@pytest.mark.django_db
 def test_application_detail_highlights_a_rejection(client, proposal):
     proposal.analysis.event_type = GmailEventType.REJECTION
     proposal.analysis.save(update_fields=["event_type"])

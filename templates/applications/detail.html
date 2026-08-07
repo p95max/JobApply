@@ -13,6 +13,7 @@
       <h1 class="h4 mb-1">{{ app.title }}</h1>
       <div class="text-body-secondary">
         {{ app.company }}{% if app.location %}{% endif %}
+        {% if ai_processed %}<span class="badge text-bg-info ms-1" title="{% trans 'Created or updated from an accepted AI suggestion' %}">🤖 AI</span>{% endif %}
       </div>
     </div>
 

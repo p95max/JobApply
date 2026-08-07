@@ -81,7 +81,10 @@
       </td>
 
     <td class="text-body-secondary col-applied">{{ app.applied_at|date:"d.m.Y" }}</td>
-    <td class="fw-semibold col-title">{{ app.title }}</td>
+    <td class="fw-semibold col-title">
+      {{ app.title }}
+      {% if app.has_ai_processed_proposal %}<span class="badge text-bg-info ms-1" title="{% trans 'Created or updated from an accepted AI suggestion' %}">🤖 AI</span>{% endif %}
+    </td>
     <td class="col-company">{{ app.company }}</td>
     <td class="text-body-secondary col-source">
       {{ app.get_source_display|default:app.source|default:"—" }}
