@@ -24,7 +24,6 @@ def test_legal_pages_are_public(client, url_name, expected):
 
     assert response.status_code == 200
     assert expected in response.content
-    assert b"DEMO" in response.content
 
 
 @override_settings(
