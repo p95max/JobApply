@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "apps.accounts.middleware.DemoUserRestrictionsMiddleware",
     "apps.accounts.middleware.ConsentRequiredMiddleware",
 ]
 
@@ -88,6 +89,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.accounts.context_processors.account_mode",
                 "apps.gmail_assistant.context_processors.gmail_assistant_notifications",
             ],
         },

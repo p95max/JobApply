@@ -16,6 +16,9 @@
 
     <nav class="app-navigation" id="app-navigation" aria-label="{% trans 'Main navigation' %}" data-menu-panel>
       {% if user.is_authenticated %}
+        {% if is_demo_user %}
+          {% include "includes/guest/navbar_demo.html" %}
+        {% else %}
         <div class="app-navigation__primary">
           <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span></a>
           <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="{% url 'applications:list' %}"><span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span></a>
@@ -64,6 +67,7 @@
             </div>
           </details>
         </div>
+        {% endif %}
       {% else %}
         <div class="app-navigation__primary app-navigation__primary--guest">
           <a class="app-nav-link" href="#features"><span>✨</span><span>{% trans "Features" %}</span></a>

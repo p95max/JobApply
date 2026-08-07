@@ -1,0 +1,20 @@
+{% load static i18n %}
+
+<section class="dashboard-card dashboard-connections dashboard-locked-connections" aria-labelledby="connectionsTitle">
+  <div class="dashboard-card__header">
+    <h2 id="connectionsTitle">{% trans "Connections" %}</h2>
+    <span class="dashboard-locked-connections__label">{% trans "Google sign-in required" %}</span>
+  </div>
+  <span class="dashboard-connection dashboard-connection--disabled" aria-disabled="true">
+    <span aria-hidden="true"><img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" width="20" height="20" alt=""></span><span><strong>{% trans "Telegram bot" %}</strong><small>{% trans "Notifications" %}</small></span>
+    <b class="dashboard-status">⚪</b>
+  </span>
+  <span class="dashboard-connection dashboard-connection--disabled" aria-disabled="true">
+    <span aria-hidden="true">✉️</span><span><strong>{% trans "Gmail" %}</strong><small>{% trans "Read-only email analysis" %}</small></span>
+    <b class="dashboard-status">⚪</b>
+  </span>
+  <span class="dashboard-connection dashboard-connection--disabled" aria-disabled="true">
+    <span aria-hidden="true"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="20" height="20" alt=""></span><span><strong>{% trans "Drive backups" %}</strong><small>{% trans "Manual" %}</small></span>
+    <b class="dashboard-status">⚪</b>
+  </span>
+</section>

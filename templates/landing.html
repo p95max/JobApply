@@ -44,6 +44,10 @@
         <p class="landing-lead">{% trans "JobApply brings application tracking, passwordless Google sign-in, Gmail updates, Telegram notifications and Google Drive backups into one clear workflow." %}</p>
         <div class="landing-actions">
           <a class="btn btn-primary btn-lg" href="{% url 'google_login_gate' %}?next=/dashboard/">{% trans "Continue with Google" %}</a>
+          <form method="post" action="{% url 'accounts:start_demo' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-light btn-lg" type="submit">{% trans "Try demo without Google" %}</button>
+          </form>
           <a class="btn btn-outline-light btn-lg" href="#features">{% trans "Explore features" %}</a>
         </div>
         <div class="landing-trust">

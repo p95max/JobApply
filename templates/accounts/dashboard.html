@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/dashboard_guest.css' %}?v=1">
 {% endblock %}
 
 {% block content %}
@@ -35,13 +36,22 @@
         </small>
       </article>
       <article class="dashboard-card dashboard-metric">
+        {% if is_demo_user %}
+        <span>{% trans "Demo workspace" %}</span>
+        <strong>✓</strong>
+        <small>{% trans "Manual applications and interviews" %}</small>
+        {% else %}
         <span>{% trans "Suggestions to review" %}</span>
         <strong>{{ pending_proposal_count }}</strong>
         <small>{% trans "From Gmail Assistant" %}</small>
+        {% endif %}
       </article>
     </div>
 
     <div class="dashboard-grid">
+      {% if is_demo_user %}
+        {% include "includes/guest/dashboard_assistant_locked.html" %}
+      {% else %}
       <section class="dashboard-card dashboard-assistant">
         <div class="dashboard-card__header">
           <div>
@@ -86,6 +96,7 @@
           <a href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Open Gmail Assistant" %} →</a>
         </div>
       </section>
+      {% endif %}
 
       <aside class="dashboard-sidebar">
         <section class="dashboard-card dashboard-next">
@@ -106,6 +117,9 @@
           {% endif %}
         </section>
 
+        {% if is_demo_user %}
+          {% include "includes/guest/dashboard_connections_locked.html" %}
+        {% else %}
         <section class="dashboard-card dashboard-connections" aria-labelledby="connectionsTitle">
           <div class="dashboard-card__header">
             <h2 id="connectionsTitle">{% trans "Connections" %}</h2>
@@ -124,6 +138,7 @@
             <b class="dashboard-status {% if drive_connected %}is-active{% endif %}">{% if drive_connected %}🟢{% else %}⚪{% endif %}</b>
           </a>
         </section>
+        {% endif %}
       </aside>
     </div>
 

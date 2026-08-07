@@ -1,0 +1,22 @@
+{% load i18n %}
+
+<section class="dashboard-card dashboard-locked-feature">
+  <div class="dashboard-card__header">
+    <div>
+      <span class="dashboard-section-icon" aria-hidden="true">✨</span>
+      <h2>{% trans "Gmail Assistant" %}</h2>
+    </div>
+    <span class="dashboard-status" aria-label="{% trans 'Google sign-in required' %}">⚪</span>
+  </div>
+  <div class="dashboard-locked-feature__body">
+    <span class="dashboard-locked-feature__icon" aria-hidden="true">🔒</span>
+    <div>
+      <strong>{% trans "Available after Google sign-in" %}</strong>
+      <p>{% trans "Connect Gmail and optionally enable AI only in your full personal workspace." %}</p>
+      <form method="post" action="{% url 'accounts:start_full_login' %}">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-light" type="submit">{% trans "Sign in for full access" %}</button>
+      </form>
+    </div>
+  </div>
+</section>

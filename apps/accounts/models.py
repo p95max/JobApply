@@ -11,6 +11,7 @@ from django.utils import timezone
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    is_demo_user = models.BooleanField(default=False)
     google_data_access_consent = models.BooleanField(default=False)
     consent_accepted_at = models.DateTimeField(null=True, blank=True)
     telegram_user_id = models.BigIntegerField(null=True, blank=True, unique=True)

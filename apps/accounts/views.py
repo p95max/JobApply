@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from urllib.parse import quote
 
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.google.views import oauth2_login
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
@@ -40,6 +42,42 @@ def root(request):
     except Exception:
         logger.exception("root oauth2_login failed")
         return redirect("/accounts/login/")
+
+
+def _is_demo_user(user) -> bool:
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and UserProfile.objects.filter(user=user, is_demo_user=True).exists()
+    )
+
+
+@require_POST
+def start_demo(request):
+    """Create an isolated, temporary workspace without a Google account."""
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    while True:
+        username = f"demo-{secrets.token_urlsafe(8)}"
+        if not User.objects.filter(username=username).exists():
+            break
+
+    with transaction.atomic():
+        user = User.objects.create_user(username=username)
+        UserProfile.objects.create(user=user, is_demo_user=True)
+
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    request.session.set_expiry(60 * 60 * 24)
+    messages.info(request, "Demo mode is active. Sign in with Google to unlock connected services.")
+    return redirect("dashboard")
+
+
+@require_POST
+def start_full_login(request):
+    """Leave a demo workspace before starting a real Google OAuth session."""
+    if _is_demo_user(request.user):
+        logout(request)
+    return redirect("/accounts/google/login/?next=/dashboard/")
 
 
 @login_required

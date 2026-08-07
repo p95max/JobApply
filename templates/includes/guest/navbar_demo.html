@@ -1,0 +1,23 @@
+{% load i18n %}
+
+<div class="app-navigation__primary">
+  <a class="app-nav-link {% if request.path == '/dashboard/' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span><span>{% trans "Dashboard" %}</span></a>
+  <a class="app-nav-link {% if request.path|slice:':14' == '/applications/' %}is-active{% endif %}" href="{% url 'applications:list' %}"><span aria-hidden="true">📋</span><span>{% trans "Applications" %}</span></a>
+  <a class="app-nav-link {% if request.path|slice:':12' == '/interviews/' %}is-active{% endif %}" href="{% url 'interviews:list' %}"><span aria-hidden="true">🗓️</span><span>{% trans "Interviews" %}</span></a>
+  <span class="app-nav-link app-nav-link--disabled" title="{% trans 'Sign in with Google to unlock Gmail Assistant' %}" aria-disabled="true"><span aria-hidden="true">✨</span><span>{% trans "Gmail Assistant" %}</span></span>
+  <span class="app-nav-link app-nav-link--disabled" title="{% trans 'Sign in with Google to unlock reports and backups' %}" aria-disabled="true"><span aria-hidden="true">📊</span><span>{% trans "Reports" %}</span></span>
+</div>
+
+<div class="app-navigation__actions">
+  <a class="app-create-action" href="{% url 'applications:create' %}"><span aria-hidden="true">＋</span><span>{% trans "Add" %}</span></a>
+  <span class="app-demo-mode"><span aria-hidden="true">●</span> {% trans "Demo mode" %}</span>
+  <form method="post" action="{% url 'accounts:start_full_login' %}" class="app-full-access-form">
+    {% csrf_token %}
+    <button class="app-signin-action" type="submit">{% trans "Sign in for full access" %}</button>
+  </form>
+  <form action="{% url 'set_language' %}" method="post" class="app-language-form">
+    {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
+    <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% trans 'Switch language' %}"><span>{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span></button>
+  </form>
+  <a class="app-demo-leave" href="/accounts/logout/">{% trans "Leave demo" %}</a>
+</div>
