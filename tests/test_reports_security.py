@@ -10,6 +10,14 @@ from django.utils import timezone
 from openpyxl import load_workbook
 
 from apps.applications.models import JobApplication
+from apps.gmail_assistant.models import (
+    AnalysisClassifier,
+    ApplicationUpdateProposal,
+    GmailAnalysis,
+    ProposalStatus,
+    ProposalType,
+)
+from apps.gmail_stats.models import GmailMessage
 from apps.reports.drive import DriveError, _validate_backup_metadata
 from apps.reports.models import CloudBackupSettings
 from apps.reports.services import (
@@ -146,6 +154,59 @@ def test_user_can_enable_personal_automatic_drive_backups(client, user, monkeypa
 
     assert response.status_code == 302
     assert CloudBackupSettings.objects.get(user=user).enabled is True
+
+
+@pytest.mark.django_db
+def test_ai_statistics_shows_only_the_current_users_analysis_and_proposals(
+    client,
+    user,
+    django_user_model,
+):
+    message = GmailMessage.objects.create(
+        user=user,
+        message_id="ai-stats-message",
+        thread_id="ai-stats-thread",
+        received_at=timezone.now(),
+    )
+    analysis = GmailAnalysis.objects.create(
+        user=user,
+        message=message,
+        classifier=AnalysisClassifier.AI,
+        confidence=88,
+    )
+    ApplicationUpdateProposal.objects.create(
+        user=user,
+        message=message,
+        analysis=analysis,
+        proposal_type=ProposalType.UPDATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    )
+    other_user = django_user_model.objects.create_user(
+        "other-report-user",
+        email="other@example.com",
+    )
+    other_message = GmailMessage.objects.create(
+        user=other_user,
+        message_id="other-ai-stats-message",
+        thread_id="other-ai-stats-thread",
+        received_at=timezone.now(),
+    )
+    GmailAnalysis.objects.create(
+        user=other_user,
+        message=other_message,
+        classifier=AnalysisClassifier.RULE,
+        confidence=10,
+    )
+
+    client.force_login(user)
+    response = client.get(reverse("reports:ai_statistics"))
+
+    assert response.status_code == 200
+    assert response.context["analysis_total"] == 1
+    assert response.context["analysis_ai"] == 1
+    assert response.context["analysis_rules"] == 0
+    assert response.context["average_confidence"] == 88
+    assert response.context["proposal_counts"][ProposalStatus.PENDING] == 1
 
 
 @pytest.mark.django_db

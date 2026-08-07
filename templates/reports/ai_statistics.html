@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "AI statistics" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4 service-page">
+  {% include "reports/_reports_nav.html" %}
+
+  <section class="service-hero mb-4">
+    <div>
+      <div class="service-eyebrow">🤖 {% trans "Gmail Assistant insights" %}</div>
+      <h1 class="h3 mb-2">{% trans "AI statistics" %}</h1>
+      <p class="text-body-secondary mb-0">{% trans "How Gmail Assistant analysed your messages and what still needs review." %}</p>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Period' %}">
+      <a href="?days=7" class="btn {% if days == 7 %}btn-primary{% else %}btn-outline-secondary{% endif %}">7 {% trans "days" %}</a>
+      <a href="?days=30" class="btn {% if days == 30 %}btn-primary{% else %}btn-outline-secondary{% endif %}">30 {% trans "days" %}</a>
+    </div>
+  </section>
+
+  <div class="service-metric-grid mb-4">
+    <article class="service-metric-card service-metric-card--primary">
+      <div class="service-metric-icon" aria-hidden="true">📨</div>
+      <div class="service-metric-label">{% trans "Messages analysed" %}</div>
+      <div class="service-metric-value">{{ analysis_total }}</div>
+      <div class="service-metric-help">{% blocktrans with days=days %}During the last {{ days }} days{% endblocktrans %}</div>
+    </article>
+    <article class="service-metric-card service-metric-card--info">
+      <div class="service-metric-icon" aria-hidden="true">🤖</div>
+      <div class="service-metric-label">{% trans "AI analysis" %}</div>
+      <div class="service-metric-value">{{ analysis_ai }}</div>
+      <div class="service-metric-help">{% trans "AI or AI-assisted rules" %}</div>
+    </article>
+    <article class="service-metric-card service-metric-card--secondary">
+      <div class="service-metric-icon" aria-hidden="true">⚙️</div>
+      <div class="service-metric-label">{% trans "Rules fallback" %}</div>
+      <div class="service-metric-value">{{ analysis_rules }}</div>
+      <div class="service-metric-help">{% trans "Processed without an AI result" %}</div>
+    </article>
+    <article class="service-metric-card service-metric-card--success">
+      <div class="service-metric-icon" aria-hidden="true">🎯</div>
+      <div class="service-metric-label">{% trans "Average confidence" %}</div>
+      <div class="service-metric-value">{{ average_confidence }}%</div>
+      <div class="service-metric-help">{% trans "Across all analysed messages" %}</div>
+    </article>
+  </div>
+
+  <section class="service-panel mb-4">
+    <div class="service-panel__header">
+      <div>
+        <div class="fw-semibold">{% trans "Proposal review" %}</div>
+        <div class="small text-body-secondary">{% trans "Suggestions created during the selected period" %}</div>
+      </div>
+      <a class="btn btn-sm btn-outline-primary" href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Open Gmail Assistant" %}</a>
+    </div>
+    <div class="row g-2">
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Pending" %}</div><div class="fs-4 fw-semibold text-primary">{{ proposal_counts.pending }}</div><div class="small text-body-secondary">{% trans "Need your review" %}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Accepted" %}</div><div class="fs-4 fw-semibold text-success">{{ proposal_counts.accepted }}</div><div class="small text-body-secondary">{% trans "Applied to your data" %}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Rejected" %}</div><div class="fs-4 fw-semibold text-danger">{{ proposal_counts.rejected }}</div><div class="small text-body-secondary">{% trans "Dismissed after review" %}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded-3 p-3 h-100"><div class="small text-body-secondary">{% trans "Ignored" %}</div><div class="fs-4 fw-semibold text-secondary">{{ proposal_counts.ignored }}</div><div class="small text-body-secondary">{% trans "Left unchanged" %}</div></div></div>
+    </div>
+  </section>
+
+  <section class="service-info-card">
+    <div class="service-info-card__icon" aria-hidden="true">ℹ️</div>
+    <div>
+      <div class="fw-semibold mb-1">{% trans "Tokens and limits" %}</div>
+      <p class="text-body-secondary mb-0">{% trans "Token usage, costs and your daily AI email limit remain in Gmail Assistant, next to the controls that use them." %}</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

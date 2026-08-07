@@ -6,6 +6,7 @@ app_name = "reports"
 
 urlpatterns = [
     path("statistics/", views.statistics, name="statistics"),
+    path("ai-statistics/", views.ai_statistics, name="ai_statistics"),
     path("export/<str:fmt>/", views.export_report, name="export"),
     path("import/", views.import_view, name="import"),
     path("drive/", views.drive_backups, name="drive_backups"),

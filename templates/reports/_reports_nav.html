@@ -7,4 +7,7 @@
   <a class="nav-link {% if request.resolver_match.url_name == 'gmail_dashboard' %}active{% endif %}" href="{% url 'gmail_stats:gmail_dashboard' %}">
     <span aria-hidden="true">📨</span> {% trans "Gmail statistics" %}
   </a>
+  <a class="nav-link {% if request.resolver_match.url_name == 'ai_statistics' %}active{% endif %}" href="{% url 'reports:ai_statistics' %}">
+    <span aria-hidden="true">🤖</span> {% trans "AI statistics" %}
+  </a>
 </nav>

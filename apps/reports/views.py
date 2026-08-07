@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -16,6 +17,12 @@ from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
 from google_auth_oauthlib.flow import Flow
 
 from apps.applications.models import JobApplication
+from apps.gmail_assistant.models import (
+    AnalysisClassifier,
+    ApplicationUpdateProposal,
+    GmailAnalysis,
+    ProposalStatus,
+)
 
 from .drive import (
     DriveError,
@@ -110,6 +117,49 @@ def statistics(request):
         logger.exception("statistics failed user=%s", request.user.id)
         messages.error(request, "Could not build statistics. Try again later.")
         return render(request, "reports/statistics.html", {"stats": {}})
+
+
+@login_required
+def ai_statistics(request):
+    try:
+        days = int(request.GET.get("days", "30"))
+    except ValueError:
+        days = 30
+    if days not in {7, 30}:
+        days = 30
+
+    since = timezone.now() - timedelta(days=days)
+    analyses = GmailAnalysis.objects.filter(user=request.user, analyzed_at__gte=since)
+    analysis_totals = analyses.aggregate(
+        total=Count("id"),
+        ai=Count(
+            "id",
+            filter=Q(classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI)),
+        ),
+        rules=Count("id", filter=Q(classifier=AnalysisClassifier.RULE)),
+        average_confidence=Avg("confidence"),
+    )
+    proposals = ApplicationUpdateProposal.objects.filter(
+        user=request.user,
+        created_at__gte=since,
+    )
+    proposal_counts = {
+        status: proposals.filter(status=status).count()
+        for status in ProposalStatus.values
+    }
+
+    return render(
+        request,
+        "reports/ai_statistics.html",
+        {
+            "days": days,
+            "analysis_total": analysis_totals["total"] or 0,
+            "analysis_ai": analysis_totals["ai"] or 0,
+            "analysis_rules": analysis_totals["rules"] or 0,
+            "average_confidence": round(analysis_totals["average_confidence"] or 0),
+            "proposal_counts": proposal_counts,
+        },
+    )
 
 
 @login_required

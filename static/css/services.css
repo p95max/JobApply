@@ -120,6 +120,7 @@
 .service-metric-card--danger { --metric-glow: rgba(220, 53, 69, .15); }
 .service-metric-card--success { --metric-glow: rgba(25, 135, 84, .15); }
 .service-metric-card--info { --metric-glow: rgba(13, 202, 240, .13); }
+.service-metric-card--secondary { --metric-glow: rgba(108, 117, 125, .14); }
 
 .service-metric-icon {
   width: 38px;
