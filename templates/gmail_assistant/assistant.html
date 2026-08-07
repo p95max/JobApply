@@ -248,6 +248,8 @@
     <p class="text-muted d-none" id="pendingFilterEmpty">{% trans "No pending suggestions match these filters." %}</p>
   {% endif %}
 
+  {% include "includes/_pagination.html" with pagination_kind='assistant' %}
+
   <section class="card mt-4">
     <div class="card-body">
       <h2 class="h6 mb-3">{% trans "FAQ" %}</h2>

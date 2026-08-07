@@ -7,6 +7,8 @@ from datetime import timedelta
 from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Max
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -94,6 +96,25 @@ def _group_proposals_by_message(proposals):
     return grouped
 
 
+def _paginated_proposal_groups(*, proposal_queryset, status: str, page_number: str | None):
+    grouped_messages = (
+        proposal_queryset.filter(status=status)
+        .order_by()
+        .values("message_id")
+        .annotate(message_received_at=Max("message__received_at"), latest_created_at=Max("created_at"))
+        .order_by("-message_received_at", "-latest_created_at")
+    )
+    paginator = Paginator(grouped_messages, 10)
+    page_obj = paginator.get_page(page_number)
+    message_ids = [row["message_id"] for row in page_obj.object_list]
+    proposals = proposal_queryset.filter(status=status, message_id__in=message_ids)
+    groups_by_message_id = {
+        group["message"].id: group for group in _group_proposals_by_message(proposals)
+    }
+    groups = [groups_by_message_id[message_id] for message_id in message_ids]
+    return groups, page_obj, paginator
+
+
 @login_required
 def gmail_assistant(request):
     proposal_queryset = (
@@ -105,8 +126,11 @@ def gmail_assistant(request):
         selected_status = ProposalStatus(request.GET.get("status", ProposalStatus.PENDING))
     except ValueError:
         selected_status = ProposalStatus.PENDING
-    proposals = list(proposal_queryset.filter(status=selected_status.value)[:150])
-    proposal_groups = _group_proposals_by_message(proposals)[:50]
+    proposal_groups, page_obj, paginator = _paginated_proposal_groups(
+        proposal_queryset=proposal_queryset,
+        status=selected_status.value,
+        page_number=request.GET.get("page"),
+    )
     proposal_counts = {
         proposal_status: proposal_queryset.filter(status=proposal_status).count()
         for proposal_status in ProposalStatus.values
@@ -130,11 +154,16 @@ def gmail_assistant(request):
         next_automatic_check_at = assistant_settings.last_successful_run_at + timedelta(
             seconds=django_settings.GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS
         )
+    params = request.GET.copy()
+    params.pop("page", None)
     return render(
         request,
         "gmail_assistant/assistant.html",
         {
             "proposal_groups": proposal_groups,
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "base_qs": params.urlencode(),
             "selected_status": selected_status.value,
             "proposal_status_filters": [
                 {"value": value, "label": label, "count": proposal_counts[value]}

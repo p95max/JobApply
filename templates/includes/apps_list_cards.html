@@ -2,7 +2,7 @@
 
 <div class="application-card-list d-md-none no-print">
   {% for app in items %}
-    <article class="application-card js-row-link" data-href="{% url 'applications:detail' app.pk %}">
+    <article class="application-card application-card--{{ app.status }} js-row-link" data-href="{% url 'applications:detail' app.pk %}">
       <div class="application-card__topbar">
         <label class="application-card__select">
           <input

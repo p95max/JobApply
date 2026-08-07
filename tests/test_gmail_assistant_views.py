@@ -95,6 +95,44 @@ def test_assistant_lists_newest_email_first(client, proposal):
 
 
 @pytest.mark.django_db
+def test_assistant_paginates_complete_message_groups_by_ten(client, proposal):
+    for index in range(10):
+        message = GmailMessage.objects.create(
+            user=proposal.user,
+            message_id=f"pagination-message-{index}",
+            thread_id=f"pagination-thread-{index}",
+            received_at=proposal.message.received_at + timedelta(hours=index + 2),
+            subject=f"Pagination proposal {index}",
+        )
+        analysis = GmailAnalysis.objects.create(
+            user=proposal.user,
+            message=message,
+            event_type=GmailEventType.GENERAL_UPDATE,
+            is_job_related=True,
+        )
+        ApplicationUpdateProposal.objects.create(
+            user=proposal.user,
+            message=message,
+            analysis=analysis,
+            application=proposal.application,
+            proposal_type=ProposalType.UPDATE_APPLICATION,
+            changes={"application": {"status": {"old": "applied", "new": "replied"}}},
+        )
+
+    client.force_login(proposal.user)
+    first_page = client.get(reverse("gmail_assistant:gmail_assistant"))
+    second_page = client.get(reverse("gmail_assistant:gmail_assistant"), {"page": 2})
+
+    assert first_page.status_code == 200
+    assert first_page.context["page_obj"].paginator.per_page == 10
+    assert first_page.context["page_obj"].paginator.count == 11
+    assert len(first_page.context["proposal_groups"]) == 10
+    assert second_page.status_code == 200
+    assert second_page.context["page_obj"].number == 2
+    assert len(second_page.context["proposal_groups"]) == 1
+
+
+@pytest.mark.django_db
 def test_pending_assistant_cards_include_client_side_filters(client, proposal):
     client.force_login(proposal.user)
 

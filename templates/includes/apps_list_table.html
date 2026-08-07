@@ -67,7 +67,7 @@
 
 <tbody>
 {% for app in items %}
-  <tr class="js-row-link" data-href="{% url 'applications:detail' app.pk %}">
+  <tr class="js-row-link apps-table__row apps-table__row--{{ app.status }}" data-href="{% url 'applications:detail' app.pk %}">
     <td class="text-center no-print col-check">
       <input class="form-check-input js-row-check" type="checkbox" value="{{ app.id }}" aria-label="{% trans 'Select row' %}">
     </td>
