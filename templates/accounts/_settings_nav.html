@@ -3,7 +3,7 @@
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
     <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'telegram' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
-      <img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" alt=""> {% trans "Telegram" %}
+      <img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" width="18" height="18" alt=""> {% trans "Telegram" %}
     </a>
   </li>
   <li class="nav-item">
@@ -18,7 +18,7 @@
   </li>
   <li class="nav-item">
     <a class="nav-link {% if request.resolver_match.url_name == 'drive_backups' %}active{% endif %}" href="{% url 'reports:drive_backups' %}">
-      <img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Cloud backups" %}
+      <img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="18" height="18" alt=""> {% trans "Cloud backups" %}
     </a>
   </li>
   <li class="nav-item">

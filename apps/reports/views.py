@@ -47,6 +47,13 @@ def _is_server_operations_owner(user) -> bool:
     return bool(owner_email and user_email == owner_email)
 
 
+def _personal_backup_interval_display() -> str:
+    seconds = settings.PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS
+    if seconds % 3600 == 0:
+        return f"{seconds // 3600} hours"
+    return f"{seconds // 60} minutes"
+
+
 def _google_app() -> SocialApp:
     app = SocialApp.objects.filter(provider="google").first()
     if not app:
@@ -198,6 +205,7 @@ def drive_backups(request):
             "error": error,
             "auto_backup_enabled": bool(getattr(settings_obj, "enabled", False)),
             "auto_backup_last_run_at": getattr(settings_obj, "last_run_at", None),
+            "auto_backup_interval_display": _personal_backup_interval_display(),
             "show_server_operations": _is_server_operations_owner(request.user),
         },
     )
@@ -346,7 +354,10 @@ def toggle_auto_backup(request):
         return redirect("reports:drive_backups")
 
     if enabled:
-        messages.success(request, "Automatic backups enabled (every 5 minutes).")
+        messages.success(
+            request,
+            f"Automatic backups enabled (every {_personal_backup_interval_display()}).",
+        )
     else:
         messages.success(request, "Automatic backups disabled.")
 

@@ -60,10 +60,10 @@
                     <div class="fw-semibold">{% trans "Automatic personal backups" %}</div>
                     <div class="small text-body-secondary">
                       {% if auto_backup_enabled %}
-                        {% trans "Your applications are saved to this Drive folder every 5 minutes." %}
+                        {% blocktrans with interval=auto_backup_interval_display %}Your applications are saved to this Drive folder every {{ interval }}.{% endblocktrans %}
                         {% if auto_backup_last_run_at %}<br>{% trans "Last automatic backup" %}: {{ auto_backup_last_run_at|date:"d.m.Y H:i" }}{% endif %}
                       {% else %}
-                        {% trans "Off. Enable it to save your applications to this Drive folder every 5 minutes." %}
+                        {% blocktrans with interval=auto_backup_interval_display %}Off. Enable it to save your applications to this Drive folder every {{ interval }}.{% endblocktrans %}
                       {% endif %}
                     </div>
                   </div>
@@ -105,11 +105,11 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-            <div class="fw-semibold"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Your Cloud Backups" %}</div>
+            <div class="fw-semibold"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="20" height="20" alt=""> {% trans "Your Cloud Backups" %}</div>
             {% if drive_status.connected and drive_status.has_refresh_token %}
               <form method="post" action="{% url 'reports:drive_export' 'csv' %}">
                 {% csrf_token %}
-                <button class="btn btn-primary btn-sm" type="submit" title="{% trans 'Save a snapshot of your applications to Google Drive now. It does not enable automatic backups.' %}" aria-label="{% trans 'Save a backup manually to Google Drive' %}"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" alt=""> {% trans "Save backup manually" %}</button>
+                <button class="btn btn-primary btn-sm" type="submit" title="{% trans 'Save a snapshot of your applications to Google Drive now. It does not enable automatic backups.' %}" aria-label="{% trans 'Save a backup manually to Google Drive' %}"><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="16" height="16" alt=""> {% trans "Save backup manually" %}</button>
               </form>
             {% endif %}
           </div>

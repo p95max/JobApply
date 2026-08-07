@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from django.db import connection
 from datetime import timedelta
+from django.conf import settings
+from django.db import connection
 from django.core.management.base import BaseCommand
 from apps.reports.models import CloudBackupSettings
 from apps.reports.drive import get_drive_status, upload_backup_rotate_3
@@ -18,11 +19,11 @@ def _ts() -> str:
     return timezone.localtime().strftime("[%H:%M:%S %d-%m-%Y]")
 
 INTERVAL_SECONDS = 300
-BACKUP_EVERY = timedelta(minutes=5)
+BACKUP_EVERY = timedelta(seconds=settings.PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS)
 
 
 class Command(BaseCommand):
-    help = "Runs a lightweight loop that performs Google Drive auto backups (latest + 2) every 5 minutes."
+    help = "Runs a lightweight loop that performs scheduled personal Google Drive backups (latest + 2)."
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS(
