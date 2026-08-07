@@ -19,7 +19,7 @@
           <h1 class="h4 mb-2">{{ proposal.message.subject|default:"—" }}</h1>
           <p class="mb-0 text-muted">{{ proposal.message.from_email|default:"—" }} · {{ proposal.message.received_at|date:"d.m.Y H:i" }}</p>
         </div>
-        <span class="badge text-bg-{{ event_tone }}">{{ proposal.analysis.get_event_type_display }}</span>
+        <span class="badge text-bg-{{ event_tone }}">{{ event_label }}</span>
       </div>
     </div>
   </section>
@@ -47,7 +47,7 @@
     <div class="card-body">
       <h2 class="proposal-step-title"><span class="proposal-step-number">2</span> {% trans "Understand why this was suggested" %}</h2>
       <div class="proposal-metadata">
-        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Event" %}</span>{{ proposal.analysis.get_event_type_display }}</div>
+        <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Event" %}</span>{{ event_label }}</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Confidence" %}</span>{{ proposal.analysis.confidence }}%</div>
         <div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Match" %}</span>{% if proposal.match_method %}{{ proposal.match_method }}{% else %}{% trans "No application matched" %}{% endif %} ({{ proposal.match_score }})</div>
         {% if proposal.analysis.extracted_data.company %}<div class="proposal-metadata__item"><span class="proposal-metadata__label">{% trans "Detected company" %}</span>{{ proposal.analysis.extracted_data.company }}</div>{% endif %}

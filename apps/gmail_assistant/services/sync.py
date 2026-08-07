@@ -21,7 +21,7 @@ from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_emai
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
 from apps.gmail_assistant.services.proposal_builder import build_proposals
-from apps.gmail_assistant.services.queries import build_candidate_query
+from apps.gmail_assistant.services.queries import build_candidate_query, build_sent_applications_query
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
 from apps.gmail_stats.services.direction import determine_direction
 from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
@@ -187,6 +187,19 @@ def _record_rule_fallback(
     )
 
 
+def _outbound_application_rule(rule: RuleClassification) -> RuleClassification:
+    """Relevant messages from Sent represent an application sent by the user."""
+    if not rule.is_job_related:
+        return rule
+    return RuleClassification(
+        event_type="application_sent",
+        detected_type=rule.detected_type,
+        is_job_related=True,
+        confidence=max(rule.confidence, 80),
+        evidence=rule.evidence or ("sent by mailbox owner",),
+    )
+
+
 def _safe_fallback_error(analysis: GmailAnalysis) -> str:
     reason = analysis.extracted_data.get("fallback_reason")
     if isinstance(reason, str) and reason.endswith("Error"):
@@ -202,6 +215,7 @@ def sync_gmail_messages_for_user(
     max_results_each: int = 500,
     ai_analyzer: OpenAIEmailAnalyzer | None = None,
     reanalyze_existing: bool = False,
+    include_sent: bool = False,
 ) -> dict[str, int]:
     """Run the bounded, per-message Gmail assistant pipeline for one user."""
     if not 1 <= days <= 365:
@@ -209,6 +223,13 @@ def sync_gmail_messages_for_user(
 
     candidate_days = _candidate_days(user=user, requested_days=days)
     ids = set(gmail_client.list_message_ids(build_candidate_query(candidate_days), max_results=max_results_each))
+    if include_sent:
+        ids.update(
+            gmail_client.list_message_ids(
+                build_sent_applications_query(candidate_days),
+                max_results=max_results_each,
+            )
+        )
     existing = set(
         GmailMessage.objects.filter(user=user, message_id__in=ids)
         .exclude(processing_status=GmailProcessingStatus.FAILED)
@@ -230,6 +251,7 @@ def sync_gmail_messages_for_user(
         "failed": 0,
         "ignored_noise": 0,
         "outbound_ignored": 0,
+        "outbound_imported": 0,
         "analyses_created": 0,
         "analyzed_by_rules": 0,
         "analyzed_by_ai": 0,
@@ -260,6 +282,8 @@ def sync_gmail_messages_for_user(
                 profile_email=profile_email,
             )
             rule = classify_event(parsed.subject, str(raw.get("snippet") or ""), parsed.text)
+            if direction == GmailDirection.OUTBOUND and include_sent:
+                rule = _outbound_application_rule(rule)
             message, created = _store_message(
                 user=user,
                 message_id=message_id,
@@ -270,10 +294,12 @@ def sync_gmail_messages_for_user(
             )
             counters["created"] += int(created)
 
-            if direction == GmailDirection.OUTBOUND:
+            if direction == GmailDirection.OUTBOUND and not include_sent:
                 _update_message_status(message=message, status=GmailProcessingStatus.IGNORED)
                 counters["outbound_ignored"] += 1
                 continue
+            if direction == GmailDirection.OUTBOUND:
+                counters["outbound_imported"] += 1
 
             if rule.event_type == "noise":
                 _record_analysis(
@@ -319,9 +345,9 @@ def sync_gmail_messages_for_user(
                             result,
                             requires_manual_review=requires_manual_review,
                         ),
-                        event_type=result.event_type,
+                        event_type=("application_sent" if direction == GmailDirection.OUTBOUND else result.event_type),
                         confidence=result.confidence,
-                        is_job_related=result.is_job_related,
+                        is_job_related=(True if direction == GmailDirection.OUTBOUND else result.is_job_related),
                         model_name=config.model,
                     )
                     counters["analyses_created"] += 1

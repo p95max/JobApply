@@ -113,6 +113,47 @@ class MissingKeyAnalyzer(FakeAnalyzer):
 
 
 @pytest.mark.django_db
+def test_manual_sent_import_creates_a_myself_sent_application_proposal(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    class SentQueryClient(FakeGmailClient):
+        def __init__(self, messages):
+            super().__init__(messages)
+            self.queries = []
+
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            self.queries.append(query)
+            return list(self.messages)
+
+    client = SentQueryClient(
+        {
+            "sent-application": message(
+                sender="user@example.com",
+                recipient="recruiter@example.org",
+                subject="Application for Python Developer",
+                text="I would like to apply for the Python Developer position.",
+            )
+        }
+    )
+
+    result = sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=client,
+        ai_analyzer=FakeAnalyzer(),
+        include_sent=True,
+    )
+
+    analysis = GmailAnalysis.objects.get(user=user)
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert any("in:sent" in query for query in client.queries)
+    assert result["outbound_imported"] == 1
+    assert analysis.event_type == GmailEventType.APPLICATION_SENT
+    assert analysis.message.direction == "outbound"
+    assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
+
+
+@pytest.mark.django_db
 def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     client = FakeGmailClient(

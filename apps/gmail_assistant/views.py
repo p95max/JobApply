@@ -45,6 +45,12 @@ def _event_tone(event_type: str) -> str:
     return "secondary"
 
 
+def _proposal_event_label(proposal: ApplicationUpdateProposal) -> str:
+    if proposal.message.direction == "outbound":
+        return "myself_sent"
+    return proposal.analysis.get_event_type_display()
+
+
 def _first_url(*values: object) -> str:
     for value in values:
         if isinstance(value, str):
@@ -163,6 +169,7 @@ def gmail_proposal_detail(request, pk: int):
             "proposal": proposal,
             "candidates": candidates,
             "event_tone": _event_tone(proposal.analysis.event_type),
+            "event_label": _proposal_event_label(proposal),
             "review_context": review_context,
         },
     )

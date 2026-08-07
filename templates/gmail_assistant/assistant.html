@@ -125,7 +125,7 @@
             <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
           </div>
           <span class="badge flex-shrink-0 {% if group.analysis.event_type == 'rejection' %}bg-danger{% elif group.analysis.event_type in technical_event_types %}bg-primary{% elif group.analysis.event_type in interview_event_types %}bg-success{% elif group.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-            {% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}
+            {% if group.message.direction == 'outbound' %}myself_sent{% else %}{% if group.analysis.event_type in technical_event_types %}⚙️ {% endif %}{{ group.analysis.event_type }}{% endif %}
           </span>
         </div>
 
@@ -193,6 +193,13 @@
           <option value="90">{% trans "Last 3 months" %}</option>
           <option value="180">{% trans "Last 6 months" %}</option>
         </select>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" value="1" id="gmailSyncIncludeSent">
+          <label class="form-check-label" for="gmailSyncIncludeSent">
+            {% trans "Include applications sent by me" %}
+          </label>
+          <div class="form-text">{% trans "Searches relevant messages in Sent and labels them myself_sent. This is manual only; automatic checks never scan Sent." %}</div>
+        </div>
         <button id="syncNewGmail" type="button" class="btn btn-primary w-100">{% trans "Sync new messages" %}</button>
       </div>
     </div>
@@ -209,13 +216,14 @@
   const progressText = document.getElementById("aiAnalysisProgressText");
   const syncButton = document.getElementById("aiAnalysisSync");
   const syncDays = document.getElementById("gmailSyncDays");
+  const syncIncludeSent = document.getElementById("gmailSyncIncludeSent");
   const syncNewButton = document.getElementById("syncNewGmail");
   const optionalReanalysisDays = document.querySelector("[data-dev-reanalysis-days]");
   const optionalReanalysisButton = document.querySelector("[data-dev-reanalysis-button]");
 
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
 
-  async function syncGmail(days, reanalyze = false) {
+  async function syncGmail(days, reanalyze = false, includeSent = false) {
     const syncModal = document.getElementById("gmailSyncPeriodModal");
     if (syncModal.classList.contains("show")) bootstrap.Modal.getOrCreateInstance(syncModal).hide();
     progressText.textContent = "{% trans 'Gmail sync and AI analysis can take about 30 seconds. Please keep this page open.' %}";
@@ -225,12 +233,14 @@
     progress.classList.remove("d-none");
     syncButton.disabled = true;
     syncDays.disabled = true;
+    syncIncludeSent.disabled = true;
     syncNewButton.disabled = true;
     if (optionalReanalysisDays) optionalReanalysisDays.disabled = true;
     if (optionalReanalysisButton) optionalReanalysisButton.disabled = true;
     try {
       const params = new URLSearchParams({days});
       if (reanalyze) params.set("reanalyze", "1");
+      if (includeSent) params.set("include_sent", "1");
       const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?" + params.toString(), {
         method: "POST",
         headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
@@ -244,13 +254,14 @@
       progress.classList.add("alert-danger");
       syncButton.disabled = false;
       syncDays.disabled = false;
+      syncIncludeSent.disabled = false;
       syncNewButton.disabled = false;
       if (optionalReanalysisDays) optionalReanalysisDays.disabled = false;
       if (optionalReanalysisButton) optionalReanalysisButton.disabled = false;
     }
   }
 
-  syncNewButton.addEventListener("click", () => syncGmail(syncDays.value));
+  syncNewButton.addEventListener("click", () => syncGmail(syncDays.value, false, syncIncludeSent.checked));
   optionalReanalysisButton?.addEventListener("click", () => {
     if (window.confirm("{% trans 'Reanalyze saved messages for the selected period? This can consume your daily AI email limit.' %}")) {
       syncGmail(optionalReanalysisDays.value, true);

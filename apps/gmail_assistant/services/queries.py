@@ -13,6 +13,15 @@ def build_candidate_query(days: int) -> str:
     )
 
 
+def build_sent_applications_query(days: int) -> str:
+    """Bounded query for applications the mailbox owner sent themselves."""
+    return (
+        f"in:sent newer_than:{days}d "
+        "(bewerbung OR application OR applying OR apply OR position OR stelle OR vacancy) "
+        "-category:promotions -category:social"
+    )
+
+
 def build_responses_query(days: int) -> str:
     return (
         f"newer_than:{days}d "

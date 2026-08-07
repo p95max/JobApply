@@ -75,6 +75,7 @@ def gmail_sync_api(request):
     if not 1 <= days <= 365:
         return JsonResponse({"error": "days must be between 1 and 365"}, status=400)
     reanalyze_existing = request.GET.get("reanalyze", "0") == "1"
+    include_sent = request.GET.get("include_sent", "0") == "1"
     if reanalyze_existing and not has_dev_tools_access(user=request.user):
         return JsonResponse({"error": "Not found"}, status=404)
 
@@ -108,6 +109,7 @@ def gmail_sync_api(request):
             days=days,
             max_results_each=500,
             reanalyze_existing=reanalyze_existing,
+            include_sent=include_sent,
         )
     except (RuntimeError, ValueError) as error:
         logger.warning("Gmail sync failed user_id=%s error=%s", request.user.id, type(error).__name__)
