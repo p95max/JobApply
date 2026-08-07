@@ -120,11 +120,11 @@
     <section class="card mb-3" aria-label="{% trans 'Filter pending suggestions' %}">
       <div class="card-body py-3">
         <div class="row g-2 align-items-end">
-          <div class="col-12 col-md-7">
+          <div class="col-12 col-md-5">
             <label class="form-label small mb-1" for="pendingSearch">{% trans "Search pending suggestions" %}</label>
             <input id="pendingSearch" class="form-control" type="search" placeholder="{% trans 'Search subject, company or role' %}">
           </div>
-          <div class="col-12 col-md-5">
+          <div class="col-12 col-md-4">
             <label class="form-label small mb-1" for="pendingTypeFilter">{% trans "Show" %}</label>
             <select id="pendingTypeFilter" class="form-select">
               <option value="all">{% trans "All pending suggestions" %}</option>
@@ -136,17 +136,26 @@
               <option value="action">{% trans "Actions required" %}</option>
             </select>
           </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small mb-1" for="pendingSort">{% trans "Sort by date" %}</label>
+            <select id="pendingSort" class="form-select">
+              <option value="newest">{% trans "Newest first" %}</option>
+              <option value="oldest">{% trans "Oldest first" %}</option>
+            </select>
+          </div>
         </div>
         <div class="small text-muted mt-2" id="pendingFilterCount" aria-live="polite"></div>
       </div>
     </section>
   {% endif %}
 
+  <div id="pendingCards">
   {% for group in proposal_groups %}
     <section class="card mb-3 js-pending-card {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
       data-event="{{ group.analysis.event_type }}"
       data-direction="{{ group.message.direction }}"
       data-myself-sent="{% if group.analysis.extracted_data.sent_kind == 'direct_application' %}true{% else %}false{% endif %}"
+      data-received-at="{{ group.message.received_at|date:'c' }}"
       data-match="{% if group.representative.application_id %}linked{% else %}unmatched{% endif %}"
       data-proposal-types="{% for proposal in group.proposals %}{{ proposal.proposal_type }} {% endfor %}">
       <div class="card-body">
@@ -182,6 +191,7 @@
   {% empty %}
     <p class="text-muted">{% trans "No proposals in this state." %}</p>
   {% endfor %}
+  </div>
   {% if selected_status == 'pending' and proposal_groups %}
     <p class="text-muted d-none" id="pendingFilterEmpty">{% trans "No pending suggestions match these filters." %}</p>
   {% endif %}
@@ -256,7 +266,9 @@
   const optionalReanalysisButton = document.querySelector("[data-dev-reanalysis-button]");
   const pendingSearch = document.getElementById("pendingSearch");
   const pendingTypeFilter = document.getElementById("pendingTypeFilter");
+  const pendingSort = document.getElementById("pendingSort");
   const pendingCards = Array.from(document.querySelectorAll(".js-pending-card"));
+  const pendingCardsContainer = document.getElementById("pendingCards");
   const pendingFilterCount = document.getElementById("pendingFilterCount");
   const pendingFilterEmpty = document.getElementById("pendingFilterEmpty");
 
@@ -293,11 +305,18 @@
       pendingFilterCount.textContent = `${visible} / ${pendingCards.length} {% trans "pending suggestions shown" %}`;
     }
     pendingFilterEmpty?.classList.toggle("d-none", visible !== 0);
+    if (pendingCardsContainer && pendingSort) {
+      const multiplier = pendingSort.value === "oldest" ? 1 : -1;
+      [...pendingCards]
+        .sort((left, right) => multiplier * (new Date(left.dataset.receivedAt) - new Date(right.dataset.receivedAt)))
+        .forEach((card) => pendingCardsContainer.append(card));
+    }
   }
 
   toggle.addEventListener("change", () => settingsForm.requestSubmit());
   pendingSearch?.addEventListener("input", filterPendingCards);
   pendingTypeFilter?.addEventListener("change", filterPendingCards);
+  pendingSort?.addEventListener("change", filterPendingCards);
   filterPendingCards();
 
   async function syncGmail(days, reanalyze = false, includeSent = false) {
