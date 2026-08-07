@@ -1,0 +1,23 @@
+@media (max-width: 899.98px) {
+  body.app-menu-open {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .app-header.is-open::before {
+    display: none;
+  }
+
+  .app-header.is-open .app-header__inner {
+    flex-wrap: wrap;
+  }
+
+  .app-header.is-open .app-navigation {
+    position: static;
+    flex: 1 0 100%;
+    width: 100%;
+    max-height: calc(100dvh - 88px);
+    margin: 0 0 12px;
+    overflow-y: auto;
+  }
+}
