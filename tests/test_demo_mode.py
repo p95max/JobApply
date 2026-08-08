@@ -10,7 +10,7 @@ from django.urls import reverse
 from apps.accounts.models import UserProfile
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 @override_settings(TURNSTILE_ENABLED=False, DEMO_ACCOUNT_TTL_HOURS=12)
 @patch("apps.accounts.views.send_notification_once")
 def test_guest_can_start_temporary_demo_and_use_manual_workspace(send_notification_mock, client):
