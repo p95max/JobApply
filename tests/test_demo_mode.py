@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
@@ -9,8 +11,9 @@ from apps.accounts.models import UserProfile
 
 
 @pytest.mark.django_db
-@override_settings(TURNSTILE_ENABLED=False)
-def test_guest_can_start_temporary_demo_and_use_manual_workspace(client):
+@override_settings(TURNSTILE_ENABLED=False, DEMO_ACCOUNT_TTL_HOURS=12)
+@patch("apps.accounts.views.send_notification_once")
+def test_guest_can_start_temporary_demo_and_use_manual_workspace(send_notification_mock, client):
     landing = client.get(reverse("landing"))
     response = client.post(reverse("accounts:start_demo"))
 
@@ -19,8 +22,19 @@ def test_guest_can_start_temporary_demo_and_use_manual_workspace(client):
     assert response.url == reverse("dashboard")
     user_id = client.session.get("_auth_user_id")
     profile = UserProfile.objects.get(user_id=user_id)
+    user = get_user_model().objects.get(pk=user_id)
     assert profile.is_demo_user is True
-    assert get_user_model().objects.get(pk=user_id).username.startswith("demo-")
+    assert user.username.startswith("demo-")
+    assert client.session.get_expiry_age() <= 12 * 60 * 60
+    send_notification_mock.assert_called_once_with(
+        event_key=f"demo_started:{user.pk}",
+        event_type="demo_started",
+        text=(
+            "🧪 <b>Demo mode started</b>\n\n"
+            f"👤 Workspace: <code>{user.username}</code>\n"
+            "⏳ Auto-delete after: <b>12 hours</b>"
+        ),
+    )
 
     dashboard = client.get(reverse("dashboard"))
     application_form = client.get(reverse("applications:create"))
