@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from allauth.socialaccount.models import SocialToken
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.db.models import F, IntegerField, Q, Sum, Value
+from django.db.models import BooleanField, Exists, F, IntegerField, OuterRef, Q, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+
+from apps.applications.models import JobApplication
+from apps.gmail_assistant.usage_models import OpenAITokenUsage
 
 
 class ActiveUserAdmin(UserAdmin):
@@ -16,11 +20,14 @@ class ActiveUserAdmin(UserAdmin):
         "email",
         "first_name",
         "last_name",
-        "date_joined",
-        "last_login",
+        "telegram_connected",
+        "drive_connected",
+        "applications_count",
+        "tokens_30d_total",
         "tokens_30d_input",
         "tokens_30d_output",
-        "tokens_30d_total",
+        "date_joined",
+        "last_login",
     )
     list_filter = ("is_staff", "is_superuser", "date_joined", "last_login")
     search_fields = ("username", "email", "first_name", "last_name")
@@ -28,27 +35,70 @@ class ActiveUserAdmin(UserAdmin):
 
     def get_queryset(self, request):
         since = timezone.now() - timedelta(days=30)
-        usage_filter = Q(gmail_openai_token_usage__created_at__gte=since)
+        usage = (
+            OpenAITokenUsage.objects
+            .filter(user_id=OuterRef("pk"), created_at__gte=since)
+            .values("user_id")
+            .annotate(
+                input_total=Sum("input_tokens"),
+                output_total=Sum("output_tokens"),
+            )
+        )
+        applications = (
+            JobApplication.objects
+            .filter(user_id=OuterRef("pk"))
+            .values("user_id")
+            .annotate(total=Sum(Value(1), output_field=IntegerField()))
+            .values("total")[:1]
+        )
+        telegram_linked = Q(userprofile__telegram_chat_id__isnull=False) & Q(
+            userprofile__telegram_user_id__isnull=False
+        )
+        google_token_exists = SocialToken.objects.filter(
+            account__user_id=OuterRef("pk"),
+            account__provider="google",
+        )
+
         return (
             super()
             .get_queryset(request)
             .filter(is_active=True)
             .annotate(
                 tokens_30d_input_value=Coalesce(
-                    Sum("gmail_openai_token_usage__input_tokens", filter=usage_filter),
+                    Subquery(usage.values("input_total")[:1], output_field=IntegerField()),
                     Value(0),
-                    output_field=IntegerField(),
                 ),
                 tokens_30d_output_value=Coalesce(
-                    Sum("gmail_openai_token_usage__output_tokens", filter=usage_filter),
+                    Subquery(usage.values("output_total")[:1], output_field=IntegerField()),
                     Value(0),
-                    output_field=IntegerField(),
                 ),
+                applications_count_value=Coalesce(
+                    Subquery(applications, output_field=IntegerField()),
+                    Value(0),
+                ),
+                telegram_connected_value=Coalesce(
+                    telegram_linked,
+                    Value(False),
+                    output_field=BooleanField(),
+                ),
+                drive_connected_value=Exists(google_token_exists),
             )
             .annotate(
                 tokens_30d_total_value=F("tokens_30d_input_value") + F("tokens_30d_output_value")
             )
         )
+
+    @admin.display(description="Telegram", boolean=True, ordering="telegram_connected_value")
+    def telegram_connected(self, obj: User) -> bool:
+        return obj.telegram_connected_value
+
+    @admin.display(description="Google Drive", boolean=True, ordering="drive_connected_value")
+    def drive_connected(self, obj: User) -> bool:
+        return obj.drive_connected_value
+
+    @admin.display(description="Applications", ordering="applications_count_value")
+    def applications_count(self, obj: User) -> int:
+        return obj.applications_count_value
 
     @admin.display(description="Input tokens · 30d", ordering="tokens_30d_input_value")
     def tokens_30d_input(self, obj: User) -> int:
