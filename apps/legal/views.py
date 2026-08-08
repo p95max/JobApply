@@ -4,7 +4,7 @@ from django.conf import settings
 from django.shortcuts import render
 
 
-def _legal_context() -> dict[str, str]:
+def _legal_context() -> dict[str, object]:
     context = {
         "provider_name": settings.LEGAL_PROVIDER_NAME,
         "provider_address": settings.LEGAL_PROVIDER_ADDRESS,
@@ -12,8 +12,20 @@ def _legal_context() -> dict[str, str]:
         "privacy_contact_email": settings.LEGAL_PRIVACY_CONTACT_EMAIL,
         "supervisory_authority": settings.LEGAL_SUPERVISORY_AUTHORITY,
         "log_retention": settings.LEGAL_LOG_RETENTION,
+        "demo_account_ttl_hours": settings.DEMO_ACCOUNT_TTL_HOURS,
     }
-    context["legal_placeholders_present"] = any(value.startswith("[") for value in context.values())
+    placeholder_values = (
+        context["provider_name"],
+        context["provider_address"],
+        context["contact_email"],
+        context["privacy_contact_email"],
+        context["supervisory_authority"],
+        context["log_retention"],
+    )
+    context["legal_placeholders_present"] = any(
+        isinstance(value, str) and value.startswith("[")
+        for value in placeholder_values
+    )
     return context
 
 
