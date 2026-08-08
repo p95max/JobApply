@@ -19,7 +19,7 @@ from .diagnostics import get_doctor_snapshot, get_health_snapshot
 from .notifications import url_keyboard
 from .permissions import is_update_allowed, linked_profile_for_update
 from .proposal_actions import apply_callback_action, parse_callback_data
-from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
+from .selectors import get_application_summary, get_gmail_summary, get_new_users, get_owner, get_status_snapshot
 from .texts import (
     admin_text,
     applications_text,
@@ -28,6 +28,7 @@ from .texts import (
     gmail_text,
     health_text,
     help_text,
+    new_users_text,
     status_text,
 )
 
@@ -342,6 +343,15 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     result = "forbidden"
                 else:
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
+            elif text == "/newusers":
+                if not _is_owner(user_id, chat_id, config):
+                    reply = "This command is available only to the bot owner."
+                    result = "forbidden"
+                elif has_arguments:
+                    reply = "New users does not accept command arguments."
+                    result = "invalid"
+                else:
+                    reply = new_users_text(get_new_users(days=7), days=7)
             elif text == "/gmail":
                 total, _proposals = get_gmail_summary(data_owner_email)
                 assistant_url = _jobapply_url("/gmail_stats/gmail/assistant/")
