@@ -56,6 +56,7 @@ def test_set_commands_publishes_client_and_admin_scopes():
         "applications",
         "admin",
         "status",
+        "newusers",
         "health",
         "doctor",
         "deploy",
