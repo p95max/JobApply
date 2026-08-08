@@ -47,12 +47,14 @@ def get_owner(email: str):
 
 def get_new_users(days: int = 7):
     since = timezone.now() - timedelta(days=days)
-    return list(
-        get_user_model()
-        .objects.filter(is_active=True, date_joined__gte=since)
+    base_queryset = get_user_model().objects.filter(is_active=True, date_joined__gte=since)
+    demo_count = base_queryset.filter(userprofile__is_demo_user=True).count()
+    users = list(
+        base_queryset.exclude(userprofile__is_demo_user=True)
         .only("email", "date_joined")
         .order_by("-date_joined", "-id")
     )
+    return users, demo_count
 
 
 def _current_commit() -> tuple[str, datetime | None]:
