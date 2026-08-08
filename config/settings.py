@@ -169,6 +169,11 @@ TURNSTILE_SECRET_KEY = getenv("TURNSTILE_SECRET_KEY", "")
 TURNSTILE_ENABLED = getenv("TURNSTILE_ENABLED", "1") == "1"
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
+try:
+    DEMO_ACCOUNT_TTL_HOURS = max(1, int(getenv("DEMO_ACCOUNT_TTL_HOURS", "24")))
+except ValueError:
+    DEMO_ACCOUNT_TTL_HOURS = 24
+
 GMAIL_ASSISTANT_AI_ENABLED = getenv("GMAIL_ASSISTANT_AI_ENABLED", "0") == "1"
 GMAIL_ASSISTANT_AUTO_SYNC_ENABLED = getenv("GMAIL_ASSISTANT_AUTO_SYNC_ENABLED", "1") == "1"
 try:
