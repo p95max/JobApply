@@ -17,6 +17,7 @@ CLIENT_COMMANDS: tuple[dict[str, str], ...] = (
 ADMIN_COMMANDS: tuple[dict[str, str], ...] = CLIENT_COMMANDS + (
     {"command": "admin", "description": "Show administrator commands"},
     {"command": "status", "description": "Show JobApply service status"},
+    {"command": "newusers", "description": "Show users registered in the last 7 days"},
     {"command": "health", "description": "Run runtime health checks"},
     {"command": "doctor", "description": "Run owner diagnostics"},
     {"command": "deploy", "description": "Queue production deploy"},
