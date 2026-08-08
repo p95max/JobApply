@@ -8,7 +8,7 @@
 {% if LANGUAGE_CODE == "de" %}
 <main class="container legal-page py-5">
   <h1>Datenschutzerklärung</h1>
-  <p class="text-body-secondary">Stand: 5. August 2026</p>
+  <p class="text-body-secondary">Stand: 8. August 2026</p>
 
   {% if legal_placeholders_present %}
     <div class="alert legal-placeholder" role="alert"><strong>Demo-Placeholder:</strong> Diese Vorlage ist noch nicht veröffentlichungsfertig. Verantwortliche Person, Anschrift, Kontakt, Log-Aufbewahrung und Aufsichtsbehörde müssen ergänzt und rechtlich geprüft werden.</div>
@@ -32,6 +32,7 @@
   <p>Die Verarbeitung erfolgt, soweit erforderlich, zur Bereitstellung des vom Nutzer angeforderten Dienstes (Art. 6 Abs. 1 lit. b DSGVO), auf Grundlage einer Einwilligung für optionale Funktionen wie AI-Analyse (Art. 6 Abs. 1 lit. a DSGVO) sowie für Sicherheit und Fehleranalyse auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO).</p>
   <h2>7. Speicherdauer</h2>
   <p>Bewerbungs- und Gmail-Daten werden gespeichert, solange das Nutzerkonto bzw. die Verbindung besteht oder bis eine Löschung verlangt wird, sofern keine gesetzlichen Pflichten entgegenstehen. Server-Logs werden für {{ log_retention }} gespeichert.</p>
+  <p>Temporäre Demo-Konten einschließlich der darin angelegten Bewerbungs-, Interview- und Notizdaten werden höchstens <strong>{{ demo_account_ttl_hours }} Stunden</strong> gespeichert und anschließend automatisch gelöscht. Die konkrete Dauer wird durch die Serverkonfiguration <code>DEMO_ACCOUNT_TTL_HOURS</code> festgelegt.</p>
   <h2>8. Cookies</h2>
   <p>JobApply verwendet technisch erforderliche Session- und Sicherheits-Cookies für Anmeldung und Schutz vor missbräuchlichen Anfragen. Es werden keine Analyse- oder Werbe-Cookies eingesetzt, solange solche Dienste nicht ausdrücklich ergänzt werden. Die Kenntnisnahme des Cookie-Hinweises wird als <code>jobapply_cookie_notice</code> für 180 Tage gespeichert.</p>
   <h2>9. Rechte betroffener Personen</h2>
@@ -41,7 +42,7 @@
 {% else %}
 <main class="container legal-page py-5">
   <h1>Privacy Policy</h1>
-  <p class="text-body-secondary">Last updated: August 5, 2026</p>
+  <p class="text-body-secondary">Last updated: August 8, 2026</p>
 
   {% if legal_placeholders_present %}
     <div class="alert legal-placeholder" role="alert"><strong>Demo placeholder:</strong> This template is not ready for publication. The responsible person, address, contact details, log retention and supervisory authority must be completed and legally reviewed.</div>
@@ -65,6 +66,7 @@
   <p>Where necessary, processing is carried out to provide the service requested by the user (Art. 6(1)(b) GDPR), based on consent for optional features such as AI analysis (Art. 6(1)(a) GDPR), and for security and error analysis based on legitimate interests (Art. 6(1)(f) GDPR).</p>
   <h2>7. Retention</h2>
   <p>Application and Gmail data is kept while the user account or connection exists, or until deletion is requested, unless legal obligations require otherwise. Server logs are retained for {{ log_retention }}.</p>
+  <p>Temporary demo accounts, including application, interview and note data created inside them, are retained for no longer than <strong>{{ demo_account_ttl_hours }} hours</strong> and are then deleted automatically. The exact period is controlled by the server setting <code>DEMO_ACCOUNT_TTL_HOURS</code>.</p>
   <h2>8. Cookies</h2>
   <p>JobApply uses technically necessary session and security cookies for sign-in and protection against abusive requests. No analytics or advertising cookies are used unless such services are expressly added. Your acknowledgement of the cookie notice is stored in <code>jobapply_cookie_notice</code> for 180 days.</p>
   <h2>9. Your rights</h2>
