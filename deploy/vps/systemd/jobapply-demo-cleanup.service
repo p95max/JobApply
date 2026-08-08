@@ -1,0 +1,12 @@
+[Unit]
+Description=JobApply expired demo account cleanup
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+EnvironmentFile=/opt/jobapply/.env
+ExecStart=/opt/jobapply/.venv/bin/python manage.py cleanup_demo_users
