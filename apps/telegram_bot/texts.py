@@ -38,10 +38,25 @@ def admin_text() -> str:
     return (
         "🛠 <b>Administrator commands</b>\n\n"
         "📊 /status — service summary\n"
+        "👥 /newusers — users registered in the last 7 days\n"
         "🩺 /health — runtime health checks\n"
         "🛠 /doctor — extended diagnostics\n"
         "🚀 /deploy — queue production deploy"
     )
+
+
+def new_users_text(users, *, days: int = 7) -> str:
+    lines = [f"👥 <b>New users · last {days} days</b>", ""]
+    if not users:
+        lines.append("No new users.")
+        return "\n".join(lines)
+
+    lines.append(f"Total: <b>{len(users)}</b>")
+    lines.append("")
+    for user in users:
+        email = escape((user.email or "no email").strip())
+        lines.append(f"• <code>{email}</code> · {escape(_format_dt(user.date_joined))}")
+    return "\n".join(lines)
 
 
 def status_text(environment: str, snapshot: StatusSnapshot) -> str:
