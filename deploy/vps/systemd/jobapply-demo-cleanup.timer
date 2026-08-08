@@ -1,0 +1,11 @@
+[Unit]
+Description=Clean expired JobApply demo accounts hourly
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=1h
+Persistent=true
+Unit=jobapply-demo-cleanup.service
+
+[Install]
+WantedBy=timers.target
