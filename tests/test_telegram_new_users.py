@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from apps.accounts.models import UserProfile
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import handle_update
 
@@ -47,9 +48,11 @@ def update(user_id: int, command: str = "/newusers") -> dict:
 
 @pytest.mark.django_db
 def test_owner_can_list_active_users_registered_in_last_7_days(django_user_model):
-    recent = django_user_model.objects.create_user("recent", email="recent@example.com")
+    django_user_model.objects.create_user("recent", email="recent@example.com")
     old = django_user_model.objects.create_user("old", email="old@example.com")
     inactive = django_user_model.objects.create_user("inactive", email="inactive@example.com", is_active=False)
+    demo = django_user_model.objects.create_user("demo-recent")
+    UserProfile.objects.create(user=demo, is_demo_user=True)
     django_user_model.objects.filter(pk=old.pk).update(date_joined=timezone.now() - timedelta(days=8))
     django_user_model.objects.filter(pk=inactive.pk).update(date_joined=timezone.now() - timedelta(days=1))
 
@@ -58,9 +61,12 @@ def test_owner_can_list_active_users_registered_in_last_7_days(django_user_model
 
     text = client.messages[0][1]
     assert "New users · last 7 days" in text
+    assert "Registered users: <b>1</b>" in text
+    assert "🧪 Demo workspaces: <b>1</b>" in text
     assert "recent@example.com" in text
     assert "old@example.com" not in text
     assert "inactive@example.com" not in text
+    assert "demo-recent" not in text
     assert client.messages[0][2] is None
 
 
