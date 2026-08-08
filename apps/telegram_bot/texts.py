@@ -45,17 +45,17 @@ def admin_text() -> str:
     )
 
 
-def new_users_text(users, *, days: int = 7) -> str:
+def new_users_text(summary, *, days: int = 7) -> str:
+    users, demo_count = summary
     lines = [f"👥 <b>New users · last {days} days</b>", ""]
-    if not users:
-        lines.append("No new users.")
-        return "\n".join(lines)
+    lines.append(f"Registered users: <b>{len(users)}</b>")
+    lines.append(f"🧪 Demo workspaces: <b>{demo_count}</b>")
 
-    lines.append(f"Total: <b>{len(users)}</b>")
-    lines.append("")
-    for user in users:
-        email = escape((user.email or "no email").strip())
-        lines.append(f"• <code>{email}</code> · {escape(_format_dt(user.date_joined))}")
+    if users:
+        lines.append("")
+        for user in users:
+            email = escape((user.email or "no email").strip())
+            lines.append(f"• <code>{email}</code> · {escape(_format_dt(user.date_joined))}")
     return "\n".join(lines)
 
 
