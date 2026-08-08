@@ -19,10 +19,11 @@ from apps.gmail_stats.models import GmailMessage
 def test_user_admin_lists_active_users_with_usage_integrations_and_applications():
     active_user = User.objects.create_user("active", email="active@example.com")
     inactive_user = User.objects.create_user("inactive", email="inactive@example.com", is_active=False)
-    profile = UserProfile.objects.get(user=active_user)
-    profile.telegram_user_id = 200
-    profile.telegram_chat_id = 100
-    profile.save(update_fields=["telegram_user_id", "telegram_chat_id"])
+    UserProfile.objects.create(
+        user=active_user,
+        telegram_user_id=200,
+        telegram_chat_id=100,
+    )
 
     google_account = SocialAccount.objects.create(
         user=active_user,
