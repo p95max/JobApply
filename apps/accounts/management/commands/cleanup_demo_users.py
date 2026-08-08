@@ -27,7 +27,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         ttl_hours = options["hours"]
         if ttl_hours is None:
-            ttl_hours = int(getattr(settings, "DEMO_ACCOUNT_TTL_HOURS", 24))
+            ttl_hours = int(getattr(settings, "DEMO_ACCOUNT_TTL_HOURS", 12))
         ttl_hours = max(1, ttl_hours)
 
         cutoff = timezone.now() - timedelta(hours=ttl_hours)
