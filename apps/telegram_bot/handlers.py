@@ -16,6 +16,7 @@ from .client import TelegramClient
 from .config import TelegramConfig
 from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
+from .notifications import url_keyboard
 from .permissions import is_update_allowed, linked_profile_for_update
 from .proposal_actions import apply_callback_action, parse_callback_data
 from .selectors import get_application_summary, get_gmail_summary, get_owner, get_status_snapshot
@@ -343,15 +344,17 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
             elif text == "/gmail":
                 total, _proposals = get_gmail_summary(data_owner_email)
-                reply = gmail_text(
-                    total,
-                    assistant_url=_jobapply_url("/gmail_stats/gmail/assistant/"),
-                )
+                assistant_url = _jobapply_url("/gmail_stats/gmail/assistant/")
+                reply = gmail_text(total, assistant_url=assistant_url)
+                if total:
+                    reply_markup = url_keyboard("📨 Open Gmail Assistant", assistant_url)
             elif text == "/applications":
+                applications_url = _jobapply_url("/applications/")
                 reply = applications_text(
                     get_application_summary(data_owner_email),
-                    applications_url=_jobapply_url("/applications/"),
+                    applications_url=applications_url,
                 )
+                reply_markup = url_keyboard("📋 Open applications", applications_url)
             elif text == "/health":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "This command is available only to the bot owner."
