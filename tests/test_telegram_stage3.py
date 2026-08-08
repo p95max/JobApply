@@ -164,7 +164,7 @@ def test_client_cannot_run_administrative_commands(command):
 
 
 @pytest.mark.django_db
-def test_gmail_command_links_to_the_web_review_without_action_buttons(proposal):
+def test_gmail_command_uses_web_review_button_without_action_buttons(proposal):
     client = FakeClient()
 
     handle_update(
@@ -174,8 +174,17 @@ def test_gmail_command_links_to_the_web_review_without_action_buttons(proposal):
     )
 
     assert "Pending proposals: <b>1</b>" in client.messages[0][1]
-    assert 'href="https://jobapply.p95max.dev/gmail_stats/gmail/assistant/"' in client.messages[0][1]
-    assert client.messages[0][2] is None
+    assert "href=" not in client.messages[0][1]
+    assert client.messages[0][2] == {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "📨 Open Gmail Assistant",
+                    "url": "https://jobapply.p95max.dev/gmail_stats/gmail/assistant/",
+                }
+            ]
+        ]
+    }
 
 
 @pytest.mark.django_db
