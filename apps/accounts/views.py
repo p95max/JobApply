@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 
 from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
+from apps.telegram_bot.notifications import send_notification_once
 
 from .models import UserProfile
 
@@ -62,12 +63,24 @@ def start_demo(request):
         if not User.objects.filter(username=username).exists():
             break
 
+    ttl_hours = int(getattr(settings, "DEMO_ACCOUNT_TTL_HOURS", 12))
     with transaction.atomic():
         user = User.objects.create_user(username=username)
         UserProfile.objects.create(user=user, is_demo_user=True)
+        transaction.on_commit(
+            lambda: send_notification_once(
+                event_key=f"demo_started:{user.pk}",
+                event_type="demo_started",
+                text=(
+                    "🧪 <b>Demo mode started</b>\n\n"
+                    f"👤 Workspace: <code>{user.username}</code>\n"
+                    f"⏳ Auto-delete after: <b>{ttl_hours} hours</b>"
+                ),
+            )
+        )
 
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-    request.session.set_expiry(60 * 60 * 24)
+    request.session.set_expiry(60 * 60 * ttl_hours)
     messages.info(request, "Demo mode is active. Sign in with Google to unlock connected services.")
     return redirect("dashboard")
 
@@ -97,7 +110,7 @@ def consent(request):
                 return redirect("applications:list")
             except Exception:
                 logger.exception("accept_consent failed user=%s", request.user.id)
-                messages.error(request, "Could not save consent. Try again.")
+                messages.error(request, "Could not save consent. Try again later.")
 
     return render(
         request,
