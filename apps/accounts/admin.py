@@ -6,10 +6,11 @@ from allauth.socialaccount.models import SocialToken
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from django.db.models import BooleanField, Exists, F, IntegerField, OuterRef, Q, Subquery, Sum, Value
+from django.db.models import Count, Exists, F, IntegerField, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
+from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
 from apps.gmail_assistant.usage_models import OpenAITokenUsage
 
@@ -48,11 +49,13 @@ class ActiveUserAdmin(UserAdmin):
             JobApplication.objects
             .filter(user_id=OuterRef("pk"))
             .values("user_id")
-            .annotate(total=Sum(Value(1), output_field=IntegerField()))
+            .annotate(total=Count("pk"))
             .values("total")[:1]
         )
-        telegram_linked = Q(userprofile__telegram_chat_id__isnull=False) & Q(
-            userprofile__telegram_user_id__isnull=False
+        telegram_link_exists = UserProfile.objects.filter(
+            user_id=OuterRef("pk"),
+            telegram_chat_id__isnull=False,
+            telegram_user_id__isnull=False,
         )
         google_token_exists = SocialToken.objects.filter(
             account__user_id=OuterRef("pk"),
@@ -76,11 +79,7 @@ class ActiveUserAdmin(UserAdmin):
                     Subquery(applications, output_field=IntegerField()),
                     Value(0),
                 ),
-                telegram_connected_value=Coalesce(
-                    telegram_linked,
-                    Value(False),
-                    output_field=BooleanField(),
-                ),
+                telegram_connected_value=Exists(telegram_link_exists),
                 drive_connected_value=Exists(google_token_exists),
             )
             .annotate(
