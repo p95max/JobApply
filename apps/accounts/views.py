@@ -81,7 +81,13 @@ def start_demo(request):
 
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     request.session.set_expiry(60 * 60 * ttl_hours)
-    messages.info(request, "Demo mode is active. Sign in with Google to unlock connected services.")
+    messages.info(
+        request,
+        (
+            "Demo mode is active. Sign in with Google to unlock connected services. "
+            f"This temporary demo account and its data will be automatically deleted after {ttl_hours} hours."
+        ),
+    )
     return redirect("dashboard")
 
 
