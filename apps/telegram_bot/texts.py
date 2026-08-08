@@ -70,14 +70,13 @@ def status_text(environment: str, snapshot: StatusSnapshot) -> str:
     return "\n".join(lines)
 
 
-def gmail_text(total: int, *, assistant_url: str) -> str:
+def gmail_text(total: int, *, assistant_url: str = "") -> str:
     if not total:
         return "📨 <b>Gmail Assistant</b>\n\n✅ No pending proposals."
     return (
         "📨 <b>Gmail Assistant</b>\n\n"
         f"Pending proposals: <b>{total}</b>\n"
-        "Review the source emails and proposed changes in JobApply:\n"
-        f'<a href="{escape(assistant_url)}">Open Gmail Assistant</a>'
+        "Review the source emails and proposed changes in JobApply."
     )
 
 
@@ -107,8 +106,6 @@ def applications_text(summary: ApplicationSummary, *, applications_url: str = ""
                 f"🕒 {escape(_format_dt(interview.starts_at))}",
             ]
         )
-    if applications_url:
-        lines.extend(["", f'<a href="{escape(applications_url)}">Open applications</a>'])
     return "\n".join(lines)
 
 
