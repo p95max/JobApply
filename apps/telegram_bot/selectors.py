@@ -45,6 +45,16 @@ def get_owner(email: str):
     return get_user_model().objects.get(email__iexact=email)
 
 
+def get_new_users(days: int = 7):
+    since = timezone.now() - timedelta(days=days)
+    return list(
+        get_user_model()
+        .objects.filter(is_active=True, date_joined__gte=since)
+        .only("email", "date_joined")
+        .order_by("-date_joined", "-id")
+    )
+
+
 def _current_commit() -> tuple[str, datetime | None]:
     try:
         result = subprocess.run(
