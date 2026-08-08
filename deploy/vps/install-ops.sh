@@ -56,7 +56,7 @@ done
 sudo systemctl daemon-reload
 sudo systemctl restart systemd-journald.service
 sudo systemctl enable --now jobapply-web.service jobapply-gmail-worker.service jobapply-drive-backup-worker.service
-sudo systemctl enable --now jobapply-backup.timer jobapply-neon-sync.timer
+sudo systemctl enable --now jobapply-backup.timer jobapply-neon-sync.timer jobapply-demo-cleanup.timer
 sudo caddy validate --config "$CADDY_FILE"
 # Restart so Caddy and JobApply receive their updated supplementary groups.
 sudo systemctl restart caddy jobapply-web.service jobapply-gmail-worker.service
