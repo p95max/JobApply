@@ -2,12 +2,22 @@ from __future__ import annotations
 
 from html import escape
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from apps.gmail_assistant.models import ApplicationUpdateProposal, GmailEventType
-from apps.telegram_bot.notifications import send_notification_once
+from apps.telegram_bot.notifications import send_notification_once, url_keyboard
+
+
+def _jobapply_url(path: str) -> str:
+    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
+    if domain.startswith(("http://", "https://")):
+        base_url = domain
+    else:
+        base_url = f"https://{domain}"
+    return f"{base_url}{path}"
 
 
 @receiver(post_save, sender=ApplicationUpdateProposal)
@@ -41,12 +51,14 @@ def notify_significant_gmail_proposal(
         "🔎 Review the pending proposal in JobApply."
     )
     event_key = f"{delivery_type}:{instance.message.message_id}"
+    assistant_url = _jobapply_url("/gmail_stats/gmail/assistant/")
 
     transaction.on_commit(
         lambda: send_notification_once(
             event_key=event_key,
             event_type=delivery_type,
             text=text,
+            reply_markup=url_keyboard("📨 Open Gmail Assistant", assistant_url),
         )
     )
 
