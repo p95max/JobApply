@@ -30,6 +30,27 @@ The Gmail Assistant is deliberately review-first: it analyses emails and prepare
 - OpenAI Responses API (optional)
 - Telegram Bot API (optional)
 
+## Demo mode
+
+The public landing page can create an isolated temporary demo workspace without Google OAuth. Demo accounts are marked with `UserProfile.is_demo_user=True`, use the normal application UI with connected-service restrictions, and are intentionally short-lived.
+
+The default demo lifetime is **12 hours** and is configurable with:
+
+```env
+DEMO_ACCOUNT_TTL_HOURS=12
+```
+
+The demo session expiry is aligned with the same TTL. Expired demo users are deleted by the `cleanup_demo_users` management command together with related data through Django cascading deletes. On the VPS, `jobapply-demo-cleanup.timer` runs the cleanup regularly, so stale demo workspaces do not accumulate.
+
+Manual checks:
+
+```bash
+python manage.py cleanup_demo_users --dry-run
+python manage.py cleanup_demo_users
+```
+
+When a visitor enters demo mode from the landing page, the configured Telegram administrator receives a `Demo mode started` notification. The owner-only `/newusers` command reports registered users from the last seven days and shows demo workspaces as a separate count rather than mixing anonymous demos into the email list.
+
 ## Gmail Assistant
 
 Gmail access uses the read-only OAuth scope:
@@ -167,9 +188,12 @@ The configured owner additionally sees:
 
 - `/admin`
 - `/status`
+- `/newusers`
 - `/health`
 - `/doctor`
 - `/deploy`
+
+`/newusers` shows active registered users from the last seven days by email and date, plus a separate `Demo workspaces` count for demo-mode sessions created during the same period.
 
 Administrative commands require both the configured owner user ID and private chat ID. The bot rate-limits inbound updates and `/ping` gives a user-visible liveness response. Telegram failures are isolated from Gmail and application processing. A systemd failure hook can alert the owner if the bot service fails.
 
@@ -241,6 +265,7 @@ Core services:
 - `jobapply-gmail-worker.service` — automatic Gmail Assistant sync
 - `jobapply-drive-backup-worker.service` — personal Drive backup loop
 - `jobapply-telegram-bot.service` — optional Telegram polling
+- `jobapply-demo-cleanup.timer` — periodic deletion of expired demo workspaces
 - `jobapply-backup.timer` — server PostgreSQL dump and off-site upload
 - `jobapply-neon-sync.timer` — optional recovery-database sync
 
@@ -260,6 +285,13 @@ sudo systemctl status jobapply-drive-backup-worker.service --no-pager -l
 sudo journalctl -u jobapply-drive-backup-worker.service -n 80 --no-pager -l
 ```
 
+Check demo cleanup:
+
+```bash
+sudo systemctl status jobapply-demo-cleanup.timer --no-pager -l
+systemctl list-timers --all | grep jobapply-demo-cleanup
+```
+
 Minimum production configuration:
 
 ```env
@@ -269,6 +301,7 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://your-domain.example
 DJANGO_SITE_DOMAIN=your-domain.example
 DJANGO_USE_X_FORWARDED_HOST=1
 DJANGO_SECURE_PROXY_SSL_HEADER=1
+DEMO_ACCOUNT_TTL_HOURS=12
 # Leave empty to allow any Google account. To restrict access, provide a comma-separated list.
 ALLOWED_ACCOUNT_EMAILS=
 ```
