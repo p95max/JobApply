@@ -47,7 +47,7 @@ def test_jobapply_url_is_https_and_resolves():
     assert resolve(path).url_name == "gmail_assistant"
 
 
-def test_gmail_command_includes_gmail_assistant_link_without_buttons(monkeypatch):
+def test_gmail_command_uses_gmail_assistant_button_when_pending(monkeypatch):
     client = FakeClient()
     monkeypatch.setattr("apps.telegram_bot.handlers.get_gmail_summary", lambda email: (0, []))
 
@@ -61,9 +61,17 @@ def test_gmail_command_includes_gmail_assistant_link_without_buttons(monkeypatch
     handle_update(_update("/gmail"), client, _config())
 
     assert "Pending proposals: <b>2</b>" in client.calls[1][1]
-    assert 'href="https://jobapply.p95max.dev/gmail_stats/gmail/assistant/"' in client.calls[1][1]
-    assert "Open Gmail Assistant" in client.calls[1][1]
-    assert client.calls[1][2] is None
+    assert "href=" not in client.calls[1][1]
+    assert client.calls[1][2] == {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "📨 Open Gmail Assistant",
+                    "url": "https://jobapply.p95max.dev/gmail_stats/gmail/assistant/",
+                }
+            ]
+        ]
+    }
 
 
 def test_ping_confirms_that_bot_is_online():
@@ -74,7 +82,7 @@ def test_ping_confirms_that_bot_is_online():
     assert client.calls == [(10, "🟢 JobApply bot is online.", None)]
 
 
-def test_applications_command_includes_hidden_web_link(monkeypatch):
+def test_applications_command_uses_web_button(monkeypatch):
     client = FakeClient()
     monkeypatch.setattr(
         "apps.telegram_bot.handlers.get_application_summary",
@@ -83,9 +91,17 @@ def test_applications_command_includes_hidden_web_link(monkeypatch):
 
     handle_update(_update("/applications"), client, _config())
 
-    assert 'href="https://jobapply.p95max.dev/applications/"' in client.calls[0][1]
-    assert "Open applications" in client.calls[0][1]
-    assert client.calls[0][2] is None
+    assert "href=" not in client.calls[0][1]
+    assert client.calls[0][2] == {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "📋 Open applications",
+                    "url": "https://jobapply.p95max.dev/applications/",
+                }
+            ]
+        ]
+    }
 
 
 def test_disconnect_deep_link_returns_confirmation():
