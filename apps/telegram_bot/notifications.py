@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -24,11 +25,16 @@ def _target_chat_id(config: TelegramConfig, *, recipient_email: str | None = Non
     return resolve_linked_chat_id(config.owner_email) or config.default_chat_id
 
 
+def url_keyboard(text: str, url: str) -> dict[str, list[list[dict[str, str]]]]:
+    return {"inline_keyboard": [[{"text": text, "url": url}]]}
+
+
 def send_notification(
     text: str,
     *,
     recipient_email: str | None = None,
     config: TelegramConfig | None = None,
+    reply_markup: dict[str, Any] | None = None,
 ) -> bool:
     config = config or TelegramConfig.from_env()
     chat_id = _target_chat_id(config, recipient_email=recipient_email)
@@ -37,7 +43,7 @@ def send_notification(
 
     client = TelegramClient(config.token)
     try:
-        client.send_message(chat_id, text)
+        client.send_message(chat_id, text, reply_markup=reply_markup)
         return True
     except Exception as error:
         logger.warning("Telegram notification delivery failed: %s", type(error).__name__)
@@ -53,6 +59,7 @@ def send_notification_once(
     text: str,
     recipient_email: str | None = None,
     config: TelegramConfig | None = None,
+    reply_markup: dict[str, Any] | None = None,
 ) -> bool:
     config = config or TelegramConfig.from_env()
     chat_id = _target_chat_id(config, recipient_email=recipient_email)
@@ -85,7 +92,7 @@ def send_notification_once(
 
     client = TelegramClient(config.token)
     try:
-        client.send_message(chat_id, text)
+        client.send_message(chat_id, text, reply_markup=reply_markup)
     except Exception as error:
         delivery.status = TelegramDeliveryStatus.FAILED
         delivery.error = type(error).__name__[:120]
