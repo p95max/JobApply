@@ -74,18 +74,18 @@ printf 'exit_code=%s\nstart_commit=%s\nstart_commit_date=%s\nend_commit=%s\nend_
 if (( status == 0 )); then
   if [[ "$START_COMMIT" == "$end_commit" ]]; then
     result="UP TO DATE"
-    icon="ℹ️"
+    icon="🟡"
   else
     result="UPDATED"
-    icon="✅"
+    icon="🟢"
   fi
   send_telegram "$(printf '%s <b>JobApply deploy finished</b>\n\n📦 Result: <b>%s</b>\n🔖 Commit: <code>%s</code>\n📅 Commit date: <code>%s</code>\n⏱ Duration: <b>%s</b>' "$icon" "$result" "$end_commit" "$end_commit_date" "$duration")"
 else
   failed_tests="$(sed -nE 's/^FAILED ([^ ]+).*/\1/p' "$LOG_FILE" | head -n 5 | sed 's/::/\n  ↳ /' || true)"
   if [[ -n "$failed_tests" ]]; then
-    send_telegram "$(printf '❌ <b>JobApply deploy failed: TESTS FAILED</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n📅 Commit date: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n<b>Failed tests:</b>\n<pre><code>%s</code></pre>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$end_commit_date" "$duration" "$failed_tests")"
+    send_telegram "$(printf '🔴 <b>JobApply deploy failed: TESTS FAILED</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n📅 Commit date: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n<b>Failed tests:</b>\n<pre><code>%s</code></pre>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$end_commit_date" "$duration" "$failed_tests")"
   else
-    send_telegram "$(printf '❌ <b>JobApply deploy failed</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n📅 Commit date: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$end_commit_date" "$duration")"
+    send_telegram "$(printf '🔴 <b>JobApply deploy failed</b>\n\n🔢 Exit code: <code>%s</code>\n🔖 Commit: <code>%s</code>\n📅 Commit date: <code>%s</code>\n⏱ Duration: <b>%s</b>\n\n🛠 <b>Copy and run on the server:</b>\n<pre><code>tail -n 250 /var/log/jobapply/deploy-last.log</code></pre>' "$status" "$end_commit" "$end_commit_date" "$duration")"
   fi
 fi
 
