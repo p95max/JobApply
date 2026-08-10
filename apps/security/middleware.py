@@ -29,6 +29,16 @@ def _admin_login_key(request) -> str:
 
 
 class TurnstileAnonymousGateMiddleware:
+    PUBLIC_PATHS = frozenset(
+        {
+            "/impressum/",
+            "/datenschutz/",
+            "/nutzungsbedingungen/",
+            "/favicon.ico",
+            "/robots.txt",
+        }
+    )
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -50,7 +60,7 @@ class TurnstileAnonymousGateMiddleware:
             or path.startswith("/static/")
             or path.startswith("/media/")
             or (admin_prefix and path.startswith(admin_prefix))
-            or path in ("/favicon.ico", "/robots.txt")
+            or path in self.PUBLIC_PATHS
         ):
             return self.get_response(request)
 

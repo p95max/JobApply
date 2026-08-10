@@ -17,6 +17,7 @@ from apps.accounts.models import UserProfile
         ("legal:terms", b"Nutzungsbedingungen"),
     ],
 )
+@override_settings(TURNSTILE_ENABLED=True)
 def test_legal_pages_are_public(client, url_name, expected):
     client.cookies[settings.LANGUAGE_COOKIE_NAME] = "de"
 
