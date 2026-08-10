@@ -22,6 +22,7 @@ if not DEBUG and (SECRET_KEY == "dev-secret-key" or len(SECRET_KEY) < 50):
     raise RuntimeError(
         "DJANGO_SECRET_KEY must be a non-development value of at least 50 characters."
     )
+OAUTH_TOKEN_ENCRYPTION_KEY = os.getenv("OAUTH_TOKEN_ENCRYPTION_KEY", "").strip()
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()

@@ -9,6 +9,8 @@ from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
 
 from google.oauth2.credentials import Credentials
 
+from apps.security.oauth_tokens import OAuthTokenError, decrypt_oauth_token
+
 
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
@@ -44,12 +46,15 @@ def get_google_credentials_for_user(user) -> Optional[Credentials]:
 
 
 
-    access_token = token.token
+    try:
+        access_token = decrypt_oauth_token(token.token)
+        refresh_token = decrypt_oauth_token(token.token_secret)
+    except OAuthTokenError:
+        return None
 
     if not access_token:
         return None
 
-    refresh_token = token.token_secret
     expires_at = token.expires_at
 
     if _is_expired(expires_at):

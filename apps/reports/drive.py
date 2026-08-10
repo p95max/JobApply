@@ -12,6 +12,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaInMemoryUpload, MediaIoBaseDownload
 
+from apps.security.oauth_tokens import OAuthTokenError, decrypt_oauth_token
+
 from .models import CloudBackupSettings
 
 try:
@@ -88,7 +90,7 @@ def get_drive_status(user) -> dict:
         if not tok:
             return {"connected": True, "has_refresh_token": False}
 
-        refresh = (tok.token_secret or "").strip()
+        refresh = decrypt_oauth_token(tok.token_secret).strip()
         return {"connected": True, "has_refresh_token": bool(refresh)}
 
     try:
@@ -117,8 +119,11 @@ def _credentials_from_allauth(user) -> Credentials:
     if not app:
         raise PermissionDenied("Google SocialApp is not configured.")
 
-    access_token = tok.token
-    refresh_token = (tok.token_secret or "").strip() or None
+    try:
+        access_token = decrypt_oauth_token(tok.token)
+        refresh_token = decrypt_oauth_token(tok.token_secret).strip() or None
+    except OAuthTokenError as error:
+        raise PermissionDenied("Google token is invalid. Reconnect Google Drive.") from error
     if not refresh_token:
         raise PermissionDenied("Google refresh token is missing. Reconnect Google Drive.")
 
