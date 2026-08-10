@@ -14,18 +14,6 @@ def _legal_context() -> dict[str, object]:
         "log_retention": settings.LEGAL_LOG_RETENTION,
         "demo_account_ttl_hours": settings.DEMO_ACCOUNT_TTL_HOURS,
     }
-    placeholder_values = (
-        context["provider_name"],
-        context["provider_address"],
-        context["contact_email"],
-        context["privacy_contact_email"],
-        context["supervisory_authority"],
-        context["log_retention"],
-    )
-    context["legal_placeholders_present"] = any(
-        isinstance(value, str) and value.startswith("[")
-        for value in placeholder_values
-    )
     return context
 
 
