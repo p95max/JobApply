@@ -14,6 +14,7 @@ from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 from apps.gmail_stats.models import GmailDirection, GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
+from apps.gmail_stats.services.sync_control import GmailSyncBusyError, GmailSyncCooldownError, claim_manual_sync_slot
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,17 @@ def gmail_sync_api(request):
         return JsonResponse({"error": "Not found"}, status=404)
 
     try:
+        claim_manual_sync_slot(user=request.user)
+    except GmailSyncCooldownError as error:
+        return JsonResponse(
+            {
+                "error": "Gmail sync was requested recently. Please wait before trying again.",
+                "retry_after_seconds": error.retry_after_seconds,
+            },
+            status=429,
+        )
+
+    try:
         credentials = get_google_credentials_for_user(request.user)
     except (RuntimeError, ValueError) as error:
         logger.warning("Gmail credential lookup failed user_id=%s error=%s", request.user.id, type(error).__name__)
@@ -110,6 +122,11 @@ def gmail_sync_api(request):
             max_results_each=500,
             reanalyze_existing=reanalyze_existing,
             include_sent=include_sent,
+        )
+    except GmailSyncBusyError:
+        return JsonResponse(
+            {"error": "A Gmail sync is already running for this account."},
+            status=409,
         )
     except (RuntimeError, ValueError) as error:
         logger.warning("Gmail sync failed user_id=%s error=%s", request.user.id, type(error).__name__)

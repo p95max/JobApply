@@ -26,6 +26,9 @@ class GmailSyncState(models.Model):
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_manual_sync_requested_at = models.DateTimeField(null=True, blank=True)
+    sync_started_at = models.DateTimeField(null=True, blank=True)
+    sync_lock_token = models.CharField(max_length=32, blank=True)
 
     def __str__(self) -> str:
         return f"GmailSyncState(user_id={self.user_id})"

@@ -28,3 +28,12 @@ def test_google_login_drops_external_return_url(client):
 
 def test_allauth_does_not_show_a_second_login_confirmation_page():
     assert settings.SOCIALACCOUNT_LOGIN_ON_GET is True
+
+
+@pytest.mark.django_db
+@override_settings(TURNSTILE_ENABLED=True)
+def test_direct_google_oauth_requires_a_turnstile_gate_session(client):
+    response = client.get(reverse("google_oauth_login"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("google_login_gate") + f"?next={reverse('google_oauth_login')}"

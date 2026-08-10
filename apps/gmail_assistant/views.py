@@ -413,6 +413,15 @@ def reset_ai_daily_limit(request):
         raise Http404
     assistant_settings, _created = GmailAssistantSettings.objects.get_or_create(user=request.user)
     assistant_settings.ai_daily_usage_reset_at = timezone.now()
-    assistant_settings.save(update_fields=["ai_daily_usage_reset_at", "updated_at"])
+    assistant_settings.ai_daily_usage_date = timezone.localdate()
+    assistant_settings.ai_daily_usage_count = 0
+    assistant_settings.save(
+        update_fields=[
+            "ai_daily_usage_reset_at",
+            "ai_daily_usage_date",
+            "ai_daily_usage_count",
+            "updated_at",
+        ]
+    )
     messages.success(request, _("Today's AI limit was reset for this user."))
     return redirect("gmail_assistant:gmail_assistant")

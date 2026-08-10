@@ -26,8 +26,6 @@ class TurnstileAnonymousGateMiddleware:
 
         if (
             path == gate_path
-            or path.startswith("/accounts/google/")
-            or path.startswith("/accounts/social/")
             or path.startswith("/static/")
             or path.startswith("/media/")
             or (admin_prefix and path.startswith(admin_prefix))

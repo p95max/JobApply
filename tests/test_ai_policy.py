@@ -70,3 +70,18 @@ def test_daily_usage_excludes_ai_analyses_before_a_user_reset(django_user_model)
     GmailAssistantSettings.objects.create(user=user, ai_daily_usage_reset_at=timezone.now())
 
     assert AIUsagePolicy.from_environment().daily_usage(user=user) == 0
+
+
+@pytest.mark.django_db
+def test_atomic_ai_reservations_stop_at_the_daily_limit(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    policy = AIUsagePolicy(daily_limit=2, confidence_threshold=80, rules_fallback_enabled=True)
+
+    assert policy.reserve_call(user=user) is True
+    assert policy.reserve_call(user=user) is True
+    assert policy.reserve_call(user=user) is False
+
+    settings_obj = GmailAssistantSettings.objects.get(user=user)
+    assert settings_obj.ai_daily_usage_count == 2
+    assert settings_obj.ai_daily_usage_date == timezone.localdate()
+    assert policy.daily_usage(user=user) == 2

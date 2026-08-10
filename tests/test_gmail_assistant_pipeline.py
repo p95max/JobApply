@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import pytest
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone as django_timezone
 
 from apps.accounts.models import UserProfile
 from apps.applications.models import JobApplication
@@ -513,6 +514,20 @@ def test_sync_api_reports_missing_gmail_readonly_permission(client, django_user_
 
     assert response.status_code == 403
     assert "gmail.readonly" in response.json()["error"]
+
+
+@pytest.mark.django_db
+@override_settings(GMAIL_SYNC_MANUAL_COOLDOWN_SECONDS=60)
+def test_sync_api_rate_limits_repeated_manual_requests(client, django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+    GmailSyncState.objects.create(user=user, last_manual_sync_requested_at=django_timezone.now())
+    client.force_login(user)
+
+    response = client.post(reverse("gmail_stats:gmail_sync_api"))
+
+    assert response.status_code == 429
+    assert response.json()["retry_after_seconds"] >= 1
 
 
 @pytest.mark.django_db

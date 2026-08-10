@@ -25,6 +25,7 @@ from apps.gmail_assistant.services.classifier import RuleClassification, classif
 from apps.gmail_assistant.services.proposal_builder import build_proposals
 from apps.gmail_assistant.services.queries import build_candidate_query, build_sent_applications_query
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
+from apps.gmail_stats.services.sync_control import acquire_gmail_sync_lock
 from apps.gmail_stats.services.direction import determine_direction
 from apps.gmail_stats.services.message_parser import ParsedGmailMessage, parse_gmail_message
 
@@ -270,6 +271,29 @@ def sync_gmail_messages_for_user(
     include_sent: bool = False,
 ) -> dict[str, int]:
     """Run the bounded, per-message Gmail assistant pipeline for one user."""
+    with acquire_gmail_sync_lock(user=user):
+        return _sync_gmail_messages_for_user(
+            user=user,
+            gmail_client=gmail_client,
+            days=days,
+            max_results_each=max_results_each,
+            ai_analyzer=ai_analyzer,
+            reanalyze_existing=reanalyze_existing,
+            include_sent=include_sent,
+        )
+
+
+def _sync_gmail_messages_for_user(
+    *,
+    user: Any,
+    gmail_client: Any,
+    days: int = 180,
+    max_results_each: int = 500,
+    ai_analyzer: OpenAIEmailAnalyzer | None = None,
+    reanalyze_existing: bool = False,
+    include_sent: bool = False,
+) -> dict[str, int]:
+    """Run the Gmail pipeline after the caller obtained the per-user lock."""
     if not 1 <= days <= 365:
         raise ValueError("days must be between 1 and 365")
 
@@ -294,8 +318,6 @@ def sync_gmail_messages_for_user(
     config = ai_analyzer.config if ai_analyzer else AIAnalyzerConfig.from_environment()
     analyzer = ai_analyzer or OpenAIEmailAnalyzer(config)
     policy = AIUsagePolicy.from_environment()
-    initial_ai_usage = policy.daily_usage(user=user)
-    ai_calls_reserved = 0
     counters = {
         "days": candidate_days,
         "fetched_candidates": len(ids),
@@ -388,11 +410,11 @@ def sync_gmail_messages_for_user(
                 continue
 
             ai_enabled = bool(assistant_settings and assistant_settings.ai_enabled)
-            capacity_available = initial_ai_usage + ai_calls_reserved < policy.daily_limit
-            use_ai = _ai_available(ai_enabled=ai_enabled, config=config) and capacity_available
+            ai_available = _ai_available(ai_enabled=ai_enabled, config=config)
+            capacity_available = ai_available and policy.reserve_call(user=user)
+            use_ai = ai_available and capacity_available
 
             if use_ai:
-                ai_calls_reserved += 1
                 try:
                     result = analyzer.analyze(
                         SanitizedEmail(
@@ -466,7 +488,7 @@ def sync_gmail_messages_for_user(
                     counters["ai_fallbacks"] += 1
             else:
                 reason = "ai_disabled"
-                if _ai_available(ai_enabled=ai_enabled, config=config) and not capacity_available:
+                if ai_available and not capacity_available:
                     reason = "daily_limit_reached"
                     counters["ai_limit_reached"] += 1
                 if not policy.rules_fallback_enabled:
