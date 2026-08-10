@@ -1,11 +1,13 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import UserProfile
 
 
+@override_settings(TURNSTILE_ENABLED=True)
 def test_public_root_renders_landing_page(client):
     response = client.get(reverse("landing"))
 

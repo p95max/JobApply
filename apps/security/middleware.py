@@ -31,6 +31,7 @@ def _admin_login_key(request) -> str:
 class TurnstileAnonymousGateMiddleware:
     PUBLIC_PATHS = frozenset(
         {
+            "/",
             "/impressum/",
             "/datenschutz/",
             "/nutzungsbedingungen/",
