@@ -173,6 +173,16 @@ try:
     DEMO_ACCOUNT_TTL_HOURS = max(1, int(getenv("DEMO_ACCOUNT_TTL_HOURS", "12")))
 except ValueError:
     DEMO_ACCOUNT_TTL_HOURS = 12
+try:
+    DEMO_START_MAX_PER_IP_PER_DAY = max(1, min(20, int(getenv("DEMO_START_MAX_PER_IP_PER_DAY", "3"))))
+except ValueError:
+    DEMO_START_MAX_PER_IP_PER_DAY = 3
+try:
+    DEMO_START_COOLDOWN_SECONDS = max(0, int(getenv("DEMO_START_COOLDOWN_SECONDS", "60")))
+except ValueError:
+    DEMO_START_COOLDOWN_SECONDS = 60
+# Enable only behind a proxy that overwrites, rather than forwards, client headers.
+DEMO_START_TRUST_X_FORWARDED_FOR = getenv("DEMO_START_TRUST_X_FORWARDED_FOR", "0") == "1"
 
 GMAIL_ASSISTANT_AI_ENABLED = getenv("GMAIL_ASSISTANT_AI_ENABLED", "0") == "1"
 GMAIL_ASSISTANT_AUTO_SYNC_ENABLED = getenv("GMAIL_ASSISTANT_AUTO_SYNC_ENABLED", "1") == "1"
@@ -230,6 +240,10 @@ try:
     )
 except ValueError:
     APPLICATION_BULK_DELETE_MAX_IDS = 200
+try:
+    APPLICATIONS_PER_USER_LIMIT = max(10, min(10_000, int(getenv("APPLICATIONS_PER_USER_LIMIT", "1000"))))
+except ValueError:
+    APPLICATIONS_PER_USER_LIMIT = 1000
 try:
     CSV_IMPORT_DAILY_LIMIT = max(1, min(20, int(getenv("CSV_IMPORT_DAILY_LIMIT", "3"))))
 except ValueError:

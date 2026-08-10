@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from apps.applications.services.limits import ApplicationLimitError, ensure_application_capacity
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus, ProposalType
 from apps.gmail_assistant.services.status_policy import proposed_status, status_reference_at
@@ -108,6 +109,10 @@ def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides
             return application
         if not changes or changes.get("operation") != "create":
             raise ProposalApplyError("create proposal has invalid application changes")
+        try:
+            ensure_application_capacity(user=user)
+        except ApplicationLimitError as error:
+            raise ProposalApplyError(str(error)) from error
         application = JobApplication(
             user=user,
             title=_required_string(changes, "title", 200),

@@ -21,6 +21,7 @@ from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.telegram_bot.notifications import send_notification_once
 
+from .demo_limits import DemoStartRateLimitError, claim_demo_start, client_ip
 from .models import TelegramLinkTokenCooldownError, UserProfile
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,15 @@ def start_demo(request):
     """Create an isolated, temporary workspace without a Google account."""
     if request.user.is_authenticated:
         return redirect("dashboard")
+
+    try:
+        claim_demo_start(ip_address=client_ip(request))
+    except DemoStartRateLimitError as error:
+        messages.error(
+            request,
+            f"Too many demo starts from this network. Please try again in {error.retry_after_seconds} seconds.",
+        )
+        return redirect("landing")
 
     while True:
         username = f"demo-{secrets.token_urlsafe(8)}"

@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.applications.models import ApplicationSource, ApplicationStatus, JobApplication
+from apps.applications.services.limits import ApplicationLimitError, ensure_application_capacity
 from apps.gmail_assistant.models import ApplicationUpdateProposal, GmailEventType, ProposalStatus
 
 
@@ -42,25 +43,30 @@ def create_application_for_proposal(request, pk: int):
 
     source = _application_source((proposal.message.from_email or "").lower())
 
-    with transaction.atomic():
-        application = JobApplication.objects.create(
-            user=request.user,
-            title=title,
-            company=company,
-            location=location,
-            source=source,
-            status=ApplicationStatus.APPLIED,
-            applied_at=proposal.message.received_at,
-            notes=_("Created from Gmail Assistant proposal."),
-        )
-        proposal.application = application
-        proposal.match_method = "manual_created"
-        proposal.match_score = 100
-        proposal.save(update_fields=["application", "match_method", "match_score", "updated_at"])
+    try:
+        with transaction.atomic():
+            ensure_application_capacity(user=request.user)
+            application = JobApplication.objects.create(
+                user=request.user,
+                title=title,
+                company=company,
+                location=location,
+                source=source,
+                status=ApplicationStatus.APPLIED,
+                applied_at=proposal.message.received_at,
+                notes=_("Created from Gmail Assistant proposal."),
+            )
+            proposal.application = application
+            proposal.match_method = "manual_created"
+            proposal.match_score = 100
+            proposal.save(update_fields=["application", "match_method", "match_score", "updated_at"])
 
-        proposal.message.application = application
-        proposal.message.is_user_verified = True
-        proposal.message.save(update_fields=["application", "is_user_verified", "updated_at"])
+            proposal.message.application = application
+            proposal.message.is_user_verified = True
+            proposal.message.save(update_fields=["application", "is_user_verified", "updated_at"])
+    except ApplicationLimitError as error:
+        messages.error(request, str(error))
+        return redirect("gmail_assistant:gmail_proposal_detail", pk=proposal.pk)
 
     messages.success(request, _("Application created and linked. Review the proposal before accepting it."))
     return redirect("gmail_assistant:gmail_proposal_detail", pk=proposal.pk)
@@ -84,40 +90,45 @@ def create_rejected_application_for_proposal(request, pk: int):
         messages.error(request, _("Job title and company are required."))
         return redirect("gmail_assistant:gmail_proposal_detail", pk=proposal.pk)
 
-    with transaction.atomic():
-        application = JobApplication.objects.create(
-            user=request.user,
-            title=title,
-            company=company,
-            location=location,
-            source=_application_source((proposal.message.from_email or "").lower()),
-            status=ApplicationStatus.REJECTED,
-            # This is the only known timestamp. The note makes clear that it is
-            # the rejection email date, not a fabricated application confirmation.
-            applied_at=proposal.message.received_at,
-            recruiter_reply_at=proposal.message.received_at,
-            notes=_("Created from an immediate rejection email. The original application date is unknown."),
-        )
-        proposal.application = application
-        proposal.match_method = "manual_created_immediate_rejection"
-        proposal.match_score = 100
-        proposal.status = ProposalStatus.ACCEPTED
-        proposal.reviewed_at = timezone.now()
-        proposal.review_note = _("Created as a rejected application after manual review.")
-        proposal.save(
-            update_fields=[
-                "application",
-                "match_method",
-                "match_score",
-                "status",
-                "reviewed_at",
-                "review_note",
-                "updated_at",
-            ]
-        )
-        proposal.message.application = application
-        proposal.message.is_user_verified = True
-        proposal.message.save(update_fields=["application", "is_user_verified", "updated_at"])
+    try:
+        with transaction.atomic():
+            ensure_application_capacity(user=request.user)
+            application = JobApplication.objects.create(
+                user=request.user,
+                title=title,
+                company=company,
+                location=location,
+                source=_application_source((proposal.message.from_email or "").lower()),
+                status=ApplicationStatus.REJECTED,
+                # This is the only known timestamp. The note makes clear that it is
+                # the rejection email date, not a fabricated application confirmation.
+                applied_at=proposal.message.received_at,
+                recruiter_reply_at=proposal.message.received_at,
+                notes=_("Created from an immediate rejection email. The original application date is unknown."),
+            )
+            proposal.application = application
+            proposal.match_method = "manual_created_immediate_rejection"
+            proposal.match_score = 100
+            proposal.status = ProposalStatus.ACCEPTED
+            proposal.reviewed_at = timezone.now()
+            proposal.review_note = _("Created as a rejected application after manual review.")
+            proposal.save(
+                update_fields=[
+                    "application",
+                    "match_method",
+                    "match_score",
+                    "status",
+                    "reviewed_at",
+                    "review_note",
+                    "updated_at",
+                ]
+            )
+            proposal.message.application = application
+            proposal.message.is_user_verified = True
+            proposal.message.save(update_fields=["application", "is_user_verified", "updated_at"])
+    except ApplicationLimitError as error:
+        messages.error(request, str(error))
+        return redirect("gmail_assistant:gmail_proposal_detail", pk=proposal.pk)
 
     messages.success(request, _("Rejected application created and Gmail rejection recorded."))
     return redirect("gmail_assistant:gmail_assistant")

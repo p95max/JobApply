@@ -5,11 +5,13 @@ import io
 from dataclasses import dataclass
 from datetime import datetime
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from openpyxl import Workbook
 
 from apps.applications.forms import JobApplicationForm
 from apps.applications.models import JobApplication
+from apps.applications.services.limits import ApplicationLimitError, ensure_application_capacity
 
 
 EXPECTED_IMPORT_HEADERS = (
@@ -112,20 +114,43 @@ def import_csv(user, raw_bytes: bytes) -> dict[str, int]:
         headers = ",".join(reader.fieldnames or ())
         raise ImportValidationError(f"Unexpected CSV header: {headers or 'missing header'}.")
 
+    rows = list(reader)
+    if len(rows) > MAX_IMPORT_ROWS:
+        raise ImportValidationError(f"A CSV import may contain at most {MAX_IMPORT_ROWS} rows.")
+
+    owned_ids: set[int] = set()
+    parsed_ids: list[int | None] = []
+    for row_number, row in enumerate(rows, start=2):
+        if None in row:
+            raise ImportValidationError(f"Row {row_number} has more values than the header.")
+        raw_id = (row.get("id") or "").strip()
+        if not raw_id:
+            parsed_ids.append(None)
+            continue
+        if not raw_id.isdigit() or int(raw_id) < 1:
+            raise ImportValidationError(f"Row {row_number}: id must be a positive integer or empty.")
+        parsed_id = int(raw_id)
+        parsed_ids.append(parsed_id)
+        owned_ids.add(parsed_id)
+
     created = 0
     updated = 0
     with transaction.atomic():
-        for row_number, row in enumerate(reader, start=2):
-            if row_number - 1 > MAX_IMPORT_ROWS:
-                raise ImportValidationError(f"A CSV import may contain at most {MAX_IMPORT_ROWS} rows.")
-            if None in row:
-                raise ImportValidationError(f"Row {row_number} has more values than the header.")
-
+        # Hold the same per-user lock as every other application-creation path
+        # before deciding how many rows will become new records.
+        get_user_model().objects.select_for_update().get(pk=user.pk)
+        existing_ids = set(
+            JobApplication.objects.filter(user=user, id__in=owned_ids).values_list("id", flat=True)
+        )
+        create_count = sum(1 for application_id in parsed_ids if application_id not in existing_ids)
+        try:
+            ensure_application_capacity(user=user, create_count=create_count)
+        except ApplicationLimitError as error:
+            raise ImportValidationError(str(error)) from error
+        for row_number, row in enumerate(rows, start=2):
             raw_id = (row.get("id") or "").strip()
             application = None
             if raw_id:
-                if not raw_id.isdigit() or int(raw_id) < 1:
-                    raise ImportValidationError(f"Row {row_number}: id must be a positive integer or empty.")
                 application = JobApplication.objects.filter(user=user, id=int(raw_id)).first()
             was_existing = application is not None
 

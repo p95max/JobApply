@@ -4,10 +4,16 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import UserProfile
+
+
+@pytest.fixture(autouse=True)
+def clear_demo_start_cache():
+    cache.clear()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -82,3 +88,27 @@ def test_google_login_leaves_demo_workspace_before_oauth(client):
     assert response.status_code == 302
     assert response.url == "/accounts/google/login/?next=/dashboard/"
     assert "_auth_user_id" not in client.session
+
+
+@pytest.mark.django_db
+@override_settings(
+    TURNSTILE_ENABLED=False,
+    DEMO_START_MAX_PER_IP_PER_DAY=1,
+    DEMO_START_COOLDOWN_SECONDS=0,
+)
+def test_demo_start_is_limited_per_untrusted_client_ip(client):
+    cache.clear()
+    remote_ip = "198.51.100.42"
+
+    first = client.post(reverse("accounts:start_demo"), REMOTE_ADDR=remote_ip)
+    client.logout()
+    second = client.post(
+        reverse("accounts:start_demo"),
+        REMOTE_ADDR=remote_ip,
+        HTTP_X_FORWARDED_FOR="203.0.113.99",
+    )
+
+    assert first.status_code == 302
+    assert second.status_code == 302
+    assert second.url == reverse("landing")
+    assert UserProfile.objects.filter(is_demo_user=True).count() == 1

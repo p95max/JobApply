@@ -101,6 +101,34 @@ def test_import_uses_application_form_validation_and_is_atomic(user):
 
 
 @pytest.mark.django_db
+@override_settings(APPLICATIONS_PER_USER_LIMIT=1)
+def test_import_respects_the_per_user_application_limit(user):
+    JobApplication.objects.create(user=user, company="Existing GmbH", title="Developer")
+
+    with pytest.raises(ImportValidationError, match="Application limit reached"):
+        import_csv(
+            user,
+            _csv(
+                [
+                    {
+                        "id": "",
+                        "title": "New role",
+                        "company": "New GmbH",
+                        "location": "",
+                        "source": "other",
+                        "status": "applied",
+                        "applied_at": "",
+                        "recruiter_reply_at": "",
+                        "notes": "",
+                    }
+                ]
+            ),
+        )
+
+    assert JobApplication.objects.filter(user=user).count() == 1
+
+
+@pytest.mark.django_db
 def test_import_accepts_exported_datetime_values(user):
     result = import_csv(
         user,

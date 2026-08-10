@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,6 +18,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import JobApplicationForm
 from .models import JobApplication
+from .services.limits import ApplicationLimitError, ensure_application_capacity
 from apps.gmail_assistant.models import AnalysisClassifier, ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_stats.models import GmailMessage
 
@@ -152,24 +154,26 @@ def list_applications(request):
 
 @login_required
 def create_application(request):
-    try:
-        if request.method == "POST":
-            form = JobApplicationForm(request.POST)
-            if form.is_valid():
-                obj = form.save(commit=False)
-                obj.user = request.user
-                obj.save()
-                messages.success(request, "Application created.")
-                return redirect("applications:list")
-        else:
-            form = JobApplicationForm()
-
+    form = JobApplicationForm(request.POST or None)
+    if request.method != "POST":
         return render(request, "applications/form.html", {"form": form, "mode": "create"})
+
+    try:
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.user = request.user
+            with transaction.atomic():
+                ensure_application_capacity(user=request.user)
+                obj.save()
+            messages.success(request, "Application created.")
+            return redirect("applications:list")
+    except ApplicationLimitError as error:
+        form.add_error(None, str(error))
     except Exception:
         logger.exception("create_application failed user=%s", request.user.id)
         messages.error(request, "Could not create application. Try again later.")
-        form = JobApplicationForm()
-        return render(request, "applications/form.html", {"form": form, "mode": "create"})
+
+    return render(request, "applications/form.html", {"form": form, "mode": "create"})
 
 
 @login_required
