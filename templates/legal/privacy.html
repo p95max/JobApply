@@ -12,26 +12,52 @@
 
   <h2>1. Verantwortliche Stelle</h2>
   <dl class="legal-meta"><dt>Name</dt><dd>{{ provider_name }}</dd><dt>Anschrift</dt><dd>{{ provider_address }}</dd><dt>Datenschutzkontakt</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd></dl>
-  <h2>2. Zweck und verarbeitete Daten</h2>
-  <p>JobApply hilft Nutzerinnen und Nutzern, die eigene Jobsuche zu organisieren. Dafür verarbeitet der Dienst insbesondere Kontodaten aus Google OAuth (z. B. Name, E-Mail-Adresse und technische Konto-ID), Bewerbungs-, Interview- und Notizdaten sowie technische Protokolldaten.</p>
-  <p>Wenn ein Nutzer Gmail verbindet, verarbeitet JobApply nur die Daten des verbundenen Google-Kontos. Je nach verwendeter Funktion können Absender, Empfänger, Betreff, Zeitpunkt, Textauszüge und Textinhalte von E-Mails verarbeitet und gespeichert werden. Das Lesen erfolgt durch einen manuellen Sync oder bei aktivierter automatischer Prüfung. Anhänge werden nicht an die AI-Analyse übertragen.</p>
-  <h2>3. Google OAuth, Gmail und Drive</h2>
-  <p>Die Anmeldung erfolgt über Google OAuth. Mit deiner Einwilligung zur Nutzung von JobApply mit deinem Google-Konto werden Profil- und E-Mail-Daten angefordert.</p>
-  <p>Der Lesezugriff auf Gmail wird ausschließlich für vom Nutzer ausgelöste Funktionen zur Auswertung eigener Nachrichten verwendet. Für aktivierte Google-Drive-Backups erstellt, listet, aktualisiert und löscht JobApply nur eigene Sicherungsdateien und greift nicht auf andere Drive-Inhalte zu. Der Zugriff kann über die Google-Kontoeinstellungen widerrufen werden.</p>
+
+  <h2>2. Zweck des Dienstes und verarbeitete Daten</h2>
+  <p>JobApply dient der persönlichen Organisation einer Jobsuche. Je nach genutzter Funktion verarbeitet der Dienst insbesondere Konto- und Profildaten, Bewerbungsdaten, Interviewdaten, Notizen, verbundene Telegram-Kennungen, Google-OAuth-Tokens, Gmail-Nachrichtendaten, Backup-Metadaten sowie technische Sicherheits- und Protokolldaten.</p>
+  <p>Bei Gmail können Absender, Empfänger, Betreff, Zeitstempel, Gmail- und Thread-IDs, Textauszüge und Textinhalte verarbeitet und in JobApply gespeichert werden. Nachrichten werden bei einem manuellen Sync oder – wenn vom Nutzer aktiviert – durch automatische Gmail-Prüfungen gelesen. Anhänge werden nicht an die AI-Analyse übertragen.</p>
+
+  <h2>3. Google OAuth, Gmail und Google Drive</h2>
+  <p>Die Anmeldung erfolgt über Google OAuth. JobApply fordert die für die aktivierten Funktionen erforderlichen Google-Berechtigungen an, insbesondere Profildaten, E-Mail-Adresse, Gmail-Lesezugriff und für Google-Drive-Backups den eingeschränkten <code>drive.file</code>-Zugriff.</p>
+  <p>Gmail wird ausschließlich genutzt, um für den Nutzer sichtbare JobApply-Funktionen zur Auswertung eigener Nachrichten bereitzustellen. Für Google Drive erstellt, listet, aktualisiert, lädt und löscht JobApply nur Dateien und Ordner, auf die der mit <code>drive.file</code> erteilte Zugriff anwendbar ist; insbesondere werden persönliche JobApply-Backups im Drive des Nutzers verwaltet.</p>
+  <p>OAuth-Zugriffs- und Refresh-Tokens werden serverseitig gespeichert und in der JobApply-Datenbank verschlüsselt. Google-Zugriff kann jederzeit über die Google-Kontoeinstellungen widerrufen werden. Ein Widerruf bei Google löscht nicht automatisch bereits in JobApply gespeicherte Daten; diese können über die Kontolöschung in JobApply oder durch eine Löschanfrage entfernt werden.</p>
   <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
-  <p>Google-Nutzerdaten werden nicht verkauft, nicht für Werbung verwendet und nicht zum Training allgemeiner Modelle genutzt.</p>
-  <h2>4. Optionale AI-Analyse</h2>
-  <p>Die AI-Analyse ist optional und wird erst nach Aktivierung durch den Nutzer eingesetzt. Dabei können bereinigter Betreff und E-Mail-Text an den konfigurierten AI-Anbieter (derzeit OpenAI) übermittelt werden. Anhänge werden nicht übermittelt. Die Analyse erzeugt nur Vorschläge; Änderungen an Bewerbungen werden erst nach einer Bestätigung durch den Nutzer vorgenommen.</p>
-  <h2>5. Empfänger und Drittlandübermittlungen</h2>
-  <p>Zur technischen Bereitstellung können Hosting-Anbieter, Google (OAuth, Gmail und Drive), der optionale AI-Anbieter sowie – wenn vom Nutzer aktiviert – Telegram eingebunden sein. Bei einer Verarbeitung außerhalb der EU/des EWR können zusätzliche Garantien erforderlich sein. Details sind vor dem Produktivbetrieb anhand der tatsächlich eingesetzten Anbieter und Verträge zu ergänzen.</p>
-  <h2>6. Rechtsgrundlagen</h2>
-  <p>Die Verarbeitung erfolgt, soweit erforderlich, zur Bereitstellung des vom Nutzer angeforderten Dienstes (Art. 6 Abs. 1 lit. b DSGVO), auf Grundlage einer Einwilligung für optionale Funktionen wie AI-Analyse (Art. 6 Abs. 1 lit. a DSGVO) sowie für Sicherheit und Fehleranalyse auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO).</p>
-  <h2>7. Speicherdauer</h2>
-  <p>Bewerbungs- und Gmail-Daten werden gespeichert, solange das Nutzerkonto bzw. die Verbindung besteht oder bis eine Löschung verlangt wird, sofern keine gesetzlichen Pflichten entgegenstehen. Server-Logs werden für {{ log_retention }} gespeichert.</p>
+  <p>Google-Nutzerdaten werden nicht verkauft, nicht für Werbung verwendet und nicht zum Training allgemeiner Modelle verwendet.</p>
+
+  <h2>4. Optionale AI-Analyse mit OpenAI</h2>
+  <p>Die AI-Analyse ist optional und wird nur für Nutzerkonten eingesetzt, die diese Funktion aktiviert haben. Dabei können bereinigte Absenderinformationen, Betreff und begrenzter E-Mail-Text an OpenAI übermittelt werden. Anhänge werden nicht übertragen. JobApply verwendet für diese API-Aufrufe <code>store=False</code>.</p>
+  <p>OpenAI verwendet API-Eingaben und -Ausgaben standardmäßig nicht zum Training seiner allgemeinen Modelle. Abhängig von den für das verwendete OpenAI-Konto geltenden Datenkontrollen können jedoch Sicherheits- und Missbrauchsprotokolle für einen begrenzten Zeitraum verarbeitet werden.</p>
+  <p>Die Analyse erzeugt Vorschläge und Klassifizierungen. Standardmäßig prüft der Nutzer Änderungen vor der Übernahme. Wenn der Nutzer ausdrücklich die Funktion zum automatischen Übernehmen vertrauenswürdiger Aktualisierungen aktiviert, kann JobApply eng begrenzte, risikoarme Statusänderungen mit sicherer Zuordnung automatisch anwenden. Ablehnungen, Angebote, Interviews, Handlungsaufforderungen, neu anzulegende Bewerbungen und unsichere Zuordnungen bleiben zur manuellen Prüfung.</p>
+
+  <h2>5. Telegram</h2>
+  <p>Telegram ist optional. Wenn ein Nutzer sein Telegram-Konto mit JobApply verbindet, verarbeitet JobApply die für die Verknüpfung erforderlichen Telegram-Chat-/Benutzerkennungen und kann vom Nutzer aktivierte Benachrichtigungen über den Telegram Bot API versenden. Dabei werden die Inhalte der jeweiligen Benachrichtigung an Telegram übertragen. Die Verbindung kann in den JobApply-Einstellungen getrennt werden.</p>
+
+  <h2>6. Cloudflare Turnstile</h2>
+  <p>Zum Schutz von Anmeldung und öffentlich erreichbaren Funktionen vor automatisiertem Missbrauch verwendet JobApply Cloudflare Turnstile. Dabei wird ein von Cloudflare bereitgestelltes Skript bzw. Widget geladen, das technische Signale aus Browser und Gerät zur Erkennung automatisierter Zugriffe auswertet. JobApply übermittelt den erzeugten Turnstile-Token zur serverseitigen Validierung an Cloudflare. Die Verarbeitung dient der Sicherheit und Missbrauchsprävention.</p>
+
+  <h2>7. Technische Bereitstellung, CDN und Protokolle</h2>
+  <p>Für den Betrieb werden Hosting-Infrastruktur und Server-Protokolle eingesetzt. Solche Protokolle können insbesondere IP-Adresse, Zeitpunkt, aufgerufene URL, HTTP-Status, Referrer und User-Agent enthalten. Sie werden für Betrieb, Sicherheit, Fehleranalyse und Missbrauchsprävention verarbeitet.</p>
+  <p>JobApply lädt derzeit einzelne Frontend-Ressourcen über jsDelivr. Beim Abruf solcher Ressourcen stellt der Browser eine direkte Verbindung zum jeweiligen CDN her und übermittelt dabei technisch erforderliche Verbindungsdaten, insbesondere die IP-Adresse und Request-Metadaten.</p>
+
+  <h2>8. Empfänger und Drittlandübermittlungen</h2>
+  <p>Je nach aktivierter Funktion können insbesondere der Hosting-Anbieter, Google (OAuth, Gmail und Drive), OpenAI, Telegram, Cloudflare sowie jsDelivr/CDN-Infrastruktur Empfänger oder Auftragsverarbeiter personenbezogener Daten sein.</p>
+  <p>Soweit Daten dabei außerhalb der EU/des EWR verarbeitet werden, erfolgt eine Übermittlung nur auf Grundlage der jeweils anwendbaren Garantien nach Kapitel V DSGVO, etwa eines Angemessenheitsbeschlusses oder geeigneter vertraglicher Garantien, soweit diese erforderlich sind.</p>
+
+  <h2>9. Rechtsgrundlagen</h2>
+  <p>Die Verarbeitung von Konto-, Bewerbungs-, Interview-, Gmail- und Backup-Daten erfolgt, soweit sie für die vom Nutzer angeforderten JobApply-Funktionen erforderlich ist, auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO. Optionale Funktionen, die auf einer ausdrücklichen Aktivierung beruhen, insbesondere die AI-Analyse, werden auf Grundlage von Art. 6 Abs. 1 lit. a DSGVO verarbeitet, soweit eine Einwilligung erforderlich ist. Sicherheits-, Missbrauchs- und Fehleranalyse sowie technisch erforderliche Protokollierung erfolgen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.</p>
+
+  <h2>10. Speicherdauer und Löschung</h2>
+  <p>Konten-, Bewerbungs-, Interview-, Gmail- und Einstellungsdaten werden grundsätzlich gespeichert, solange das JobApply-Konto besteht oder bis die betreffenden Daten gelöscht werden, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen. Server-Logs werden für {{ log_retention }} gespeichert.</p>
+  <p>Ein Nutzer kann sein JobApply-Konto über die Kontoeinstellungen löschen. Dabei werden das Benutzerkonto und die damit in JobApply verknüpften Daten aus der Anwendungsdatenbank gelöscht. Dateien, die zuvor in einem persönlichen Google Drive gespeichert wurden, können unabhängig davon im Google-Konto verbleiben und müssen dort gegebenenfalls separat gelöscht werden.</p>
   <p>Temporäre Demo-Konten einschließlich der darin angelegten Bewerbungs-, Interview- und Notizdaten werden höchstens <strong>{{ demo_account_ttl_hours }} Stunden</strong> gespeichert und anschließend automatisch gelöscht. Die konkrete Dauer wird durch die Serverkonfiguration <code>DEMO_ACCOUNT_TTL_HOURS</code> festgelegt.</p>
-  <h2>8. Cookies</h2>
-  <p>JobApply verwendet technisch erforderliche Session- und Sicherheits-Cookies für Anmeldung und Schutz vor missbräuchlichen Anfragen. Es werden keine Analyse- oder Werbe-Cookies eingesetzt, solange solche Dienste nicht ausdrücklich ergänzt werden. Die Kenntnisnahme des Cookie-Hinweises wird als <code>jobapply_cookie_notice</code> für 180 Tage gespeichert.</p>
-  <h2>9. Rechte betroffener Personen</h2>
+
+  <h2>11. Cookies und lokale Einstellungen</h2>
+  <p>JobApply verwendet technisch erforderliche Session-, CSRF-, Sprach- und Sicherheitsfunktionen. Soweit dafür Informationen im Browser gespeichert oder ausgelesen werden, geschieht dies nur, soweit dies für einen ausdrücklich gewünschten Dienst erforderlich ist. Es werden keine Analyse- oder Werbe-Cookies eingesetzt. Die Kenntnisnahme des Cookie-Hinweises wird als <code>jobapply_cookie_notice</code> für 180 Tage gespeichert.</p>
+
+  <h2>12. Automatisierte Entscheidungen</h2>
+  <p>JobApply trifft keine ausschließlich automatisierten Entscheidungen mit rechtlicher oder ähnlich erheblicher Wirkung im Sinne von Art. 22 DSGVO. AI-Klassifizierungen unterstützen die Organisation der Jobsuche. Die optionale automatische Übernahme vertrauenswürdiger, risikoarmer Statusaktualisierungen verändert nur Daten innerhalb des persönlichen JobApply-Arbeitsbereichs.</p>
+
+  <h2>13. Rechte betroffener Personen</h2>
   <p>Du hast insbesondere Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Eine erteilte Einwilligung kann jederzeit mit Wirkung für die Zukunft widerrufen werden. Wende dich hierfür an <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
   <p>Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren. Zuständig ist in der Regel die Aufsichtsbehörde deines gewöhnlichen Aufenthaltsorts, Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes. Für die verantwortliche Stelle: {{ supervisory_authority }}.</p>
 </main>
@@ -42,26 +68,52 @@
 
   <h2>1. Controller</h2>
   <dl class="legal-meta"><dt>Name</dt><dd>{{ provider_name }}</dd><dt>Address</dt><dd>{{ provider_address }}</dd><dt>Privacy contact</dt><dd><a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a></dd></dl>
-  <h2>2. Purpose and data processed</h2>
-  <p>JobApply helps users organise their job search. For this purpose, the service processes Google OAuth account data (such as name, email address and technical account ID), application, interview and note data, and technical log data.</p>
-  <p>When a user connects Gmail, JobApply processes only data from that connected Google account. Depending on the feature used, this may include email sender, recipient, subject, time, excerpts and text content. Messages are read through a manual sync or when automatic checks are enabled. Attachments are never sent to AI analysis.</p>
-  <h2>3. Google OAuth, Gmail and Drive</h2>
-  <p>Sign-in uses Google OAuth. By consenting to use JobApply with your Google account, profile and email data are requested.</p>
-  <p>Read-only Gmail access is used solely for user-triggered features that review the user’s messages. For enabled Google Drive backups, JobApply creates, lists, updates and deletes only backup files created by JobApply and does not access other Drive content. Access can be revoked in Google Account settings.</p>
+
+  <h2>2. Purpose of the service and data processed</h2>
+  <p>JobApply is used to organise a personal job search. Depending on the features used, the service processes account and profile data, application data, interview data, notes, linked Telegram identifiers, Google OAuth tokens, Gmail message data, backup metadata, and technical security and log data.</p>
+  <p>For Gmail, this may include sender, recipient, subject, timestamps, Gmail and thread IDs, excerpts and message text. Messages are read during a manual sync or, when enabled by the user, through automatic Gmail checks. Attachments are not sent to AI analysis.</p>
+
+  <h2>3. Google OAuth, Gmail and Google Drive</h2>
+  <p>Sign-in uses Google OAuth. JobApply requests the Google permissions required for enabled features, including profile data, email address, read-only Gmail access and the restricted <code>drive.file</code> permission for Google Drive backups.</p>
+  <p>Gmail is used only to provide user-facing JobApply features for reviewing the user’s own messages. For Google Drive, JobApply creates, lists, updates, downloads and deletes only files and folders to which the granted <code>drive.file</code> permission applies, including personal JobApply backups in the user’s Drive.</p>
+  <p>OAuth access and refresh tokens are stored server-side and encrypted in the JobApply database. Google access can be revoked at any time in Google Account settings. Revoking access at Google does not automatically remove data already stored in JobApply; that data can be removed by deleting the JobApply account or by making a deletion request.</p>
   <p>JobApply’s use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
   <p>Google user data is not sold, used for advertising, or used to train general-purpose models.</p>
-  <h2>4. Optional AI analysis</h2>
-  <p>AI analysis is optional and is used only after the user enables it. Sanitised email subject and text may be sent to the configured AI provider (currently OpenAI). Attachments are not sent. Analysis produces suggestions only; application changes require user confirmation.</p>
-  <h2>5. Recipients and international transfers</h2>
-  <p>Hosting providers, Google (OAuth, Gmail and Drive), the optional AI provider and, when enabled by the user, Telegram may be involved in providing the service. Processing outside the EU/EEA may require additional safeguards. Before production use, details must be completed based on the actual providers and agreements used.</p>
-  <h2>6. Legal bases</h2>
-  <p>Where necessary, processing is carried out to provide the service requested by the user (Art. 6(1)(b) GDPR), based on consent for optional features such as AI analysis (Art. 6(1)(a) GDPR), and for security and error analysis based on legitimate interests (Art. 6(1)(f) GDPR).</p>
-  <h2>7. Retention</h2>
-  <p>Application and Gmail data is kept while the user account or connection exists, or until deletion is requested, unless legal obligations require otherwise. Server logs are retained for {{ log_retention }}.</p>
-  <p>Temporary demo accounts, including application, interview and note data created inside them, are retained for no longer than <strong>{{ demo_account_ttl_hours }} hours</strong> and are then deleted automatically. The exact period is controlled by the server setting <code>DEMO_ACCOUNT_TTL_HOURS</code>.</p>
-  <h2>8. Cookies</h2>
-  <p>JobApply uses technically necessary session and security cookies for sign-in and protection against abusive requests. No analytics or advertising cookies are used unless such services are expressly added. Your acknowledgement of the cookie notice is stored in <code>jobapply_cookie_notice</code> for 180 days.</p>
-  <h2>9. Your rights</h2>
+
+  <h2>4. Optional AI analysis with OpenAI</h2>
+  <p>AI analysis is optional and is used only for accounts that enable it. Sanitised sender information, subject and bounded email text may be sent to OpenAI. Attachments are not sent. JobApply uses <code>store=False</code> for these API requests.</p>
+  <p>OpenAI does not use API inputs and outputs to train its general-purpose models by default. Depending on the data controls applicable to the OpenAI account in use, security and abuse-monitoring logs may nevertheless be processed for a limited period.</p>
+  <p>The analysis produces suggestions and classifications. By default, the user reviews changes before they are applied. If the user explicitly enables automatic acceptance of trusted updates, JobApply may automatically apply narrowly limited, low-risk status changes with a verified match. Rejections, offers, interviews, required actions, newly created applications and uncertain matches remain subject to manual review.</p>
+
+  <h2>5. Telegram</h2>
+  <p>Telegram is optional. When a user links Telegram to JobApply, JobApply processes the Telegram chat/user identifiers needed for the link and may send user-enabled notifications through the Telegram Bot API. The content of each notification is transmitted to Telegram. The connection can be removed in JobApply settings.</p>
+
+  <h2>6. Cloudflare Turnstile</h2>
+  <p>JobApply uses Cloudflare Turnstile to protect sign-in and publicly reachable features from automated abuse. A Cloudflare-provided script or widget evaluates technical browser and device signals used to distinguish automated traffic. JobApply sends the resulting Turnstile token to Cloudflare for server-side validation. This processing is used for service security and abuse prevention.</p>
+
+  <h2>7. Technical delivery, CDN and logs</h2>
+  <p>Hosting infrastructure and server logs are used to operate JobApply. Such logs may include IP address, timestamp, requested URL, HTTP status, referrer and user-agent. They are processed for operation, security, troubleshooting and abuse prevention.</p>
+  <p>JobApply currently loads certain frontend resources through jsDelivr. When those resources are requested, the browser connects directly to the relevant CDN and transmits technically necessary connection data, including the IP address and request metadata.</p>
+
+  <h2>8. Recipients and international transfers</h2>
+  <p>Depending on the enabled feature, recipients or processors may include the hosting provider, Google (OAuth, Gmail and Drive), OpenAI, Telegram, Cloudflare and jsDelivr/CDN infrastructure.</p>
+  <p>Where data is processed outside the EU/EEA, transfers are made only on the basis of the applicable safeguards under Chapter V GDPR, such as an adequacy decision or appropriate contractual safeguards, where required.</p>
+
+  <h2>9. Legal bases</h2>
+  <p>Account, application, interview, Gmail and backup data is processed, where necessary for the JobApply features requested by the user, under Art. 6(1)(b) GDPR. Optional features based on explicit activation, in particular AI analysis, are processed under Art. 6(1)(a) GDPR where consent is required. Security, abuse prevention, troubleshooting and technically necessary logging are based on Art. 6(1)(f) GDPR.</p>
+
+  <h2>10. Retention and deletion</h2>
+  <p>Account, application, interview, Gmail and settings data is generally retained while the JobApply account exists or until the relevant data is deleted, unless legal retention duties apply. Server logs are retained for {{ log_retention }}.</p>
+  <p>A user can delete the JobApply account from account settings. This removes the user account and associated data held in the JobApply application database. Files previously written to the user’s personal Google Drive may remain in the Google account independently and may need to be deleted there separately.</p>
+  <p>Temporary demo accounts, including application, interview and note data created inside them, are retained for no longer than <strong>{{ demo_account_ttl_hours }} hours</strong> and are then deleted automatically. The exact period is controlled by <code>DEMO_ACCOUNT_TTL_HOURS</code>.</p>
+
+  <h2>11. Cookies and local settings</h2>
+  <p>JobApply uses technically necessary session, CSRF, language and security functionality. Where this stores or reads information in the browser, it is used only where necessary to provide a service explicitly requested by the user. No analytics or advertising cookies are used. Acknowledgement of the cookie notice is stored as <code>jobapply_cookie_notice</code> for 180 days.</p>
+
+  <h2>12. Automated decisions</h2>
+  <p>JobApply does not make solely automated decisions producing legal or similarly significant effects within the meaning of Art. 22 GDPR. AI classifications assist with organising the user’s job search. The optional automatic acceptance of trusted, low-risk status updates only changes data inside the user’s personal JobApply workspace.</p>
+
+  <h2>13. Your rights</h2>
   <p>You may have rights of access, rectification, erasure, restriction of processing, data portability and objection. Consent can be withdrawn at any time with effect for the future. Contact <a href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>.</p>
   <p>You may also lodge a complaint with a data protection supervisory authority. The responsible authority is usually the authority where you live or work, or where the alleged infringement took place. Controller’s authority: {{ supervisory_authority }}.</p>
 </main>
