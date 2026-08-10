@@ -218,6 +218,18 @@ except ValueError:
 GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED = getenv("GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED", "1") == "1"
 
 TELEGRAM_BOT_USERNAME = getenv("TELEGRAM_BOT_USERNAME", "").strip().lstrip("@")
+try:
+    TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS = max(
+        10, int(getenv("TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS", "60"))
+    )
+except ValueError:
+    TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS = 60
+try:
+    APPLICATION_BULK_DELETE_MAX_IDS = max(
+        1, min(500, int(getenv("APPLICATION_BULK_DELETE_MAX_IDS", "200")))
+    )
+except ValueError:
+    APPLICATION_BULK_DELETE_MAX_IDS = 200
 
 LEGAL_PROVIDER_NAME = getenv("LEGAL_PROVIDER_NAME", "[Bitte Namen der verantwortlichen Person eintragen]").strip()
 LEGAL_PROVIDER_ADDRESS = getenv("LEGAL_PROVIDER_ADDRESS", "[Bitte ladungsfähige Anschrift eintragen]").strip()

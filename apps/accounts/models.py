@@ -19,6 +19,7 @@ class UserProfile(models.Model):
     telegram_linked_at = models.DateTimeField(null=True, blank=True)
     telegram_link_token_hash = models.CharField(max_length=64, blank=True)
     telegram_link_token_expires_at = models.DateTimeField(null=True, blank=True)
+    telegram_link_token_issued_at = models.DateTimeField(null=True, blank=True)
 
     def accept_consent(self) -> None:
         self.google_data_access_consent = True
@@ -26,10 +27,21 @@ class UserProfile(models.Model):
         self.save(update_fields=["google_data_access_consent", "consent_accepted_at"])
 
     def create_telegram_link_token(self, *, lifetime_minutes: int = 15) -> str:
+        cooldown = timedelta(seconds=settings.TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS)
+        now = timezone.now()
+        if self.telegram_link_token_issued_at and self.telegram_link_token_issued_at + cooldown > now:
+            raise TelegramLinkTokenCooldownError
         token = secrets.token_urlsafe(24)
         self.telegram_link_token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        self.telegram_link_token_expires_at = timezone.now() + timedelta(minutes=lifetime_minutes)
-        self.save(update_fields=["telegram_link_token_hash", "telegram_link_token_expires_at"])
+        self.telegram_link_token_expires_at = now + timedelta(minutes=lifetime_minutes)
+        self.telegram_link_token_issued_at = now
+        self.save(
+            update_fields=[
+                "telegram_link_token_hash",
+                "telegram_link_token_expires_at",
+                "telegram_link_token_issued_at",
+            ]
+        )
         return token
 
     def clear_telegram_link(self) -> None:
@@ -47,3 +59,7 @@ class UserProfile(models.Model):
                 "telegram_link_token_expires_at",
             ]
         )
+
+
+class TelegramLinkTokenCooldownError(ValueError):
+    """A short cooldown protects the one-time link-token endpoint from abuse."""

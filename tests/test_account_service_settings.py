@@ -7,7 +7,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import UserProfile
+from apps.accounts.models import TelegramLinkTokenCooldownError, UserProfile
 from apps.applications.models import JobApplication
 from apps.accounts.telegram_linking import bind_telegram_from_start
 from apps.telegram_bot.config import TelegramConfig
@@ -86,6 +86,15 @@ def test_invalid_link_token_does_not_bind(account):
     assert profile.telegram_chat_id is None
 
 
+@override_settings(TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS=60)
+def test_telegram_link_token_has_a_short_issuance_cooldown(account):
+    _user, profile = account
+    profile.create_telegram_link_token()
+
+    with pytest.raises(TelegramLinkTokenCooldownError):
+        profile.create_telegram_link_token()
+
+
 def test_linked_ids_are_authorized_without_env_allowlist(account):
     _user, profile = account
     profile.telegram_user_id = 200
@@ -131,6 +140,19 @@ def test_settings_generates_one_time_telegram_command_without_redirecting_to_bot
 
     page = client.get(reverse("accounts:settings"))
     assert "/link " in page.content.decode()
+
+
+@override_settings(TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS=60)
+def test_settings_rate_limits_repeated_telegram_link_token_requests(client, account):
+    user, _profile = account
+    client.force_login(user)
+
+    first = client.post(reverse("accounts:settings"), {"action": "telegram_link"})
+    second = client.post(reverse("accounts:settings"), {"action": "telegram_link"}, follow=True)
+
+    assert first.status_code == 302
+    assert second.status_code == 200
+    assert b"requested recently" in second.content
 
 
 @override_settings(TELEGRAM_BOT_USERNAME="jobapply_test_bot")

@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -217,6 +218,8 @@ def bulk_delete(request):
     try:
         payload = json.loads(request.body.decode("utf-8"))
         ids = payload.get("ids", [])
+        if not isinstance(ids, list) or len(ids) > settings.APPLICATION_BULK_DELETE_MAX_IDS:
+            return HttpResponseBadRequest("Too many selected applications")
         ids = [int(x) for x in ids]
     except Exception:
         return HttpResponseBadRequest("Invalid payload")

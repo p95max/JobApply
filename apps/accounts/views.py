@@ -21,7 +21,7 @@ from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.telegram_bot.notifications import send_notification_once
 
-from .models import UserProfile
+from .models import TelegramLinkTokenCooldownError, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,11 @@ def settings_view(request):
     if request.method == "POST":
         action = request.POST.get("action", "")
         if action == "telegram_link":
-            token = profile.create_telegram_link_token()
+            try:
+                token = profile.create_telegram_link_token()
+            except TelegramLinkTokenCooldownError:
+                messages.info(request, "A Telegram connection code was requested recently. Please wait a minute.")
+                return redirect("accounts:settings")
             link_command = f"/link {token}"
             telegram_link_url = f"{telegram_bot_url}?start={quote(token)}" if telegram_bot_url else ""
             request.session["telegram_link_command"] = link_command
