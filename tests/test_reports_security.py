@@ -4,6 +4,7 @@ import csv
 import io
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -154,6 +155,39 @@ def test_user_can_enable_personal_automatic_drive_backups(client, user, monkeypa
 
     assert response.status_code == 302
     assert CloudBackupSettings.objects.get(user=user).enabled is True
+
+
+@pytest.mark.django_db
+@override_settings(CSV_IMPORT_COOLDOWN_SECONDS=60)
+def test_csv_import_returns_a_safe_error_when_rate_limited(client, user):
+    from apps.reports.views import _claim_csv_import
+
+    _claim_csv_import(user)
+    client.force_login(user)
+    upload = SimpleUploadedFile("applications.csv", _csv([]), content_type="text/csv")
+
+    response = client.post(reverse("reports:import"), {"file": upload})
+
+    assert response.status_code == 200
+    assert b"Please wait" in response.content
+
+
+@pytest.mark.django_db
+@override_settings(DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS=60)
+def test_drive_export_is_rate_limited_before_a_second_google_upload(client, user, monkeypatch):
+    import apps.reports.views as reports_views
+
+    uploads = []
+    monkeypatch.setattr(reports_views, "upload_backup", lambda *args, **kwargs: uploads.append(args))
+    client.force_login(user)
+
+    first = client.post(reverse("reports:drive_export", args=["csv"]))
+    second = client.post(reverse("reports:drive_export", args=["csv"]), follow=True)
+
+    assert first.status_code == 302
+    assert second.status_code == 200
+    assert len(uploads) == 1
+    assert b"Please wait" in second.content
 
 
 @pytest.mark.django_db

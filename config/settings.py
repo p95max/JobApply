@@ -230,6 +230,26 @@ try:
     )
 except ValueError:
     APPLICATION_BULK_DELETE_MAX_IDS = 200
+try:
+    CSV_IMPORT_DAILY_LIMIT = max(1, min(20, int(getenv("CSV_IMPORT_DAILY_LIMIT", "3"))))
+except ValueError:
+    CSV_IMPORT_DAILY_LIMIT = 3
+try:
+    CSV_IMPORT_COOLDOWN_SECONDS = max(10, int(getenv("CSV_IMPORT_COOLDOWN_SECONDS", "60")))
+except ValueError:
+    CSV_IMPORT_COOLDOWN_SECONDS = 60
+try:
+    DRIVE_MANUAL_OPERATION_DAILY_LIMIT = max(
+        1, min(100, int(getenv("DRIVE_MANUAL_OPERATION_DAILY_LIMIT", "20")))
+    )
+except ValueError:
+    DRIVE_MANUAL_OPERATION_DAILY_LIMIT = 20
+try:
+    DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS = max(
+        10, int(getenv("DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS", "30"))
+    )
+except ValueError:
+    DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS = 30
 
 LEGAL_PROVIDER_NAME = getenv("LEGAL_PROVIDER_NAME", "[Bitte Namen der verantwortlichen Person eintragen]").strip()
 LEGAL_PROVIDER_ADDRESS = getenv("LEGAL_PROVIDER_ADDRESS", "[Bitte ladungsfähige Anschrift eintragen]").strip()

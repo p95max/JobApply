@@ -25,6 +25,12 @@ from apps.gmail_assistant.models import (
 )
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.token_usage import load_token_usage
+from apps.security.operation_limits import (
+    OperationCooldownError,
+    OperationDailyLimitError,
+    OperationLimit,
+    claim_user_operation,
+)
 
 from .drive import (
     DriveError,
@@ -49,6 +55,8 @@ from .services import (
 
 logger = logging.getLogger(__name__)
 GOOGLE_AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
+CSV_IMPORT_OPERATION = "csv_import"
+DRIVE_MUTATION_OPERATION = "drive_mutation"
 
 
 def _is_server_operations_owner(user) -> bool:
@@ -68,6 +76,34 @@ def _next_personal_backup_at(last_run_at):
     if not last_run_at:
         return None
     return last_run_at + timedelta(seconds=settings.PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS)
+
+
+def _claim_csv_import(user) -> None:
+    claim_user_operation(
+        user=user,
+        operation=CSV_IMPORT_OPERATION,
+        limit=OperationLimit(
+            daily_limit=settings.CSV_IMPORT_DAILY_LIMIT,
+            cooldown_seconds=settings.CSV_IMPORT_COOLDOWN_SECONDS,
+        ),
+    )
+
+
+def _claim_drive_mutation(user) -> None:
+    claim_user_operation(
+        user=user,
+        operation=DRIVE_MUTATION_OPERATION,
+        limit=OperationLimit(
+            daily_limit=settings.DRIVE_MANUAL_OPERATION_DAILY_LIMIT,
+            cooldown_seconds=settings.DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS,
+        ),
+    )
+
+
+def _operation_limit_message(error: Exception) -> str:
+    if isinstance(error, OperationCooldownError):
+        return f"Please wait {error.retry_after_seconds} seconds before trying again."
+    return "Today's operation limit has been reached. Please try again tomorrow."
 
 
 def _google_app() -> SocialApp:
@@ -209,9 +245,12 @@ def import_view(request):
             return render(request, "reports/import.html", {"error": "The CSV file is too large."})
 
         try:
+            _claim_csv_import(request.user)
             raw = f.read()
             result = import_csv(request.user, raw)
             return render(request, "reports/import.html", {"result": result})
+        except (OperationCooldownError, OperationDailyLimitError) as error:
+            return render(request, "reports/import.html", {"error": _operation_limit_message(error)})
         except ImportValidationError as error:
             return render(request, "reports/import.html", {"error": str(error)})
         except Exception:
@@ -288,6 +327,7 @@ def drive_export(request, fmt: str):
     ts = timezone.now().strftime("%d-%m-%Y-%H-%M")
 
     try:
+        _claim_drive_mutation(request.user)
         content = export_csv(qs)
         filename = f"manual_backup-{ts}.csv"
 
@@ -303,6 +343,9 @@ def drive_export(request, fmt: str):
         messages.success(request, "Backup uploaded to Google Drive (CSV).")
         return redirect("reports:drive_backups")
 
+    except (OperationCooldownError, OperationDailyLimitError) as error:
+        messages.error(request, _operation_limit_message(error))
+        return redirect("reports:drive_backups")
     except DriveError as e:
         logger.exception("drive_export DriveError user=%s code=%s", request.user.id, getattr(e, "code", ""))
         messages.error(request, str(e))
@@ -317,10 +360,14 @@ def drive_export(request, fmt: str):
 @require_POST
 def drive_restore(request, file_id: str):
     try:
+        _claim_drive_mutation(request.user)
         raw = download_backup_file(request.user, file_id)
         result = import_csv(request.user, raw)
         messages.success(request, "Restore completed.")
         return render(request, "reports/import.html", {"result": result})
+    except (OperationCooldownError, OperationDailyLimitError) as error:
+        messages.error(request, _operation_limit_message(error))
+        return redirect("reports:drive_backups")
     except DriveError as e:
         logger.exception("drive_restore DriveError user=%s code=%s file_id=%s", request.user.id, getattr(e, "code", ""), file_id)
         messages.error(request, str(e))

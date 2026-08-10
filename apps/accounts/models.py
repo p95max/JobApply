@@ -63,3 +63,27 @@ class UserProfile(models.Model):
 
 class TelegramLinkTokenCooldownError(ValueError):
     """A short cooldown protects the one-time link-token endpoint from abuse."""
+
+
+class UserOperationQuota(models.Model):
+    """Per-user counters for expensive operations such as imports and Drive writes."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    operation = models.CharField(max_length=48)
+    usage_date = models.DateField()
+    count = models.PositiveIntegerField(default=0)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "operation"],
+                name="accounts_unique_user_operation_quota",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["operation", "usage_date"],
+                name="accounts_us_operati_ef553c_idx",
+            )
+        ]
