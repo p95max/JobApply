@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/security.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+  <main class="security-page container">
+    <section class="security-card" aria-labelledby="rate-limit-title">
+      <span class="security-card__icon" aria-hidden="true">🛡️</span>
+      <p class="security-card__eyebrow">{% trans "Security protection" %}</p>
+      <h1 id="rate-limit-title">{% trans "Sign-in temporarily paused" %}</h1>
+      <p class="security-card__description">
+        {% trans "Too many failed admin sign-in attempts were detected from this connection. Please wait a little and try again." %}
+      </p>
+      <a class="btn btn-primary security-card__action" href="{% url 'admin:login' %}">{% trans "Return to sign in" %}</a>
+      <p class="security-card__hint">{% trans "This protection helps keep the administration area secure." %}</p>
+    </section>
+  </main>
+{% endblock %}

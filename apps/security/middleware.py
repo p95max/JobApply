@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpResponse, HttpResponseForbidden
-from django.shortcuts import redirect
+from django.http import HttpResponseForbidden
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.crypto import salted_hmac
 
@@ -84,9 +84,11 @@ class AdminLoginThrottleMiddleware:
         is_login_post = request.method == "POST" and request.path == login_path
         key = _admin_login_key(request) if is_login_post else ""
         if is_login_post and (cache.get(key) or 0) >= settings.ADMIN_LOGIN_MAX_FAILURES:
-            return HttpResponse(
-                "Too many failed admin sign-in attempts. Please try again later.",
+            return render(
+                request,
+                "security/admin_login_rate_limited.html",
                 status=429,
+                content_type="text/html; charset=utf-8",
             )
 
         response = self.get_response(request)
