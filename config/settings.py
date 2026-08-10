@@ -69,6 +69,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.security.middleware.TurnstileAnonymousGateMiddleware",
+    "apps.security.middleware.AdminAccessPolicyMiddleware",
+    "apps.security.middleware.AdminLoginThrottleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
@@ -275,3 +277,19 @@ LEGAL_SUPERVISORY_AUTHORITY = getenv(
 LEGAL_LOG_RETENTION = getenv("LEGAL_LOG_RETENTION", "[Bitte Aufbewahrungsdauer für Server-Logs eintragen]").strip()
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
+ADMIN_ALLOWED_IPS = frozenset(
+    value.strip()
+    for value in getenv("ADMIN_ALLOWED_IPS", "").split(",")
+    if value.strip()
+)
+ADMIN_TRUST_X_FORWARDED_FOR = getenv("ADMIN_TRUST_X_FORWARDED_FOR", "0") == "1"
+try:
+    ADMIN_LOGIN_MAX_FAILURES = max(1, min(20, int(getenv("ADMIN_LOGIN_MAX_FAILURES", "5"))))
+except ValueError:
+    ADMIN_LOGIN_MAX_FAILURES = 5
+try:
+    ADMIN_LOGIN_FAILURE_WINDOW_SECONDS = max(
+        60, min(86_400, int(getenv("ADMIN_LOGIN_FAILURE_WINDOW_SECONDS", "900")))
+    )
+except ValueError:
+    ADMIN_LOGIN_FAILURE_WINDOW_SECONDS = 900
