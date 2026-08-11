@@ -10,6 +10,7 @@ from .models import WorkerHeartbeat
 GMAIL_WORKER = "gmail_worker"
 TELEGRAM_BOT = "telegram_bot"
 BACKUP_WORKER = "backup_worker"
+NEON_SYNC_WORKER = "neon_sync_worker"
 
 
 @dataclass(frozen=True)

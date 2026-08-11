@@ -5,10 +5,16 @@ from html import escape
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from apps.telegram_bot.heartbeat import BACKUP_WORKER, GMAIL_WORKER, TELEGRAM_BOT, record_heartbeat
+from apps.telegram_bot.heartbeat import (
+    BACKUP_WORKER,
+    GMAIL_WORKER,
+    NEON_SYNC_WORKER,
+    TELEGRAM_BOT,
+    record_heartbeat,
+)
 from apps.telegram_bot.notifications import send_notification_once
 
-ALLOWED_WORKERS = {BACKUP_WORKER, GMAIL_WORKER, TELEGRAM_BOT}
+ALLOWED_WORKERS = {BACKUP_WORKER, GMAIL_WORKER, NEON_SYNC_WORKER, TELEGRAM_BOT}
 
 
 class Command(BaseCommand):
