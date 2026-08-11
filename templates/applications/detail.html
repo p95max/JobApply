@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
+{% block title %}{{ app.title }} · JobApply{% endblock %}
+
 {% block page_css %}
 <link rel="stylesheet" href="{% static 'css/applications.css' %}">
 {% endblock %}

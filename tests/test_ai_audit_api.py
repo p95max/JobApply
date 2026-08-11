@@ -118,6 +118,18 @@ def test_navigation_shows_the_audit_link_only_to_staff(client):
 
 @pytest.mark.django_db
 @override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_audit_documentation_opens_json_endpoints_in_a_new_tab(client):
+    client.force_login(_staff_user())
+
+    response = client.get(reverse("ai_audit:swagger", kwargs={"audit_key": AUDIT_KEY}))
+
+    assert response.status_code == 200
+    assert b"<title>Gmail audit API \xc2\xb7 JobApply</title>" in response.content
+    assert response.content.count(b'target="_blank" rel="noopener noreferrer"') == 6
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
 def test_audit_api_returns_only_redacted_ai_proposal_metadata(client):
     staff = _staff_user()
     ai_proposal = _ai_proposal(user=staff)

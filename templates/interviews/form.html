@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
+{% block title %}{% if mode == "edit" %}{% trans "Edit interview" %}{% else %}{% trans "Schedule interview" %}{% endif %} · JobApply{% endblock %}
+
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'css/record_forms.css' %}?v=1">
 {% endblock %}

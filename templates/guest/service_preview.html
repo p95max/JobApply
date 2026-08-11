@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
+{% block title %}
+  {% if preview_kind == "assistant" %}{% trans "Gmail Assistant preview" %}
+  {% elif preview_kind == "gmail" %}{% trans "Gmail statistics preview" %}
+  {% elif preview_kind == "reports" %}{% trans "Reports preview" %}
+  {% else %}{% trans "Demo preview" %}{% endif %} · JobApply
+{% endblock %}
+
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/guest_service_preview.css' %}?v=1">

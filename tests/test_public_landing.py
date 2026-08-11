@@ -13,6 +13,7 @@ def test_public_root_renders_landing_page(client):
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert "<title>JobApply</title>" in content
     assert "Keep every application, interview and recruiter email under control." in content
     assert "Continue with Google" in content
     assert "Application tracking" in content

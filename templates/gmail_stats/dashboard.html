@@ -5,7 +5,7 @@
 <script src="{% static 'js/gmail_stats.js' %}?v=3"></script>
 {% endblock %}
 
-{% block title %}{% trans "Gmail stats" %}{% endblock %}
+{% block title %}{% trans "Gmail stats" %} · JobApply{% endblock %}
 
 {% block content %}
 <div id="gmailStatsConfig" data-stats-url="{% url 'gmail_stats:gmail_stats_api' %}"></div>

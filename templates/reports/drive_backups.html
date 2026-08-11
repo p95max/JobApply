@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static i18n systemd_timers %}
 
+{% block title %}{% trans "Cloud backups" %} · JobApply{% endblock %}
+
 {% block content %}
 {% if show_server_operations %}
   {% systemd_timer "jobapply-backup.timer" as backup_timer %}
