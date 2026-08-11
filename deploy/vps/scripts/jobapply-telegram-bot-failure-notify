@@ -5,6 +5,20 @@ STATE_FILE="${JOBAPPLY_TELEGRAM_FAILURE_ALERT_STATE_FILE:-/run/jobapply/telegram
 COOLDOWN_SECONDS="${TELEGRAM_BOT_FAILURE_ALERT_COOLDOWN_SECONDS:-900}"
 TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 CHAT_ID="${TELEGRAM_DEFAULT_CHAT_ID:-}"
+QUEUE_STATUS_FILE="${JOBAPPLY_BACKGROUND_QUEUE_STATUS_FILE:-/var/tmp/jobapply-background-job.status}"
+
+# A production deploy intentionally restarts the Telegram bot near the end of
+# the deployment. Do not report that planned interruption as an outage. The
+# background-job wrapper writes this status before the deploy command starts
+# and removes it when the job finishes, so real failures outside a deploy still
+# trigger the normal OnFailure notification.
+if [[ -f "$QUEUE_STATUS_FILE" ]]; then
+  queue_status="$(head -n 1 "$QUEUE_STATUS_FILE" 2>/dev/null || true)"
+  if [[ "$queue_status" == jobapply-deploy\ \(running\)* ]]; then
+    echo "Telegram bot failure notification suppressed during active deploy."
+    exit 0
+  fi
+fi
 
 if [[ ! "$COOLDOWN_SECONDS" =~ ^[0-9]+$ ]]; then
   COOLDOWN_SECONDS=900
