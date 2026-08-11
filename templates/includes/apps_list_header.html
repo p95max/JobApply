@@ -16,14 +16,14 @@
   </div>
 </div>
 
-<details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or month or sort != '-applied_at' %} open{% endif %}>
+<details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or ai_filter or month or sort != '-applied_at' %} open{% endif %}>
   <summary class="applications-filters__summary">
     <span class="applications-filters__title"><span aria-hidden="true">🔎</span><span>{% trans "Filters" %}</span></span>
     <span class="applications-filters__meta">
-      {% if q or status or month or sort != '-applied_at' %}
+      {% if q or status or ai_filter or month or sort != '-applied_at' %}
         <span class="applications-filters__active">{% trans "Active" %}</span>
       {% else %}
-        <span class="text-body-secondary">{% trans "Search, status, month and sort" %}</span>
+        <span class="text-body-secondary">{% trans "Search, status, AI, month and sort" %}</span>
       {% endif %}
       <span class="applications-filters__chevron" aria-hidden="true">⌄</span>
     </span>
@@ -44,6 +44,14 @@
           <option value="interview" {% if status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
           <option value="offer" {% if status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
           <option value="rejected" {% if status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
+        </select>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-2">
+        <label class="form-label small text-body-secondary mb-1">{% trans "AI processing" %}</label>
+        <select class="form-select" name="ai">
+          <option value="" {% if not ai_filter %}selected{% endif %}>{% trans "All" %}</option>
+          <option value="processed" {% if ai_filter == "processed" %}selected{% endif %}>🤖 {% trans "AI processed" %}</option>
+          <option value="without" {% if ai_filter == "without" %}selected{% endif %}>{% trans "Without AI" %}</option>
         </select>
       </div>
       <div class="col-12 col-sm-6 col-lg-2">

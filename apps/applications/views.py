@@ -44,6 +44,7 @@ def list_applications(request):
 
         q = (request.GET.get("q") or "").strip()
         status = (request.GET.get("status") or "").strip()
+        ai_filter = (request.GET.get("ai") or "").strip()
         month = (request.GET.get("month") or "").strip()
         sort = (request.GET.get("sort") or "-applied_at").strip()
         print_mode = (request.GET.get("print") == "1")
@@ -58,6 +59,13 @@ def list_applications(request):
 
         if status:
             qs = qs.filter(status=status)
+
+        if ai_filter == "processed":
+            qs = qs.filter(has_ai_processed_proposal=True)
+        elif ai_filter == "without":
+            qs = qs.filter(has_ai_processed_proposal=False)
+        else:
+            ai_filter = ""
 
         if month:
             try:
@@ -120,6 +128,7 @@ def list_applications(request):
                 "paginator": paginator,
                 "q": q,
                 "status": status,
+                "ai_filter": ai_filter,
                 "month": month,
                 "sort": sort,
                 "per_page": per_page,
@@ -141,6 +150,7 @@ def list_applications(request):
                 "paginator": None,
                 "q": "",
                 "status": "",
+                "ai_filter": "",
                 "month": "",
                 "sort": "-applied_at",
                 "per_page": PER_PAGE_DEFAULT,

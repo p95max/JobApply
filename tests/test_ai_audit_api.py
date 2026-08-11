@@ -99,7 +99,7 @@ def test_audit_api_is_disabled_until_a_secret_url_is_configured(client):
 
 @pytest.mark.django_db
 @override_settings(AI_AUDIT_URL=AUDIT_KEY)
-def test_navigation_shows_the_audit_link_only_to_staff(client):
+def test_navigation_does_not_expose_the_hidden_audit_url(client):
     staff = _staff_user()
     regular_user = get_user_model().objects.create_user(
         "regular-user",
@@ -112,7 +112,7 @@ def test_navigation_shows_the_audit_link_only_to_staff(client):
     client.force_login(regular_user)
     regular_response = client.get(reverse("dashboard"))
 
-    assert audit_url.encode() in staff_response.content
+    assert audit_url.encode() not in staff_response.content
     assert audit_url.encode() not in regular_response.content
 
 
