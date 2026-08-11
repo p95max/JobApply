@@ -2,27 +2,27 @@
 
 <ul class="nav nav-tabs mb-4">
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'telegram' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
+    <a class="nav-link {% if active_tab == 'telegram' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=telegram">
       <img class="brand-service-icon" src="{% static 'img/brands/telegram.svg' %}" width="18" height="18" alt=""> {% trans "Telegram" %}
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">
+    <a class="nav-link {% if active_tab == 'gmail' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=gmail">
       <span aria-hidden="true">✉️</span> Gmail
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'settings' and active_tab == 'account' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=account">
+    <a class="nav-link {% if active_tab == 'account' %}active{% endif %}" href="{% url 'accounts:settings' %}?tab=account">
       <span aria-hidden="true">👤</span> {% trans "Account" %}
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'drive_backups' %}active{% endif %}" href="{% url 'reports:drive_backups' %}">
+    <a class="nav-link {% if active_tab == 'drive' %}active{% endif %}" href="{% url 'reports:drive_backups' %}">
       <img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="18" height="18" alt=""> {% trans "Cloud backups" %}
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {% if request.resolver_match.url_name == 'import' %}active{% endif %}" href="{% url 'reports:import' %}">
+    <a class="nav-link {% if active_tab == 'export' %}active{% endif %}" href="{% url 'reports:import' %}">
       <span aria-hidden="true">↕️</span> {% trans "Import / Export" %}
     </a>
   </li>

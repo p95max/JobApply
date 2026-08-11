@@ -282,6 +282,30 @@ def test_legacy_token_usage_url_redirects_to_ai_statistics(client, user):
 
 
 @pytest.mark.django_db
+def test_import_page_uses_the_settings_shell_and_export_tab(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("reports:import"))
+
+    assert response.status_code == 200
+    assert b"Manage connected services and account integrations." in response.content
+    assert response.context["active_tab"] == "export"
+    assert b"Import / Export" in response.content
+
+
+@pytest.mark.django_db
+def test_drive_backups_page_uses_the_settings_shell_and_drive_tab(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("reports:drive_backups"))
+
+    assert response.status_code == 200
+    assert b"Manage connected services and account integrations." in response.content
+    assert response.context["active_tab"] == "drive"
+    assert b"Cloud backups" in response.content
+
+
+@pytest.mark.django_db
 @override_settings(TELEGRAM_OWNER_EMAIL="owner@example.com")
 def test_server_backup_schedule_is_hidden_from_regular_users(client, user):
     client.force_login(user)

@@ -8,7 +8,8 @@
   {% systemd_timer "jobapply-backup.timer" as backup_timer %}
   {% systemd_timer "jobapply-neon-sync.timer" as neon_timer %}
 {% endif %}
-<div class="container py-4">
+<div class="container py-4" style="max-width: 1180px;">
+  {% include "accounts/_settings_shell_header.html" %}
   <div class="mb-4">
     <h1 class="h3 mb-1">{% trans "Cloud backups" %}</h1>
     <p class="text-body-secondary mb-0">{% trans "Manage backups stored in your Google Drive." %}</p>

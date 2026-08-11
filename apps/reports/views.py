@@ -240,24 +240,24 @@ def import_view(request):
     if request.method == "POST":
         f = request.FILES.get("file")
         if not f:
-            return render(request, "reports/import.html", {"error": "No file uploaded."})
+            return render(request, "reports/import.html", {"active_tab": "export", "error": "No file uploaded."})
         if f.size > MAX_IMPORT_BYTES:
-            return render(request, "reports/import.html", {"error": "The CSV file is too large."})
+            return render(request, "reports/import.html", {"active_tab": "export", "error": "The CSV file is too large."})
 
         try:
             _claim_csv_import(request.user)
             raw = f.read()
             result = import_csv(request.user, raw)
-            return render(request, "reports/import.html", {"result": result})
+            return render(request, "reports/import.html", {"active_tab": "export", "result": result})
         except (OperationCooldownError, OperationDailyLimitError) as error:
-            return render(request, "reports/import.html", {"error": _operation_limit_message(error)})
+            return render(request, "reports/import.html", {"active_tab": "export", "error": _operation_limit_message(error)})
         except ImportValidationError as error:
-            return render(request, "reports/import.html", {"error": str(error)})
+            return render(request, "reports/import.html", {"active_tab": "export", "error": str(error)})
         except Exception:
             logger.exception("import_view failed user=%s filename=%s", request.user.id, getattr(f, "name", ""))
-            return render(request, "reports/import.html", {"error": "Import failed. Check the file format and try again."})
+            return render(request, "reports/import.html", {"active_tab": "export", "error": "Import failed. Check the file format and try again."})
 
-    return render(request, "reports/import.html")
+    return render(request, "reports/import.html", {"active_tab": "export"})
 
 
 @login_required
@@ -313,6 +313,7 @@ def drive_backups(request):
             "auto_backup_next_run_at": _next_personal_backup_at(getattr(settings_obj, "last_run_at", None)),
             "auto_backup_interval_display": _personal_backup_interval_display(),
             "show_server_operations": _is_server_operations_owner(request.user),
+            "active_tab": "drive",
         },
     )
 
@@ -364,7 +365,7 @@ def drive_restore(request, file_id: str):
         raw = download_backup_file(request.user, file_id)
         result = import_csv(request.user, raw)
         messages.success(request, "Restore completed.")
-        return render(request, "reports/import.html", {"result": result})
+        return render(request, "reports/import.html", {"active_tab": "export", "result": result})
     except (OperationCooldownError, OperationDailyLimitError) as error:
         messages.error(request, _operation_limit_message(error))
         return redirect("reports:drive_backups")
