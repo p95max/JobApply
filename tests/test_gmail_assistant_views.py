@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import UserProfile
-from apps.applications.models import ApplicationStatus, JobApplication
+from apps.applications.models import JobApplication
 from apps.gmail_assistant.models import (
     AnalysisClassifier,
     ApplicationUpdateProposal,
