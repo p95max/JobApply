@@ -56,6 +56,7 @@ def test_exact_match_is_a_high_confidence_suggestion():
 
     assert result.suggested and result.suggested.application.pk == 1
     assert result.suggested.method == "exact_company_title"
+    assert result.suggested.score == 98
 
 
 def test_thread_match_has_priority_over_other_signals():
@@ -68,7 +69,7 @@ def test_thread_match_has_priority_over_other_signals():
     )
 
     assert result.suggested and result.suggested.application.pk == 2
-    assert result.suggested.method == "thread_id"
+    assert result.suggested.method == "gmail_thread"
 
 
 def test_external_id_match_has_priority_after_thread_match():
@@ -184,3 +185,41 @@ def test_same_company_with_a_different_title_does_not_match():
     )
 
     assert result.is_unmatched
+
+
+def test_generic_rejection_title_matches_one_recent_application_at_company():
+    candidate = application(
+        company="firstwaters GmbH",
+        title="Junior IT Architect (m/w/d)",
+        applied_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+    )
+
+    result = match_applications(
+        user_id=10,
+        applications=[candidate],
+        email=email(
+            company="firstwaters",
+            position_title="Developer",
+            received_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+            is_rejection=True,
+        ),
+    )
+
+    assert result.suggested and result.suggested.application.pk == candidate.pk
+    assert result.suggested.method == "company_temporal"
+    assert result.suggested.score == 91
+
+
+def test_generic_rejection_with_multiple_recent_company_applications_stays_ambiguous():
+    first = application(pk=1, company="firstwaters GmbH", title="Junior IT Architect")
+    second = application(pk=2, company="firstwaters GmbH", title="Python Developer")
+
+    result = match_applications(
+        user_id=10,
+        applications=[first, second],
+        email=email(company="firstwaters", position_title="Developer", is_rejection=True),
+    )
+
+    assert result.suggested is None
+    assert {candidate.application.pk for candidate in result.ambiguous} == {first.pk, second.pk}
+    assert {candidate.method for candidate in result.ambiguous} == {"company_temporal"}

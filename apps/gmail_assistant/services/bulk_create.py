@@ -16,7 +16,9 @@ from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, app
 
 
 BULK_CREATE_MIN_CONFIDENCE = 75
-_EXACT_REMATCH_METHODS = frozenset({"thread_id", "external_application_id", "exact_company_title"})
+_EXACT_REMATCH_METHODS = frozenset(
+    {"gmail_thread", "thread_id", "external_application_id", "exact_company_title", "company_temporal"}
+)
 
 
 @dataclass(frozen=True)

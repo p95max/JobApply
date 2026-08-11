@@ -59,13 +59,17 @@ def apply_proposal(
 
         application = _apply_application(locked, user, overrides)
         interview = _apply_interview(locked, user, application, overrides)
+        if application and locked.application_id != application.pk:
+            # Keep the accepted create proposal auditable and make future
+            # Gmail replies in the same thread match this application.
+            locked.application = application
         if application:
             locked.message.application = application
             locked.message.save(update_fields=["application", "updated_at"])
         locked.status = ProposalStatus.ACCEPTED
         locked.reviewed_at = timezone.now()
         locked.review_note = review_note
-        locked.save(update_fields=["status", "review_note", "reviewed_at", "updated_at"])
+        locked.save(update_fields=["application", "status", "review_note", "reviewed_at", "updated_at"])
         return ApplyProposalResult(locked, application, interview, False)
 
 
@@ -101,6 +105,10 @@ def _review_note(value: str) -> str:
 
 def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides: dict[str, Any]) -> JobApplication | None:
     changes = _merged_changes(proposal.changes.get("application"), overrides.get("application"), _APPLICATION_FIELDS)
+    if proposal.analysis.event_type == "rejection":
+        unsafe_fields = set(changes) - {"status", "recruiter_reply_at"}
+        if unsafe_fields:
+            raise ProposalApplyError("rejection proposals may update only status and recruiter_reply_at")
     if proposal.proposal_type == ProposalType.CREATE_APPLICATION:
         if proposal.application_id:
             application = JobApplication.objects.select_for_update().filter(pk=proposal.application_id, user=user).first()

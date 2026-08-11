@@ -112,6 +112,8 @@
         {% else %}
           {% if proposal.proposal_type == "create_application" %}
             <p class="text-success mb-0">{% trans "No possible duplicate was detected. You can create this application in step 5." %}</p>
+          {% elif proposal.analysis.event_type == "rejection" %}
+            <p class="text-warning mb-0">{% trans "A rejection cannot create a new application because its date is not proof of when you applied. Link the original application, or ignore this suggestion." %}</p>
           {% else %}
             <p class="text-muted mb-0">{% trans "There are no active applications available to link." %}</p>
           {% endif %}
@@ -120,30 +122,23 @@
     </div>
   </section>
 
-  {% if not proposal.application_id and proposal.proposal_type != "create_application" %}
+  {% if not proposal.application_id and proposal.proposal_type != "create_application" and proposal.analysis.event_type != "rejection" %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
-      {% if proposal.analysis.event_type == "rejection" %}
-        <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Create rejected application" %}</h2>
-        <p class="text-muted">{% trans "Use this when the email is a confirmed rejection but no existing application matches. It creates a rejected application, records this email as the recruiter reply, and closes this suggestion." %}</p>
-      {% elif proposal.analysis.event_type == "documents_requested" %}
+      {% if proposal.analysis.event_type == "documents_requested" %}
         <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Create and link an application" %}</h2>
         <p class="text-muted">{% trans "Use this only after confirming the employer and role from the email. The required action remains pending until you review and accept it in step 5." %}</p>
       {% else %}
         <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Or create and link an application" %}</h2>
         <p class="text-muted">{% trans "Use this only after confirming the employer and role from the email." %}</p>
       {% endif %}
-      <form method="post" action="{% if proposal.analysis.event_type == 'rejection' %}{% url 'gmail_assistant:create_rejected_application_for_proposal' proposal.pk %}{% else %}{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}{% endif %}">
+      <form method="post" action="{% url 'gmail_assistant:create_application_for_proposal' proposal.pk %}">
         {% csrf_token %}
         <div class="row g-2">
           <div class="col-md-6"><label class="form-label" for="newApplicationTitle">{% trans "Job title" %}</label><input class="form-control" id="newApplicationTitle" name="title" maxlength="200" required value="{{ proposal.analysis.extracted_data.position_title|default:'' }}"></div>
           <div class="col-md-6"><label class="form-label" for="newApplicationCompany">{% trans "Company" %}</label><input class="form-control" id="newApplicationCompany" name="company" maxlength="200" required value="{{ proposal.analysis.extracted_data.company|default:'' }}"></div>
           <div class="col-12"><label class="form-label" for="newApplicationLocation">{% trans "Location" %}</label><input class="form-control" id="newApplicationLocation" name="location" maxlength="200" value="{{ proposal.analysis.extracted_data.location|default:'' }}"></div>
         </div>
-        {% if proposal.analysis.event_type == "rejection" %}
-          <button class="btn btn-danger mt-3">{% trans "Create rejected application" %}</button>
-        {% else %}
-          <button class="btn btn-success mt-3">{% trans "Create and link application" %}</button>
-        {% endif %}
+        <button class="btn btn-success mt-3">{% trans "Create and link application" %}</button>
       </form>
     </div></section>
   {% endif %}

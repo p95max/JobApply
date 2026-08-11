@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
@@ -30,6 +31,7 @@ _INTERVIEW_EVENTS = {
 }
 _MANUAL_ASSIGNMENT_EVENTS = {GmailEventType.REJECTION}
 _RULES_PATH = Path(__file__).with_name("proposal_rules.json")
+logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=1)
@@ -59,6 +61,17 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
     extracted = analysis.extracted_data
     action_required = _is_action_required(message=message, event_type=analysis.event_type, extracted=extracted)
     proposals: list[ApplicationUpdateProposal] = []
+
+    if analysis.event_type == GmailEventType.REJECTION:
+        logger.info(
+            "gmail_rejection_match analysis_id=%s message_id=%s matched_application_id=%s method=%s score=%s ambiguous_candidates=%s",
+            analysis.pk,
+            message.message_id,
+            application.pk if application else None,
+            match_method or "unmatched",
+            match_score,
+            [candidate.application.pk for candidate in match.ambiguous],
+        )
 
     if application is not None or analysis.event_type not in _CREATE_APPLICATION_EVENTS:
         ApplicationUpdateProposal.objects.filter(

@@ -158,3 +158,35 @@ def test_audit_api_lists_all_applications_including_records_without_ai_history(c
         manual_application.pk,
     }
     assert "Private note" not in response.content.decode()
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_audit_api_explains_analysis_without_a_proposal(client):
+    staff = _staff_user()
+    message = GmailMessage.objects.create(
+        user=staff,
+        message_id="audit-no-proposal",
+        thread_id="audit-no-proposal-thread",
+        received_at=timezone.now(),
+        subject="Private message subject that must not be exposed",
+    )
+    GmailAnalysis.objects.create(
+        user=staff,
+        message=message,
+        classifier=AnalysisClassifier.RULE,
+        event_type=GmailEventType.NOISE,
+        is_job_related=False,
+        confidence=99,
+    )
+    client.force_login(staff)
+
+    response = client.get(reverse("ai_audit:gmail_analyses", kwargs={"audit_key": AUDIT_KEY}))
+
+    assert response.status_code == 200
+    payload = response.json()["results"][0]
+    assert payload["gmail_message_id"] == "audit-no-proposal"
+    assert payload["proposal_created"] is False
+    assert payload["proposal_ids"] == []
+    assert payload["reason"] == "not_job_related"
+    assert "Private message subject" not in response.content.decode()

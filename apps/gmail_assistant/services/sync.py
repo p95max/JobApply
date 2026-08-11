@@ -522,6 +522,7 @@ def _sync_gmail_messages_for_user(
                 user=user,
                 message=message,
                 extracted_data=analysis.extracted_data,
+                event_type=analysis.event_type,
             )
             proposals = build_proposals(message=message, analysis=analysis, match=match)
             counters["proposals_created"] += len(proposals)

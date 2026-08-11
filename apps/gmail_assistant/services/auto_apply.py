@@ -8,7 +8,9 @@ from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, app
 
 AUTO_APPLY_MIN_CONFIDENCE = 95
 _SAFE_EVENT_TYPES = frozenset({GmailEventType.GENERAL_UPDATE, GmailEventType.SCREENING})
-_SAFE_MATCH_METHODS = frozenset({"thread_id", "external_application_id", "exact_company_title"})
+_SAFE_MATCH_METHODS = frozenset(
+    {"gmail_thread", "thread_id", "external_application_id", "exact_company_title"}
+)
 _SAFE_APPLICATION_CHANGE_FIELDS = frozenset({"status", "recruiter_reply_at"})
 
 

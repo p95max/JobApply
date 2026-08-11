@@ -733,7 +733,7 @@ def test_review_page_shows_sender_excerpt_and_requires_link_for_action(client, p
 
 
 @pytest.mark.django_db
-def test_unmatched_rejection_can_create_a_rejected_application(client, proposal):
+def test_unmatched_rejection_cannot_create_a_rejected_application(client, proposal):
     proposal.application = None
     proposal.analysis.event_type = GmailEventType.REJECTION
     proposal.analysis.extracted_data = {
@@ -752,18 +752,14 @@ def test_unmatched_rejection_can_create_a_rejected_application(client, proposal)
     )
 
     proposal.refresh_from_db()
-    application = proposal.application
     assert detail.status_code == 200
-    assert b"Create rejected application" in detail.content
+    assert b"cannot create a new application" in detail.content
     assert response.status_code == 302
-    assert proposal.status == ProposalStatus.ACCEPTED
-    assert proposal.match_method == "manual_created_immediate_rejection"
-    assert proposal.match_score == 100
-    assert application.status == ApplicationStatus.REJECTED
-    assert application.recruiter_reply_at == proposal.message.received_at
-    assert "original application date is unknown" in application.notes
+    assert proposal.status == ProposalStatus.PENDING
+    assert proposal.application is None
+    assert not JobApplication.objects.filter(user=proposal.user, company="CHECK24").exists()
     proposal.message.refresh_from_db()
-    assert proposal.message.application_id == application.pk
+    assert proposal.message.application_id is None
 
 
 @pytest.mark.django_db

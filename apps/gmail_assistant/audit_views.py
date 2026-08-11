@@ -14,8 +14,10 @@ from apps.applications.models import JobApplication
 from apps.gmail_assistant.models import (
     AnalysisClassifier,
     ApplicationUpdateProposal,
+    GmailAnalysis,
     ProposalStatus,
 )
+from apps.gmail_stats.models import GmailProcessingStatus
 
 
 def _require_audit_access(view):
@@ -105,6 +107,48 @@ def _application_payload(application: JobApplication) -> dict[str, object]:
     }
 
 
+def _analysis_reason(*, analysis: GmailAnalysis, proposals: list[ApplicationUpdateProposal]) -> str:
+    """Return a redacted, operational explanation for the audit endpoint."""
+    if proposals:
+        return "proposal_created"
+    if analysis.message.processing_status == GmailProcessingStatus.FAILED:
+        return f"processing_failed:{analysis.message.processing_error or 'unknown'}"
+    if analysis.message.processing_status == GmailProcessingStatus.IGNORED:
+        return "ignored_by_pipeline"
+    if not analysis.is_job_related:
+        return "not_job_related"
+    if analysis.event_type in {"noise", "unknown"}:
+        return f"non_actionable_event:{analysis.event_type}"
+    return "no_actionable_change_detected"
+
+
+def _analysis_payload(analysis: GmailAnalysis) -> dict[str, object]:
+    proposals = list(analysis.proposals.all())
+    matching = [
+        {
+            "proposal_id": proposal.pk,
+            "application_id": proposal.application_id,
+            "method": proposal.match_method or None,
+            "score": proposal.match_score,
+        }
+        for proposal in proposals
+    ]
+    return {
+        "analysis_id": analysis.pk,
+        "owner_id": analysis.user_id,
+        "gmail_message_id": analysis.message.message_id,
+        "event_type": analysis.event_type,
+        "classifier": analysis.classifier,
+        "confidence": analysis.confidence,
+        "analyzed_at": _iso(analysis.analyzed_at),
+        "proposal_created": bool(proposals),
+        "proposal_ids": [proposal.pk for proposal in proposals],
+        "matching": matching,
+        "ignored": analysis.message.processing_status == GmailProcessingStatus.IGNORED,
+        "reason": _analysis_reason(analysis=analysis, proposals=proposals),
+    }
+
+
 def _ai_proposals_queryset():
     return (
         ApplicationUpdateProposal.objects.filter(
@@ -127,6 +171,7 @@ def swagger(request: HttpRequest, *, audit_key: str):
             "schema_url": reverse("ai_audit:openapi_schema", kwargs={"audit_key": audit_key}),
             "applications_url": reverse("ai_audit:applications", kwargs={"audit_key": audit_key}),
             "proposals_url": reverse("ai_audit:ai_proposals", kwargs={"audit_key": audit_key}),
+            "analyses_url": reverse("ai_audit:gmail_analyses", kwargs={"audit_key": audit_key}),
         },
     )
 
@@ -226,6 +271,28 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                     "responses": {"200": {"description": "Redacted AI proposal history."}},
                 }
             },
+            "/api/gmail-analyses/": {
+                "get": {
+                    "summary": "List redacted Gmail analysis decisions",
+                    "description": (
+                        "Includes proposal and matching outcomes, including analyses "
+                        "that created no proposal."
+                    ),
+                    "parameters": [
+                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {
+                                "type": "integer",
+                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+                            },
+                        },
+                        {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0}},
+                    ],
+                    "responses": {"200": {"description": "Paginated redacted decision records."}},
+                }
+            },
         },
         "components": {
             "securitySchemes": {
@@ -301,6 +368,35 @@ def ai_proposals(request: HttpRequest, *, audit_key: str):
 
     total = queryset.count()
     records = [_proposal_payload(proposal) for proposal in queryset[offset : offset + limit]]
+    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": records})
+
+
+@_require_audit_access
+@require_GET
+@never_cache
+def gmail_analyses(request: HttpRequest, *, audit_key: str):
+    """Expose every persisted analysis decision without email content or tokens."""
+    try:
+        limit = _parse_positive_int(
+            request,
+            "limit",
+            default=50,
+            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+        )
+        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
+        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+    except ValueError as error:
+        return JsonResponse({"detail": str(error)}, status=400)
+
+    queryset = (
+        GmailAnalysis.objects.select_related("message")
+        .prefetch_related("proposals")
+        .order_by("-analyzed_at", "-pk")
+    )
+    if user_id:
+        queryset = queryset.filter(user_id=user_id)
+    total = queryset.count()
+    records = [_analysis_payload(analysis) for analysis in queryset[offset : offset + limit]]
     return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": records})
 
 

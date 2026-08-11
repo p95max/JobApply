@@ -14,7 +14,7 @@ from apps.gmail_assistant.models import (
     ProposalType,
 )
 from apps.gmail_stats.models import GmailMessage
-from apps.gmail_assistant.services.application_matcher import ApplicationMatch, MatchCandidate
+from apps.gmail_assistant.services.application_matcher import ApplicationMatch, MatchCandidate, match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
 from apps.gmail_assistant.services.proposal_builder import build_proposals
 from apps.interviews.models import InterviewEvent, InterviewStatus
@@ -376,6 +376,72 @@ def test_historical_rejection_after_application_date_proposes_rejected_status(pr
     apply_proposal(proposal=proposal, user=user)
     application.refresh_from_db()
     assert application.status == ApplicationStatus.REJECTED
+    assert application.applied_at == message.received_at - timedelta(hours=1)
+    assert application.recruiter_reply_at == message.received_at
+
+
+@pytest.mark.django_db
+def test_rejection_cannot_override_the_original_application_date(proposal_context):
+    user, application, message = proposal_context
+    original_applied_at = application.applied_at
+    proposal = build_proposals(
+        message=message,
+        analysis=analysis(user=user, message=message, event_type=GmailEventType.REJECTION),
+        match=matched(application),
+    )[0]
+
+    with pytest.raises(ProposalApplyError, match="rejection proposals"):
+        apply_proposal(
+            proposal=proposal,
+            user=user,
+            overrides={"application": {"applied_at": message.received_at.isoformat()}},
+        )
+
+    application.refresh_from_db()
+    assert application.applied_at == original_applied_at
+
+
+@pytest.mark.django_db
+def test_accepted_create_proposal_links_itself_and_replies_in_same_thread_match(proposal_context):
+    user, _, message = proposal_context
+    create_analysis = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "firstwaters", "position_title": "Junior IT Architect"},
+    )
+    create = build_proposals(
+        message=message,
+        analysis=create_analysis,
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+
+    result = apply_proposal(proposal=create, user=user)
+    create.refresh_from_db()
+    assert create.application_id == result.application.pk
+
+    rejection_message = GmailMessage.objects.create(
+        user=user,
+        message_id="thread-rejection",
+        thread_id=message.thread_id,
+        received_at=message.received_at + timedelta(days=2),
+        from_email="careers@firstwaters.de",
+    )
+    rejection_analysis = analysis(
+        user=user,
+        message=rejection_message,
+        event_type=GmailEventType.REJECTION,
+        extracted_data={"company": "firstwaters", "position_title": "Developer"},
+    )
+
+    match = match_for_message(
+        user=user,
+        message=rejection_message,
+        extracted_data=rejection_analysis.extracted_data,
+        event_type=rejection_analysis.event_type,
+    )
+    assert match.suggested and match.suggested.application.pk == result.application.pk
+    assert match.suggested.method == "gmail_thread"
 
 
 @pytest.mark.django_db
