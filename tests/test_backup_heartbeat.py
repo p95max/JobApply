@@ -46,11 +46,11 @@ def test_record_neon_sync_success():
     call_command(
         "record_worker_heartbeat",
         NEON_SYNC_WORKER,
-        interval=604800,
+        interval=172800,
         success=True,
     )
 
     heartbeat = WorkerHeartbeat.objects.get(worker_name=NEON_SYNC_WORKER)
 
-    assert heartbeat.expected_interval_seconds == 604800
+    assert heartbeat.expected_interval_seconds == 172800
     assert heartbeat.last_success_at is not None

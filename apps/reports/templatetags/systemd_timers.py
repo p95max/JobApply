@@ -27,7 +27,8 @@ _FALLBACK_SCHEDULES = {
         "end": time(3, 15),
     },
     "jobapply-neon-sync.timer": {
-        "weekday": 6,
+        "weekday": None,
+        "interval_days": 2,
         "start": time(3, 30),
         "end": time(3, 50),
     },
@@ -77,7 +78,18 @@ def _fallback_next_run(unit_name: str) -> dict[str, str]:
     target_date = local_now.date()
     weekday = schedule["weekday"]
 
-    if weekday is None:
+    interval_days = schedule.get("interval_days")
+    if interval_days:
+        while True:
+            start_target = timezone.make_aware(
+                datetime.combine(target_date, schedule["start"]),
+                timezone.get_current_timezone(),
+            )
+            is_scheduled_day = (target_date.day - 1) % int(interval_days) == 0
+            if is_scheduled_day and local_now < start_target:
+                break
+            target_date += timedelta(days=1)
+    elif weekday is None:
         start_today = timezone.make_aware(
             datetime.combine(target_date, schedule["start"]),
             timezone.get_current_timezone(),

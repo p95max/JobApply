@@ -1,8 +1,8 @@
 [Unit]
-Description=Run JobApply Neon recovery sync weekly
+Description=Run JobApply Neon recovery sync every two days
 
 [Timer]
-OnCalendar=Sun *-*-* 03:30:00
+OnCalendar=*-*-1/2 03:30:00
 RandomizedDelaySec=20m
 Persistent=true
 Unit=jobapply-neon-sync.service

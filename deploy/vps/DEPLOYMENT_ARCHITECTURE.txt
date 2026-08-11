@@ -192,7 +192,7 @@ This is the real long-term off-site backup because dump files are immutable snap
 
 Layer 3: Neon warm recovery database
 
-Once per week, jobapply-neon-sync.timer replaces a dedicated Neon database with a fresh local dump.
+Every two days, jobapply-neon-sync.timer replaces a dedicated Neon database with a fresh local dump.
 
 The script:
 
@@ -413,7 +413,7 @@ If the Gmail worker fails:
 
 If Neon is unavailable:
 
-- the weekly sync fails and is visible in journalctl;
+- the two-day sync fails and is visible in journalctl;
 - the primary local database continues to work;
 - Google Drive dumps remain available.
 

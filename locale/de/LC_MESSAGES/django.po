@@ -1560,8 +1560,8 @@ msgstr "Letzte erfolgreiche Neon-Synchronisierung"
 msgid "Next scheduled Neon synchronization"
 msgstr "Nächste geplante Neon-Synchronisierung"
 
-msgid "Once weekly on Sunday"
-msgstr "Einmal wöchentlich am Sonntag"
+msgid "Every two days at night"
+msgstr "Alle zwei Tage nachts"
 
 msgid "This server recovery copy is separate from the personal Google Drive backups above. The schedule runs on the VPS even when this page is closed."
 msgstr "Diese Server-Wiederherstellungskopie ist von den persönlichen Google-Drive-Backups oben getrennt. Der Zeitplan läuft auf dem VPS auch dann, wenn diese Seite geschlossen ist."

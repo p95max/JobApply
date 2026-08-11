@@ -120,7 +120,7 @@ The local retention is seven days. Google Drive stores the historical off-site c
 
 Create a dedicated free Neon project used only as a recovery copy. Put its direct PostgreSQL connection string in `BACKUP_DATABASE_URL` in `.env`.
 
-Every Sunday the local database is dumped and restored to Neon with `--clean`, `--if-exists`, `--single-transaction` and migration-count verification. Never point this variable at a production database or a pooled Neon endpoint.
+Every two days the local database is dumped and restored to Neon with `--clean`, `--if-exists`, `--single-transaction` and migration-count verification. Never point this variable at a production database or a pooled Neon endpoint.
 
 ## Operations
 
