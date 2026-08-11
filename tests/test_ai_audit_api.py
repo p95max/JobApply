@@ -239,3 +239,28 @@ def test_audit_api_explains_analysis_without_a_proposal(client):
     assert payload["proposal_ids"] == []
     assert payload["reason"] == "not_job_related"
     assert "Private message subject" not in response.content.decode()
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_audit_api_shows_redacted_extracted_application_identity(client):
+    staff = _staff_user()
+    proposal = _ai_proposal(user=staff)
+    proposal.analysis.extracted_data = {
+        "company": "Example GmbH",
+        "position_title": "Python Developer",
+        "location": "Leipzig",
+        "summary": "Private email body must not be exposed",
+    }
+    proposal.analysis.save(update_fields=["extracted_data"])
+    client.force_login(staff)
+
+    response = client.get(reverse("ai_audit:gmail_analyses", kwargs={"audit_key": AUDIT_KEY}))
+
+    payload = response.json()["results"][0]
+    assert payload["extracted_application"] == {
+        "company": "Example GmbH",
+        "position_title": "Python Developer",
+        "location": "Leipzig",
+    }
+    assert "Private email body" not in response.content.decode()

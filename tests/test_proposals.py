@@ -146,6 +146,67 @@ def test_job_board_name_is_not_used_as_a_new_application_company(proposal_contex
 
 
 @pytest.mark.django_db
+def test_platform_acknowledgement_is_attached_to_the_real_employer_proposal(proposal_context):
+    user, _, message = proposal_context
+    employer = build_proposals(
+        message=message,
+        analysis=analysis(
+            user=user,
+            message=message,
+            event_type=GmailEventType.APPLICATION_RECEIVED,
+            extracted_data={"company": "Smart Systems Hub GmbH", "position_title": "Python Software Engineer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+    platform_message = GmailMessage.objects.create(
+        user=user,
+        message_id="stepstone-acknowledgement",
+        thread_id="stepstone-thread",
+        received_at=message.received_at + timedelta(minutes=1),
+        subject="Application sent",
+        from_email="info@email.stepstone.de",
+    )
+
+    result = build_proposals(
+        message=platform_message,
+        analysis=analysis(
+            user=user,
+            message=platform_message,
+            event_type=GmailEventType.APPLICATION_SENT,
+            extracted_data={"company": "Stepstone Group Deutschland GmbH", "position_title": "Python Software Engineer"},
+        ),
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+
+    employer.refresh_from_db()
+    assert result == []
+    assert ApplicationUpdateProposal.objects.filter(
+        user=user,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).count() == 1
+    assert employer.changes["related_messages"][0]["from_email"] == "info@email.stepstone.de"
+
+
+@pytest.mark.django_db
+def test_rebuild_canonicalises_configured_ats_company_alias(proposal_context):
+    user, _, message = proposal_context
+    record = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "HELIX", "position_title": "Ausbildung Fachinformatiker"},
+    )
+
+    rebuild_pending_proposals_for_user(user=user)
+
+    record.refresh_from_db()
+    proposal = ApplicationUpdateProposal.objects.get(analysis=record, proposal_type=ProposalType.CREATE_APPLICATION)
+    assert record.extracted_data["company"] == "axilaris"
+    assert proposal.changes["application"]["company"] == "axilaris"
+
+
+@pytest.mark.django_db
 def test_reanalysis_removes_an_existing_job_board_create_proposal(proposal_context):
     user, _, message = proposal_context
     record = analysis(

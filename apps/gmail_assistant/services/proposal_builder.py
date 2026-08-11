@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from apps.gmail_assistant.services.application_matcher import normalize_company, normalize_position
+from apps.gmail_assistant.services.company_resolution import resolve_extracted_company
 from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
     GmailEventType,
@@ -102,6 +103,9 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             _record_related_message(proposal=pending_create_proposal, message=message)
             return []
         if not _can_create_application(extracted):
+            platform_duplicate = _pending_platform_duplicate(message=message, extracted=extracted)
+            if platform_duplicate is not None:
+                _record_related_message(proposal=platform_duplicate, message=message)
             ApplicationUpdateProposal.objects.filter(
                 message=message,
                 analysis=analysis,
@@ -396,7 +400,44 @@ def _can_create_application(extracted: dict[str, Any]) -> bool:
 
 
 def _is_job_platform(company: str) -> bool:
-    return normalize_company(company) in {normalize_company(value) for value in _rules()["job_platform_companies"]}
+    normalized = normalize_company(company)
+    return any(
+        normalized == platform or normalized.startswith(f"{platform} ")
+        for platform in (normalize_company(value) for value in _rules()["job_platform_companies"])
+    )
+
+
+def _pending_platform_duplicate(*, message: Any, extracted: dict[str, Any]) -> ApplicationUpdateProposal | None:
+    """Attach a platform acknowledgement to its real employer proposal when unambiguous.
+
+    A platform may repeat the same submission email a few seconds later.  It is
+    useful review evidence, but must never create a second application whose
+    company is the platform itself.
+    """
+    company = _string_or_none(extracted.get("company"))
+    title = normalize_position(extracted.get("position_title"))
+    if not company or not title or not _is_job_platform(company):
+        return None
+    candidates = (
+        ApplicationUpdateProposal.objects.filter(
+            user=message.user,
+            proposal_type=ProposalType.CREATE_APPLICATION,
+            status=ProposalStatus.PENDING,
+        )
+        .exclude(message=message)
+        .select_related("message")
+        .order_by("-created_at")[:100]
+    )
+    matches: list[ApplicationUpdateProposal] = []
+    for candidate in candidates:
+        proposed = candidate.changes.get("application")
+        if not isinstance(proposed, dict) or _is_job_platform(str(proposed.get("company") or "")):
+            continue
+        if normalize_position(proposed.get("title")) != title:
+            continue
+        if abs(candidate.message.received_at - message.received_at) <= timedelta(minutes=5):
+            matches.append(candidate)
+    return matches[0] if len(matches) == 1 else None
 
 
 def _pending_create_duplicate(*, message: Any, changes: dict[str, Any]) -> ApplicationUpdateProposal | None:
@@ -504,10 +545,14 @@ def rebuild_pending_proposals_for_user(*, user: Any) -> int:
         .order_by("message__received_at", "message__pk")
     )
     for analysis in analyses:
+        resolved_data = resolve_extracted_company(analysis.extracted_data)
+        if resolved_data != analysis.extracted_data:
+            analysis.extracted_data = resolved_data
+            analysis.save(update_fields=["extracted_data"])
         match = match_for_message(
             user=user,
             message=analysis.message,
-            extracted_data=analysis.extracted_data,
+            extracted_data=resolved_data,
             event_type=analysis.event_type,
         )
         rebuilt += len(build_proposals(message=analysis.message, analysis=analysis, match=match))

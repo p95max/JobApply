@@ -21,6 +21,7 @@ from apps.gmail_assistant.services.ai_analyzer import (
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_email_text
 from apps.gmail_assistant.services.auto_apply import auto_apply_trusted_proposals
 from apps.gmail_assistant.services.application_matcher import match_for_message
+from apps.gmail_assistant.services.company_resolution import resolve_extracted_company
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
 from apps.gmail_assistant.services.proposal_builder import build_proposals, rebuild_pending_proposals_for_user
 from apps.gmail_assistant.services.queries import build_candidate_query, build_sent_applications_query
@@ -110,6 +111,7 @@ def _record_analysis(
     is_job_related: bool | None = None,
     model_name: str = "",
 ) -> GmailAnalysis:
+    extracted_data = resolve_extracted_company(extracted_data)
     with transaction.atomic():
         analysis, _ = GmailAnalysis.objects.update_or_create(
             user=user,

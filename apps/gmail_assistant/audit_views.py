@@ -160,6 +160,7 @@ def _analysis_reason(*, analysis: GmailAnalysis, proposals: list[ApplicationUpda
 
 def _analysis_payload(analysis: GmailAnalysis) -> dict[str, object]:
     proposals = list(analysis.proposals.all())
+    extracted = analysis.extracted_data if isinstance(analysis.extracted_data, dict) else {}
     matching = [
         {
             "proposal_id": proposal.pk,
@@ -180,6 +181,11 @@ def _analysis_payload(analysis: GmailAnalysis) -> dict[str, object]:
         "proposal_created": bool(proposals),
         "proposal_ids": [proposal.pk for proposal in proposals],
         "matching": matching,
+        "extracted_application": {
+            "company": extracted.get("company"),
+            "position_title": extracted.get("position_title"),
+            "location": extracted.get("location"),
+        },
         "ignored": analysis.message.processing_status == GmailProcessingStatus.IGNORED,
         "reason": _analysis_reason(analysis=analysis, proposals=proposals),
     }
