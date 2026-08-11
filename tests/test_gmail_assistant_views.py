@@ -142,6 +142,7 @@ def test_pending_assistant_cards_include_client_side_filters(client, proposal):
     assert b'id="pendingSearch"' in response.content
     assert b'id="pendingTypeFilter"' in response.content
     assert b'id="pendingSort"' in response.content
+    assert b'data-pending-proposal-count="1"' in response.content
     assert b'data-event="general_update"' in response.content
     assert b'data-match="linked"' in response.content
 

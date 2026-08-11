@@ -13,7 +13,7 @@
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ schema_url }}">{% trans "Open OpenAPI schema" %}</a>
         <a class="btn btn-outline-secondary" href="{{ applications_url }}">{% trans "View applications as JSON" %}</a>
-        <a class="btn btn-outline-secondary" href="{{ pending_applications_url }}">{% trans "View pending applications as JSON" %}</a>
+        <a class="btn btn-outline-secondary" href="{{ pending_applications_url }}">{% trans "View pending suggestions as JSON" %}</a>
         <a class="btn btn-outline-secondary" href="{{ proposals_url }}">{% trans "View AI proposals as JSON" %}</a>
         <a class="btn btn-outline-secondary" href="{{ analyses_url }}">{% trans "View Gmail decisions as JSON" %}</a>
       </div>
@@ -25,7 +25,7 @@
         <dt class="col-md-4"><code>GET /api/applications/</code></dt>
         <dd class="col-md-8">{% trans "Paginated application metadata, including records without AI history." %}</dd>
         <dt class="col-md-4"><code>GET /api/pending-applications/</code></dt>
-        <dd class="col-md-8">{% trans "Applications with linked pending proposals and their redacted review metadata." %}</dd>
+        <dd class="col-md-8">{% trans "All pending suggestions with linked or proposed application metadata." %}</dd>
         <dt class="col-md-4"><code>GET /api/ai-proposals/</code></dt>
         <dd class="col-md-8">{% trans "Paginated AI proposal metadata. Supports status, user_id, limit and offset." %}</dd>
         <dt class="col-md-4"><code>GET /api/gmail-analyses/</code></dt>

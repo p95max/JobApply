@@ -162,32 +162,51 @@ def test_audit_api_lists_all_applications_including_records_without_ai_history(c
 
 @pytest.mark.django_db
 @override_settings(AI_AUDIT_URL=AUDIT_KEY)
-def test_audit_api_lists_only_applications_with_pending_proposals(client):
+def test_audit_api_lists_linked_and_unlinked_pending_application_suggestions(client):
     staff = _staff_user()
     pending = _ai_proposal(user=staff)
-    unrelated = JobApplication.objects.create(user=staff, company="Manual GmbH", title="Manual application")
+    unlinked_message = GmailMessage.objects.create(
+        user=staff,
+        message_id="pending-unlinked-message",
+        thread_id="pending-unlinked-thread",
+        received_at=timezone.now(),
+    )
+    unlinked_analysis = GmailAnalysis.objects.create(
+        user=staff,
+        message=unlinked_message,
+        classifier=AnalysisClassifier.AI,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        confidence=84,
+    )
+    unlinked = ApplicationUpdateProposal.objects.create(
+        user=staff,
+        message=unlinked_message,
+        analysis=unlinked_analysis,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        changes={
+            "application": {
+                "title": "Pending Developer",
+                "company": "Pending GmbH",
+                "status": "applied",
+            }
+        },
+    )
     client.force_login(staff)
 
     response = client.get(reverse("ai_audit:pending_applications", kwargs={"audit_key": AUDIT_KEY}))
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["count"] == 1
-    assert payload["results"][0]["id"] == pending.application_id
-    assert payload["results"][0]["pending_proposals"] == [
-        {
-            "proposal_id": pending.pk,
-            "proposal_type": ProposalType.UPDATE_APPLICATION,
-            "matching": {"score": 0, "method": None},
-            "analysis": {
-                "event_type": GmailEventType.APPLICATION_RECEIVED,
-                "classifier": AnalysisClassifier.AI,
-                "confidence": 91,
-                "analyzed_at": pending.analysis.analyzed_at.isoformat(),
-            },
-        }
-    ]
-    assert unrelated.pk not in {item["id"] for item in payload["results"]}
+    assert payload["count"] == 2
+    records = {item["proposal_id"]: item for item in payload["results"]}
+    assert records[pending.pk]["application"]["id"] == pending.application_id
+    assert records[pending.pk]["proposed_application"] is None
+    assert records[unlinked.pk]["application"] is None
+    assert records[unlinked.pk]["proposed_application"] == {
+        "title": "Pending Developer",
+        "company": "Pending GmbH",
+        "status": "applied",
+    }
 
 
 @pytest.mark.django_db

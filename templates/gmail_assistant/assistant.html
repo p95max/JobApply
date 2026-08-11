@@ -196,7 +196,7 @@
     </section>
   {% endif %}
 
-  <div id="pendingCards">
+  <div id="pendingCards" data-pending-proposal-count="{{ pending_count }}">
   {% for group in proposal_groups %}
     <section class="card mb-3 js-pending-card {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
       data-event="{{ group.analysis.event_type }}"
@@ -361,7 +361,8 @@
     });
 
     if (pendingFilterCount) {
-      pendingFilterCount.textContent = `${visible} / ${pendingCards.length} {% trans "pending suggestions shown" %}`;
+      const totalSuggestions = pendingCardsContainer?.dataset.pendingProposalCount || pendingCards.length;
+      pendingFilterCount.textContent = `${visible} / ${pendingCards.length} email threads shown on this page · ${totalSuggestions} {% trans "pending suggestions in this state" %}`;
     }
     pendingFilterEmpty?.classList.toggle("d-none", visible !== 0);
     if (pendingCardsContainer && pendingSort) {

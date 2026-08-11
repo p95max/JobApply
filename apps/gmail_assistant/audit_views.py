@@ -107,28 +107,38 @@ def _application_payload(application: JobApplication) -> dict[str, object]:
     }
 
 
-def _pending_application_payload(application: JobApplication) -> dict[str, object]:
-    """Return an application and its pending review work without private email data."""
-    payload = _application_payload(application)
-    pending = application.update_proposals.filter(status=ProposalStatus.PENDING).order_by("-created_at", "-pk")
-    payload["pending_proposals"] = [
+def _pending_application_payload(proposal: ApplicationUpdateProposal) -> dict[str, object]:
+    """Return all pending suggestions, including those not yet linked to an app."""
+    application_change = proposal.changes.get("application") if isinstance(proposal.changes, dict) else None
+    proposed_application = (
         {
-            "proposal_id": proposal.pk,
-            "proposal_type": proposal.proposal_type,
-            "matching": {
-                "score": proposal.match_score,
-                "method": proposal.match_method or None,
-            },
-            "analysis": {
-                "event_type": proposal.analysis.event_type,
-                "classifier": proposal.analysis.classifier,
-                "confidence": proposal.analysis.confidence,
-                "analyzed_at": _iso(proposal.analysis.analyzed_at),
-            },
+            field: application_change.get(field)
+            for field in ("title", "company", "location", "source", "status", "applied_at")
+            if field in application_change
         }
-        for proposal in pending
-    ]
-    return payload
+        if isinstance(application_change, dict)
+        else None
+    )
+    application = proposal.application
+    return {
+        "proposal_id": proposal.pk,
+        "owner_id": proposal.user_id,
+        "proposal_type": proposal.proposal_type,
+        "created_at": _iso(proposal.created_at),
+        "application": _application_payload(application) if application else None,
+        "proposed_application": proposed_application,
+        "matching": {
+            "score": proposal.match_score,
+            "method": proposal.match_method or None,
+        },
+        "analysis": {
+            "id": proposal.analysis_id,
+            "event_type": proposal.analysis.event_type,
+            "classifier": proposal.analysis.classifier,
+            "confidence": proposal.analysis.confidence,
+            "analyzed_at": _iso(proposal.analysis.analyzed_at),
+        },
+    }
 
 
 def _analysis_reason(*, analysis: GmailAnalysis, proposals: list[ApplicationUpdateProposal]) -> str:
@@ -274,10 +284,10 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
             },
             "/api/pending-applications/": {
                 "get": {
-                    "summary": "List applications linked to pending proposals",
+                    "summary": "List pending Gmail application suggestions",
                     "description": (
-                        "Includes redacted metadata for every pending proposal linked to an application. "
-                        "Unlinked proposals remain available via /api/ai-proposals/?status=pending."
+                        "Includes every pending proposal. Linked applications and extracted "
+                        "proposed application values are included when available."
                     ),
                     "parameters": [
                         {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
@@ -395,7 +405,7 @@ def applications(request: HttpRequest, *, audit_key: str):
 @require_GET
 @never_cache
 def pending_applications(request: HttpRequest, *, audit_key: str):
-    """List only applications that require a pending Gmail proposal review."""
+    """List every pending proposal, including unlinked application suggestions."""
     try:
         limit = _parse_positive_int(
             request,
@@ -409,15 +419,14 @@ def pending_applications(request: HttpRequest, *, audit_key: str):
         return JsonResponse({"detail": str(error)}, status=400)
 
     queryset = (
-        JobApplication.objects.filter(update_proposals__status=ProposalStatus.PENDING)
-        .distinct()
-        .prefetch_related("update_proposals__analysis")
-        .order_by("-updated_at", "-pk")
+        ApplicationUpdateProposal.objects.filter(status=ProposalStatus.PENDING)
+        .select_related("application", "analysis")
+        .order_by("-message__received_at", "-pk")
     )
     if user_id:
         queryset = queryset.filter(user_id=user_id)
     total = queryset.count()
-    results = [_pending_application_payload(application) for application in queryset[offset : offset + limit]]
+    results = [_pending_application_payload(proposal) for proposal in queryset[offset : offset + limit]]
     return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
 
 
