@@ -107,6 +107,30 @@ def _application_payload(application: JobApplication) -> dict[str, object]:
     }
 
 
+def _pending_application_payload(application: JobApplication) -> dict[str, object]:
+    """Return an application and its pending review work without private email data."""
+    payload = _application_payload(application)
+    pending = application.update_proposals.filter(status=ProposalStatus.PENDING).order_by("-created_at", "-pk")
+    payload["pending_proposals"] = [
+        {
+            "proposal_id": proposal.pk,
+            "proposal_type": proposal.proposal_type,
+            "matching": {
+                "score": proposal.match_score,
+                "method": proposal.match_method or None,
+            },
+            "analysis": {
+                "event_type": proposal.analysis.event_type,
+                "classifier": proposal.analysis.classifier,
+                "confidence": proposal.analysis.confidence,
+                "analyzed_at": _iso(proposal.analysis.analyzed_at),
+            },
+        }
+        for proposal in pending
+    ]
+    return payload
+
+
 def _analysis_reason(*, analysis: GmailAnalysis, proposals: list[ApplicationUpdateProposal]) -> str:
     """Return a redacted, operational explanation for the audit endpoint."""
     if proposals:
@@ -170,6 +194,10 @@ def swagger(request: HttpRequest, *, audit_key: str):
             "audit_key": audit_key,
             "schema_url": reverse("ai_audit:openapi_schema", kwargs={"audit_key": audit_key}),
             "applications_url": reverse("ai_audit:applications", kwargs={"audit_key": audit_key}),
+            "pending_applications_url": reverse(
+                "ai_audit:pending_applications",
+                kwargs={"audit_key": audit_key},
+            ),
             "proposals_url": reverse("ai_audit:ai_proposals", kwargs={"audit_key": audit_key}),
             "analyses_url": reverse("ai_audit:gmail_analyses", kwargs={"audit_key": audit_key}),
         },
@@ -242,6 +270,28 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                         },
                     ],
                     "responses": {"200": {"description": "Paginated application metadata."}},
+                }
+            },
+            "/api/pending-applications/": {
+                "get": {
+                    "summary": "List applications linked to pending proposals",
+                    "description": (
+                        "Includes redacted metadata for every pending proposal linked to an application. "
+                        "Unlinked proposals remain available via /api/ai-proposals/?status=pending."
+                    ),
+                    "parameters": [
+                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {
+                                "type": "integer",
+                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+                            },
+                        },
+                        {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0}},
+                    ],
+                    "responses": {"200": {"description": "Paginated pending application metadata."}},
                 }
             },
             "/api/applications/{application_id}/ai-history/": {
@@ -338,6 +388,36 @@ def applications(request: HttpRequest, *, audit_key: str):
         _application_payload(application)
         for application in queryset[offset : offset + limit]
     ]
+    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
+
+
+@_require_audit_access
+@require_GET
+@never_cache
+def pending_applications(request: HttpRequest, *, audit_key: str):
+    """List only applications that require a pending Gmail proposal review."""
+    try:
+        limit = _parse_positive_int(
+            request,
+            "limit",
+            default=50,
+            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+        )
+        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
+        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+    except ValueError as error:
+        return JsonResponse({"detail": str(error)}, status=400)
+
+    queryset = (
+        JobApplication.objects.filter(update_proposals__status=ProposalStatus.PENDING)
+        .distinct()
+        .prefetch_related("update_proposals__analysis")
+        .order_by("-updated_at", "-pk")
+    )
+    if user_id:
+        queryset = queryset.filter(user_id=user_id)
+    total = queryset.count()
+    results = [_pending_application_payload(application) for application in queryset[offset : offset + limit]]
     return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
 
 

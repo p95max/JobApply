@@ -162,6 +162,36 @@ def test_audit_api_lists_all_applications_including_records_without_ai_history(c
 
 @pytest.mark.django_db
 @override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_audit_api_lists_only_applications_with_pending_proposals(client):
+    staff = _staff_user()
+    pending = _ai_proposal(user=staff)
+    unrelated = JobApplication.objects.create(user=staff, company="Manual GmbH", title="Manual application")
+    client.force_login(staff)
+
+    response = client.get(reverse("ai_audit:pending_applications", kwargs={"audit_key": AUDIT_KEY}))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["results"][0]["id"] == pending.application_id
+    assert payload["results"][0]["pending_proposals"] == [
+        {
+            "proposal_id": pending.pk,
+            "proposal_type": ProposalType.UPDATE_APPLICATION,
+            "matching": {"score": 0, "method": None},
+            "analysis": {
+                "event_type": GmailEventType.APPLICATION_RECEIVED,
+                "classifier": AnalysisClassifier.AI,
+                "confidence": 91,
+                "analyzed_at": pending.analysis.analyzed_at.isoformat(),
+            },
+        }
+    ]
+    assert unrelated.pk not in {item["id"] for item in payload["results"]}
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
 def test_audit_api_explains_analysis_without_a_proposal(client):
     staff = _staff_user()
     message = GmailMessage.objects.create(
