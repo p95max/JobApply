@@ -52,6 +52,20 @@ def test_guest_can_start_temporary_demo_and_use_manual_workspace(send_notificati
     assert application_form.status_code == 200
 
 
+@pytest.mark.django_db(transaction=True)
+@override_settings(TURNSTILE_ENABLED=True, DEMO_ACCOUNT_TTL_HOURS=12)
+@patch("apps.accounts.views.send_notification_once")
+def test_demo_start_bypasses_google_turnstile_gate(send_notification_mock, client):
+    response = client.post(reverse("accounts:start_demo"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("dashboard")
+    user_id = client.session.get("_auth_user_id")
+    assert user_id is not None
+    assert UserProfile.objects.get(user_id=user_id).is_demo_user is True
+    send_notification_mock.assert_called_once()
+
+
 @pytest.mark.django_db
 @override_settings(TURNSTILE_ENABLED=False)
 def test_guest_can_open_safe_connected_service_previews(client):
