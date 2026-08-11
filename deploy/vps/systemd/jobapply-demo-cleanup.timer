@@ -1,9 +1,9 @@
 [Unit]
-Description=Clean expired JobApply demo accounts hourly
+Description=Clean expired JobApply demo accounts every 12 hours
 
 [Timer]
 OnBootSec=5m
-OnUnitActiveSec=1h
+OnUnitActiveSec=12h
 Persistent=true
 Unit=jobapply-demo-cleanup.service
 
