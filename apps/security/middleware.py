@@ -32,6 +32,7 @@ class TurnstileAnonymousGateMiddleware:
     PUBLIC_PATHS = frozenset(
         {
             "/",
+            "/app/demo/start/",
             "/impressum/",
             "/datenschutz/",
             "/nutzungsbedingungen/",
