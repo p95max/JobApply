@@ -51,7 +51,7 @@
             data-dark-label="{% trans 'Switch to dark theme' %}"
             title="{% trans 'Switch to light theme' %}"
             aria-label="{% trans 'Switch to light theme' %}"
-          ><span data-theme-icon aria-hidden="true">☀️</span></button>
+          ><span class="app-theme-switch__icon" data-theme-icon aria-hidden="true">☀️</span></button>
 
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
@@ -93,7 +93,7 @@
             data-dark-label="{% trans 'Switch to dark theme' %}"
             title="{% trans 'Switch to light theme' %}"
             aria-label="{% trans 'Switch to light theme' %}"
-          ><span data-theme-icon aria-hidden="true">☀️</span></button>
+          ><span class="app-theme-switch__icon" data-theme-icon aria-hidden="true">☀️</span></button>
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
             <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch"><span>{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span></button>
