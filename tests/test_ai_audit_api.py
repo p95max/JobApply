@@ -99,6 +99,25 @@ def test_audit_api_is_disabled_until_a_secret_url_is_configured(client):
 
 @pytest.mark.django_db
 @override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_navigation_shows_the_audit_link_only_to_staff(client):
+    staff = _staff_user()
+    regular_user = get_user_model().objects.create_user(
+        "regular-user",
+        email="regular@example.com",
+    )
+    audit_url = reverse("ai_audit:swagger", kwargs={"audit_key": AUDIT_KEY})
+
+    client.force_login(staff)
+    staff_response = client.get(reverse("dashboard"))
+    client.force_login(regular_user)
+    regular_response = client.get(reverse("dashboard"))
+
+    assert audit_url.encode() in staff_response.content
+    assert audit_url.encode() not in regular_response.content
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
 def test_audit_api_returns_only_redacted_ai_proposal_metadata(client):
     staff = _staff_user()
     ai_proposal = _ai_proposal(user=staff)
