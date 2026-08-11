@@ -84,7 +84,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             status=ProposalStatus.PENDING,
         ).delete()
     if analysis.event_type in {GmailEventType.NOISE, GmailEventType.UNKNOWN}:
-        return proposals
+        return _pending_results(proposals)
 
     if not action_required:
         ApplicationUpdateProposal.objects.filter(
@@ -128,7 +128,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                 changes={"application": changes},
             )
             proposals.append(proposal)
-            return proposals
+            return _pending_results(proposals)
 
     if application is None:
         if pending_create_proposal is not None:
@@ -180,7 +180,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                             changes={"interview": interview_changes, **pending_target},
                         )
                     )
-            return proposals
+            return _pending_results(proposals)
         if analysis.event_type in _MANUAL_ASSIGNMENT_EVENTS:
             proposals.append(
                 _create_pending(
@@ -210,7 +210,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                     changes={"action": _action_changes(extracted)},
                 )
             )
-        return proposals
+        return _pending_results(proposals)
 
     application_changes = _application_changes(message=message, analysis=analysis, application=application)
     if application_changes:
@@ -257,7 +257,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
                     changes={"interview": interview_changes},
                 )
             )
-    return proposals
+    return _pending_results(proposals)
 
 
 def _normalize_known_event_type(*, message: Any, analysis: Any) -> None:
@@ -371,12 +371,30 @@ def _interview_changes(*, event_type: str, application: Any, extracted: dict[str
     return changes, ProposalType.UPDATE_INTERVIEW
 
 
+def _pending_results(proposals: list[ApplicationUpdateProposal]) -> list[ApplicationUpdateProposal]:
+    """Return only proposals that still need review."""
+    return [proposal for proposal in proposals if proposal.status == ProposalStatus.PENDING]
+
+
 def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
+    identity = {
+        "user": kwargs["message"].user,
+        "message": kwargs["message"],
+        "analysis": kwargs["analysis"],
+        "proposal_type": kwargs["proposal_type"],
+    }
+    reviewed = (
+        ApplicationUpdateProposal.objects.filter(**identity)
+        .exclude(status=ProposalStatus.PENDING)
+        .order_by("-reviewed_at", "-pk")
+        .first()
+    )
+    if reviewed is not None:
+        ApplicationUpdateProposal.objects.filter(**identity, status=ProposalStatus.PENDING).delete()
+        return reviewed
+
     proposal, created = ApplicationUpdateProposal.objects.get_or_create(
-        user=kwargs["message"].user,
-        message=kwargs["message"],
-        analysis=kwargs["analysis"],
-        proposal_type=kwargs["proposal_type"],
+        **identity,
         status=ProposalStatus.PENDING,
         defaults={
             "application": kwargs["application"],
