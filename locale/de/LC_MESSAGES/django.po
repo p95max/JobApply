@@ -18,6 +18,70 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: templates/includes/apps_list_header.html:22
+msgid "Search, status, AI, month and sort"
+msgstr "Suche, Status, KI, Monat und Sortierung"
+
+#: templates/includes/apps_list_header.html:50
+msgid "AI processing"
+msgstr "KI-Verarbeitung"
+
+#: templates/includes/apps_list_header.html:53
+msgid "AI processed"
+msgstr "KI-verarbeitet"
+
+#: templates/includes/apps_list_header.html:54
+msgid "Without AI"
+msgstr "Ohne KI"
+
+#: templates/gmail_assistant/ai_audit_docs.html:4
+msgid "Gmail audit API"
+msgstr "Gmail-Prüf-API"
+
+#: templates/gmail_assistant/ai_audit_docs.html:10
+msgid "Read-only OpenAPI-compatible endpoints for reviewing Gmail application processing and proposal decisions."
+msgstr "Schreibgeschützte, OpenAPI-kompatible Endpunkte zur Prüfung der Gmail-Verarbeitung von Bewerbungen und Vorschlagsentscheidungen."
+
+#: templates/gmail_assistant/ai_audit_docs.html:11
+msgid "Email text, subjects, credentials and private review notes are never returned."
+msgstr "E-Mail-Texte, Betreffzeilen, Zugangsdaten und private Prüfnotizen werden niemals ausgegeben."
+
+#: templates/gmail_assistant/ai_audit_docs.html:16
+msgid "Available endpoints"
+msgstr "Verfügbare Endpunkte"
+
+#: templates/gmail_assistant/ai_audit_docs.html:19
+msgid "Paginated application metadata, including records without proposal history."
+msgstr "Seitengestückelte Bewerbungsmetadaten, einschließlich Einträgen ohne Vorschlagshistorie."
+
+#: templates/gmail_assistant/ai_audit_docs.html:21
+msgid "All pending suggestions with linked or proposed application metadata."
+msgstr "Alle ausstehenden Vorschläge mit verknüpften oder vorgeschlagenen Bewerbungsmetadaten."
+
+#: templates/gmail_assistant/ai_audit_docs.html:24
+msgid "Create high-confidence applications"
+msgstr "Bewerbungen mit hoher Zuversicht erstellen"
+
+#: templates/gmail_assistant/ai_audit_docs.html:25
+msgid "the exact pending create proposals currently eligible for the bulk-create action, including the active confidence threshold."
+msgstr "die genauen ausstehenden Erstellungsvorschläge, die derzeit für die Sammelerstellung geeignet sind, einschließlich des aktiven Zuversichtsgrenzwerts."
+
+#: templates/gmail_assistant/ai_audit_docs.html:28
+msgid "Paginated proposal metadata. Supports status, user_id, limit and offset."
+msgstr "Seitengestückelte Vorschlagsmetadaten. Unterstützt status, user_id, limit und offset."
+
+#: templates/gmail_assistant/ai_audit_docs.html:30
+msgid "Redacted analysis decisions, including records that did not create a proposal."
+msgstr "Bereinigte Analyseentscheidungen, einschließlich Einträgen, die keinen Vorschlag erzeugt haben."
+
+#: templates/gmail_assistant/ai_audit_docs.html:32
+msgid "Choose an application ID from the applications JSON first"
+msgstr "Wählen Sie zuerst eine Bewerbungs-ID aus dem Bewerbungs-JSON"
+
+#: templates/gmail_assistant/ai_audit_docs.html:33
+msgid "Paginated proposal history for one linked application. Choose its ID from the applications JSON first."
+msgstr "Seitengestückelte Vorschlagshistorie für eine verknüpfte Bewerbung. Wählen Sie deren ID zuerst aus dem Bewerbungs-JSON."
+
 #: apps/accounts/forms.py:15
 msgid "Sign up is disabled. Please use Google sign-in."
 msgstr ""

@@ -7,6 +7,105 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "How JobApply works"
+msgstr "So funktioniert JobApply"
+
+msgid "You decide what to connect and what to automate."
+msgstr "Sie entscheiden, was Sie verbinden und was Sie automatisieren."
+
+msgid "Track your applications"
+msgstr "Verwalten Sie Ihre Bewerbungen"
+
+msgid "Start with applications, interviews and notes. Demo mode works without connecting any service."
+msgstr "Starten Sie mit Bewerbungen, Vorstellungsgesprächen und Notizen. Der Demo-Modus funktioniert ohne die Verbindung zu einem Dienst."
+
+msgid "Connect only what you need"
+msgstr "Verbinden Sie nur, was Sie brauchen"
+
+msgid "Read-only application emails"
+msgstr "Bewerbungs-E-Mails nur lesen"
+
+msgid "Private notifications"
+msgstr "Private Benachrichtigungen"
+
+msgid "Optionally analyse new email"
+msgstr "Neue E-Mails optional analysieren"
+
+msgid "Rules classify messages by default. Enable AI only with your consent; attachments are never sent."
+msgstr "Regeln klassifizieren Nachrichten standardmäßig. Aktivieren Sie KI nur mit Ihrer Einwilligung; Anhänge werden niemals gesendet."
+
+msgid "Daily limit"
+msgstr "Tageslimit"
+
+msgid "No attachments"
+msgstr "Keine Anhänge"
+
+msgid "Stay in control"
+msgstr "Behalten Sie die Kontrolle"
+
+msgid "Manual review"
+msgstr "Manuelle Prüfung"
+
+msgid "Inspect every suggestion before applying it."
+msgstr "Prüfen Sie jeden Vorschlag, bevor er angewendet wird."
+
+msgid "Trusted automation"
+msgstr "Vertrauenswürdige Automatisierung"
+
+msgid "Only verified, low-risk updates can be applied automatically."
+msgstr "Nur verifizierte Aktualisierungen mit geringem Risiko können automatisch angewendet werden."
+
+msgid "Data safety"
+msgstr "Datensicherheit"
+
+msgid "AI never deletes your emails, applications or notes. Your data stays available for review."
+msgstr "KI löscht niemals Ihre E-Mails, Bewerbungen oder Notizen. Ihre Daten bleiben zur Prüfung verfügbar."
+
+msgid "AI processing"
+msgstr "KI-Verarbeitung"
+
+msgid "AI processed"
+msgstr "KI-verarbeitet"
+
+msgid "Without AI"
+msgstr "Ohne KI"
+
+msgid "Search, status, AI, month and sort"
+msgstr "Suche, Status, KI, Monat und Sortierung"
+
+msgid "Back to top"
+msgstr "Nach oben"
+
+msgid "DEMO"
+msgstr "DEMO"
+
+msgid "Demo"
+msgstr "Demo"
+
+msgid "Gmail"
+msgstr "Gmail"
+
+msgid "Impressum"
+msgstr "Impressum"
+
+msgid "Legal navigation"
+msgstr "Rechtliche Navigation"
+
+msgid "Privacy policy"
+msgstr "Datenschutzerklärung"
+
+msgid "Switch to English"
+msgstr "Zu Englisch wechseln"
+
+msgid "Switch to German"
+msgstr "Zu Deutsch wechseln"
+
+msgid "Terms of use"
+msgstr "Nutzungsbedingungen"
+
+msgid "Try demo without Google"
+msgstr "Demo ohne Google ausprobieren"
+
 msgid "Landing navigation"
 msgstr "Navigation der Startseite"
 

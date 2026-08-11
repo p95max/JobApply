@@ -325,6 +325,26 @@ body:has(.landing-shell) main {
   margin-top: 0.28rem;
 }
 
+.landing-flow__safety-note {
+  margin-top: 0.62rem !important;
+  padding: 0.48rem 0.58rem;
+  border: 1px solid rgba(73, 214, 177, 0.26);
+  border-radius: 0.72rem;
+  color: #a9e9d7 !important;
+  background: rgba(73, 214, 177, 0.07);
+  font-size: 0.66rem !important;
+  line-height: 1.4 !important;
+}
+
+.landing-flow__safety-note strong {
+  display: block;
+  margin-bottom: 0.18rem;
+  color: #d3fff2;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .landing-flow__chips {
   display: flex;
   flex-wrap: wrap;
