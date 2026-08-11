@@ -1498,3 +1498,81 @@ msgstr "In den letzten %(days)s Tagen"
 #, python-format
 msgid "OpenAI usage during the last %(days)s days"
 msgstr "OpenAI-Verbrauch in den letzten %(days)s Tagen"
+
+#: templates/reports/drive_backups.html
+msgid "Manage backups stored in your Google Drive."
+msgstr "Verwalten Sie Backups, die in Ihrem Google Drive gespeichert sind."
+
+msgid "Automatic personal backups"
+msgstr "Automatische persönliche Backups"
+
+msgid "Last saved"
+msgstr "Zuletzt gespeichert"
+
+msgid "Not yet"
+msgstr "Noch nicht"
+
+msgid "Next backup"
+msgstr "Nächstes Backup"
+
+msgid "Within the next 5 minutes"
+msgstr "In den nächsten 5 Minuten"
+
+msgid "Disable automatic backups"
+msgstr "Automatische Backups deaktivieren"
+
+msgid "Enable automatic backups"
+msgstr "Automatische Backups aktivieren"
+
+msgid "Disable Drive backups"
+msgstr "Drive-Backups deaktivieren"
+
+msgid "Save backup manually"
+msgstr "Backup manuell speichern"
+
+msgid "Server backup schedule"
+msgstr "Zeitplan für Server-Backups"
+
+msgid "Managed by systemd"
+msgstr "Von systemd verwaltet"
+
+msgid "VPS recovery database backup"
+msgstr "VPS-Wiederherstellungsdatenbank-Backup"
+
+msgid "Last successful backup"
+msgstr "Letztes erfolgreiches Backup"
+
+msgid "Not available"
+msgstr "Nicht verfügbar"
+
+msgid "Next scheduled backup"
+msgstr "Nächstes geplantes Backup"
+
+msgid "Once daily at night"
+msgstr "Einmal täglich nachts"
+
+msgid "Neon recovery database synchronization"
+msgstr "Neon-Wiederherstellungsdatenbank-Synchronisierung"
+
+msgid "Last successful Neon synchronization"
+msgstr "Letzte erfolgreiche Neon-Synchronisierung"
+
+msgid "Next scheduled Neon synchronization"
+msgstr "Nächste geplante Neon-Synchronisierung"
+
+msgid "Once weekly on Sunday"
+msgstr "Einmal wöchentlich am Sonntag"
+
+msgid "This server recovery copy is separate from the personal Google Drive backups above. The schedule runs on the VPS even when this page is closed."
+msgstr "Diese Server-Wiederherstellungskopie ist von den persönlichen Google-Drive-Backups oben getrennt. Der Zeitplan läuft auf dem VPS auch dann, wenn diese Seite geschlossen ist."
+
+msgid "Permission scope: <span class=\"font-monospace\">drive.file</span> (only files created by this app)."
+msgstr "Berechtigungsumfang: <span class=\"font-monospace\">drive.file</span> (nur von dieser App erstellte Dateien)."
+
+#, python-format
+msgid "Your applications are saved to this Drive folder every %(interval)s."
+msgstr "Ihre Bewerbungen werden alle %(interval)s in diesem Drive-Ordner gespeichert."
+
+#, python-format
+msgid "Off. Enable it to save your applications to this Drive folder every %(interval)s."
+msgstr "Aus. Aktivieren Sie die Funktion, um Ihre Bewerbungen alle %(interval)s in diesem Drive-Ordner zu speichern."

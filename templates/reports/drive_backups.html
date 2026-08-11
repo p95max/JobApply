@@ -24,11 +24,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="fw-semibold mb-1">{% trans "Connection" %}</div>
-          <div class="text-muted small mb-3">
-            {% blocktrans %}
-            Permission scope: <span class="font-monospace">drive.file</span> (only files created by this app).
-            {% endblocktrans %}
-          </div>
+          <div class="text-muted small mb-3">{% blocktrans %}Permission scope: <span class="font-monospace">drive.file</span> (only files created by this app).{% endblocktrans %}</div>
 
           {% if drive_status.connected %}
             <div class="text-muted small mb-2">
