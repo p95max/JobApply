@@ -241,18 +241,25 @@ def _score_candidate(application: Any, email: EmailMatchData) -> MatchCandidate 
     company_ratio = _ratio(company, application_company)
     title_ratio = _ratio(title, application_title)
     sender_domain_match = _sender_domain_matches_company(email.sender_email, application_company)
+    generic_title = _is_generic_position(email.position_title)
     evidence: list[str] = []
 
     if company and title and company == application_company and title == application_title:
         score, method = 95, "exact_company_title"
         evidence.extend(("exact normalized company", "exact normalized title"))
-    elif company and title and company == application_company and _title_contains(title, application_title):
+    elif (
+        not generic_title
+        and company
+        and title
+        and company == application_company
+        and _title_contains(title, application_title)
+    ):
         score, method = 92, "exact_company_title_containment"
         evidence.extend(("exact normalized company", "one normalized title contains the other"))
-    elif sender_domain_match and title_ratio >= 80:
+    elif not generic_title and sender_domain_match and title_ratio >= 80:
         score, method = 82, "sender_domain_title"
         evidence.extend(("sender domain matches company", "similar normalized title"))
-    elif company_ratio >= 85 and title_ratio >= 80:
+    elif not generic_title and company_ratio >= 85 and title_ratio >= 80:
         score, method = 75, "fuzzy_company_title"
         evidence.extend(("similar normalized company", "similar normalized title"))
     else:

@@ -749,12 +749,14 @@ def test_unmatched_rejection_cannot_create_a_rejected_application(client, propos
     response = client.post(
         reverse("gmail_assistant:create_rejected_application_for_proposal", args=[proposal.pk]),
         {"title": "Junior Software Developer", "company": "CHECK24", "location": "Dresden"},
+        follow=True,
     )
 
     proposal.refresh_from_db()
     assert detail.status_code == 200
-    assert b"cannot create a new application" in detail.content
-    assert response.status_code == 302
+    assert b"Create rejected application" not in detail.content
+    assert b"An unmatched rejection cannot create a new application" in response.content
+    assert response.status_code == 200
     assert proposal.status == ProposalStatus.PENDING
     assert proposal.application is None
     assert not JobApplication.objects.filter(user=proposal.user, company="CHECK24").exists()
