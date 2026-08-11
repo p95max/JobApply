@@ -10,6 +10,7 @@ PYTHON="${PYTHON:-$APP_DIR/.venv/bin/python}"
 MANAGE="$APP_DIR/manage.py"
 GUNICORN_VERSION="${GUNICORN_VERSION:-26.0.0}"
 HEALTH_URL="${JOBAPPLY_HEALTH_URL:-http://127.0.0.1/}"
+SYSTEMD_DIR="/etc/systemd/system"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script as root: sudo $0" >&2
@@ -89,6 +90,17 @@ install -o root -g jobapply -m 0750 \
   "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
   /usr/local/sbin/jobapply-deploy
 
+# Demo cleanup was added after some VPS installations. Keep these units in
+# sync on every normal deploy so production does not depend on re-running the
+# one-time install-ops bootstrap script.
+echo "==> Synchronizing demo cleanup timer"
+install -m 0644 \
+  "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.service" \
+  "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.timer" \
+  "$SYSTEMD_DIR/"
+systemctl daemon-reload
+systemctl enable --now jobapply-demo-cleanup.timer
+
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
 if command -v poetry >/dev/null 2>&1; then
@@ -139,6 +151,11 @@ run_django collectstatic --noinput
 echo "==> Compiling German translations"
 run_django compilemessages -l de
 
+# Run one cleanup immediately after the new application code and migrations are
+# ready. The hourly timer handles subsequent expiry automatically.
+echo "==> Cleaning expired demo accounts"
+systemctl start jobapply-demo-cleanup.service
+
 services=(
   jobapply-web.service
   jobapply-gmail-assistant.service
@@ -171,6 +188,11 @@ for service in "${installed_services[@]}"; do
   }
   echo "  active: $service"
 done
+
+systemctl is-enabled --quiet jobapply-demo-cleanup.timer || {
+  echo "Demo cleanup timer is not enabled." >&2
+  exit 1
+}
 
 echo "==> Running HTTP health check"
 curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
