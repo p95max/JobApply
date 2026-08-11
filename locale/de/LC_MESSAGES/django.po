@@ -974,3 +974,530 @@ msgstr "Alle Statistiken und Daten sind benutzerisoliert (benutzerspezifisch)."
 
 #~ msgid "Title (Z-A)"
 #~ msgstr "Titel (Z-A)"
+
+#: templates/accounts/_settings_shell_header.html
+msgid "Manage connected services and account integrations."
+msgstr "Verwalten Sie verbundene Dienste und Kontointegrationen."
+
+#: templates/accounts/settings.html
+msgid "Read-only connection used by Gmail Stats and Gmail Assistant."
+msgstr "Schreibgeschützte Verbindung für Gmail-Statistiken und Gmail-Assistent."
+
+msgid "Connected"
+msgstr "Verbunden"
+
+msgid "Needs attention"
+msgstr "Aufmerksamkeit erforderlich"
+
+msgid "This Google account cannot be disconnected separately because it is used to register and sign in to JobApply."
+msgstr "Dieses Google-Konto kann nicht separat getrennt werden, da es für Registrierung und Anmeldung bei JobApply verwendet wird."
+
+msgid "Google account"
+msgstr "Google-Konto"
+
+msgid "Last synchronization"
+msgstr "Letzte Synchronisierung"
+
+msgid "Automatic check interval"
+msgstr "Intervall für automatische Prüfung"
+
+msgid "Last safe error category"
+msgstr "Letzte sichere Fehlerkategorie"
+
+msgid "Delete account"
+msgstr "Konto löschen"
+
+msgid "This permanently deletes your JobApply account, applications, interviews, Gmail messages and analyses, proposals, backups settings, and Telegram connection. This cannot be undone."
+msgstr "Dadurch werden Ihr JobApply-Konto, Bewerbungen, Interviews, Gmail-Nachrichten und Analysen, Vorschläge, Backup-Einstellungen und die Telegram-Verbindung dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden."
+
+msgid "Your Google account is not deleted. You can separately revoke JobApply access in your Google Account security settings."
+msgstr "Ihr Google-Konto wird nicht gelöscht. Sie können den JobApply-Zugriff separat in den Sicherheitseinstellungen Ihres Google-Kontos widerrufen."
+
+msgid "Permanently delete your JobApply account and all associated data? This cannot be undone."
+msgstr "Ihr JobApply-Konto und alle zugehörigen Daten dauerhaft löschen? Dies kann nicht rückgängig gemacht werden."
+
+msgid "Delete my account permanently"
+msgstr "Mein Konto dauerhaft löschen"
+
+msgid "Connect your private Telegram chat to JobApply notifications and commands."
+msgstr "Verbinden Sie Ihren privaten Telegram-Chat mit JobApply-Benachrichtigungen und -Befehlen."
+
+msgid "Not connected"
+msgstr "Nicht verbunden"
+
+msgid "JobApply Telegram bot"
+msgstr "JobApply-Telegram-Bot"
+
+msgid "On a computer, opening Telegram Web in your browser is recommended."
+msgstr "Am Computer wird empfohlen, Telegram Web im Browser zu öffnen."
+
+msgid "Open bot"
+msgstr "Bot öffnen"
+
+msgid "Telegram user ID"
+msgstr "Telegram-Benutzer-ID"
+
+msgid "Telegram chat ID"
+msgstr "Telegram-Chat-ID"
+
+msgid "Connected at"
+msgstr "Verbunden seit"
+
+msgid "Disconnect Telegram"
+msgstr "Telegram trennen"
+
+msgid "Generate a one-time connection code, then send it to the JobApply bot. The code expires after 15 minutes."
+msgstr "Erstellen Sie einen einmaligen Verbindungscode und senden Sie ihn an den JobApply-Bot. Der Code läuft nach 15 Minuten ab."
+
+msgid "Generate connection code"
+msgstr "Verbindungscode erstellen"
+
+msgid "One-time connection code"
+msgstr "Einmaliger Verbindungscode"
+
+msgid "Open a private chat with the JobApply bot and send this command:"
+msgstr "Öffnen Sie einen privaten Chat mit dem JobApply-Bot und senden Sie diesen Befehl:"
+
+msgid "Connect automatically instead"
+msgstr "Stattdessen automatisch verbinden"
+
+msgid "After the bot replies “Telegram connected to JobApply.”, return to this page and refresh it to see the Connected status."
+msgstr "Nachdem der Bot mit „Telegram mit JobApply verbunden.“ geantwortet hat, kehren Sie zu dieser Seite zurück und aktualisieren sie, um den Verbindungsstatus zu sehen."
+
+#: templates/reports/statistics.html
+msgid "Application analytics"
+msgstr "Bewerbungsanalyse"
+
+msgid "Current application records and their latest statuses. Each application is counted once."
+msgstr "Aktuelle Bewerbungsdaten und ihre letzten Status. Jede Bewerbung wird einmal gezählt."
+
+msgid "Current records in your JobApply database"
+msgstr "Aktuelle Einträge in Ihrer JobApply-Datenbank"
+
+msgid "Applications by status"
+msgstr "Bewerbungen nach Status"
+
+msgid "applications"
+msgstr "Bewerbungen"
+
+msgid "No applications yet. Add one to see statistics."
+msgstr "Noch keine Bewerbungen vorhanden. Fügen Sie eine Bewerbung hinzu, um Statistiken zu sehen."
+
+msgid "Why Gmail statistics may show a different total"
+msgstr "Warum Gmail-Statistiken eine andere Gesamtzahl zeigen können"
+
+msgid "This page counts application records. Gmail statistics counts analyzed email events, and one application can have several related messages."
+msgstr "Diese Seite zählt Bewerbungsdaten. Gmail-Statistiken zählen analysierte E-Mail-Ereignisse, und eine Bewerbung kann mehrere zugehörige Nachrichten haben."
+
+#: templates/gmail_stats/dashboard.html
+msgid "Email analytics"
+msgstr "E-Mail-Analyse"
+
+msgid "AI-classified job-related emails. These are email events, not application records: one application may generate several messages."
+msgstr "KI-klassifizierte berufsbezogene E-Mails. Dies sind E-Mail-Ereignisse, keine Bewerbungsdaten: Eine Bewerbung kann mehrere Nachrichten erzeugen."
+
+msgid "Job-related emails"
+msgstr "Berufsbezogene E-Mails"
+
+msgid "All AI-classified job-related messages in the selected period"
+msgstr "Alle KI-klassifizierten berufsbezogenen Nachrichten im ausgewählten Zeitraum"
+
+msgid "Rejection emails"
+msgstr "Absage-E-Mails"
+
+msgid "Messages classified as rejection events"
+msgstr "Als Absage-Ereignisse klassifizierte Nachrichten"
+
+msgid "Interview and screening emails"
+msgstr "E-Mails zu Interviews und Vorauswahl"
+
+msgid "Interview invitations, reschedules and screening events"
+msgstr "Einladungen, Terminverschiebungen und Ereignisse der Vorauswahl"
+
+msgid "Application acknowledgements"
+msgstr "Bewerbungsbestätigungen"
+
+msgid "Application received, sent or confirmation messages"
+msgstr "Nachrichten über Eingang, Versand oder Bestätigung einer Bewerbung"
+
+msgid "How to read these numbers"
+msgstr "So lesen Sie diese Zahlen"
+
+msgid "This page counts analyzed emails. The application statistics page counts current application records, so the totals are not expected to match."
+msgstr "Diese Seite zählt analysierte E-Mails. Die Bewerbungsstatistik zählt aktuelle Bewerbungsdaten, daher müssen die Summen nicht übereinstimmen."
+
+msgid "Last Gmail data sync"
+msgstr "Letzte Gmail-Datensynchronisierung"
+
+#: templates/reports/ai_statistics.html
+msgid "Gmail Assistant insights"
+msgstr "Einblicke des Gmail-Assistenten"
+
+msgid "How Gmail Assistant analysed your messages and what still needs review."
+msgstr "Wie der Gmail-Assistent Ihre Nachrichten analysiert hat und was noch geprüft werden muss."
+
+msgid "Messages analysed"
+msgstr "Analysierte Nachrichten"
+
+msgid "AI or AI-assisted rules"
+msgstr "KI oder KI-unterstützte Regeln"
+
+msgid "Rules fallback"
+msgstr "Regelbasierter Fallback"
+
+msgid "Processed without an AI result"
+msgstr "Ohne KI-Ergebnis verarbeitet"
+
+msgid "Average confidence"
+msgstr "Durchschnittliche Zuversicht"
+
+msgid "Across all analysed messages"
+msgstr "Über alle analysierten Nachrichten"
+
+msgid "Proposal review"
+msgstr "Prüfung von Vorschlägen"
+
+msgid "Suggestions created during the selected period"
+msgstr "Im ausgewählten Zeitraum erstellte Vorschläge"
+
+msgid "Need your review"
+msgstr "Ihre Prüfung erforderlich"
+
+msgid "Applied to your data"
+msgstr "Auf Ihre Daten angewendet"
+
+msgid "Dismissed after review"
+msgstr "Nach Prüfung verworfen"
+
+msgid "Left unchanged"
+msgstr "Unverändert gelassen"
+
+msgid "Estimated cost"
+msgstr "Geschätzte Kosten"
+
+msgid "AI requests"
+msgstr "KI-Anfragen"
+
+msgid "Input tokens"
+msgstr "Eingabe-Token"
+
+msgid "Output tokens"
+msgstr "Ausgabe-Token"
+
+msgid "Total tokens"
+msgstr "Token gesamt"
+
+msgid "Token usage by day"
+msgstr "Token-Verbrauch pro Tag"
+
+msgid "Models"
+msgstr "Modelle"
+
+msgid "requests"
+msgstr "Anfragen"
+
+msgid "tokens"
+msgstr "Token"
+
+msgid "No token usage was recorded for this period."
+msgstr "Für diesen Zeitraum wurde kein Token-Verbrauch erfasst."
+
+msgid "Used today"
+msgstr "Heute verwendet"
+
+msgid "Remaining"
+msgstr "Verbleibend"
+
+msgid "The daily email limit is per user and resets each day."
+msgstr "Das tägliche E-Mail-Limit gilt pro Benutzer und wird jeden Tag zurückgesetzt."
+
+#: templates/gmail_assistant/assistant.html
+msgid "Review suggestions before any application or interview is changed."
+msgstr "Prüfen Sie Vorschläge, bevor eine Bewerbung oder ein Interview geändert wird."
+
+msgid "pending"
+msgstr "ausstehend"
+
+msgid "Dev tools"
+msgstr "Entwicklungswerkzeuge"
+
+msgid "1 day"
+msgstr "1 Tag"
+
+msgid "1 week"
+msgstr "1 Woche"
+
+msgid "1 month"
+msgstr "1 Monat"
+
+msgid "3 months"
+msgstr "3 Monate"
+
+msgid "6 months"
+msgstr "6 Monate"
+
+msgid "Reanalyze"
+msgstr "Erneut analysieren"
+
+msgid "Reset Gmail Assistant data for this account?"
+msgstr "Daten des Gmail-Assistenten für dieses Konto zurücksetzen?"
+
+msgid "Reset all data"
+msgstr "Alle Daten zurücksetzen"
+
+msgid "Reset today's AI limit for this account?"
+msgstr "Heutiges KI-Limit für dieses Konto zurücksetzen?"
+
+msgid "Reset today's AI limit"
+msgstr "Heutiges KI-Limit zurücksetzen"
+
+msgid "Optional Gmail intelligence and automation settings"
+msgstr "Optionale Einstellungen für Gmail-Intelligenz und Automatisierung"
+
+msgid "Show or hide"
+msgstr "Ein- oder ausblenden"
+
+msgid "Gmail sync and AI analysis time depends on the selected period and number of new messages. Please keep this page open."
+msgstr "Die Dauer der Gmail-Synchronisierung und KI-Analyse hängt vom gewählten Zeitraum und der Anzahl neuer Nachrichten ab. Lassen Sie diese Seite geöffnet."
+
+msgid "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent."
+msgstr "Bereinigter E-Mail-Betreff und -Text können an den konfigurierten KI-Anbieter gesendet werden. Anhänge werden niemals gesendet."
+
+msgid "Auto-check"
+msgstr "Automatische Prüfung"
+
+msgid "every"
+msgstr "alle"
+
+msgid "Used"
+msgstr "Verwendet"
+
+msgid "Review below"
+msgstr "Prüfung unter"
+
+msgid "Enable AI analysis"
+msgstr "KI-Analyse aktivieren"
+
+msgid "Advanced automation"
+msgstr "Erweiterte Automatisierung"
+
+msgid "Automatically accept trusted updates"
+msgstr "Vertrauenswürdige Aktualisierungen automatisch annehmen"
+
+msgid "Only exact application matches and low-risk updates with AI confidence of at least 95% are accepted automatically."
+msgstr "Nur exakte Bewerbungszuordnungen und risikoarme Aktualisierungen mit einer KI-Zuverlässigkeit von mindestens 95 % werden automatisch angenommen."
+
+msgid "Risks and limits"
+msgstr "Risiken und Grenzen"
+
+msgid "Recheck pending application links"
+msgstr "Ausstehende Bewerbungszuordnungen erneut prüfen"
+
+msgid "Recheck links"
+msgstr "Zuordnungen erneut prüfen"
+
+msgid "Last successful Gmail sync"
+msgstr "Letzte erfolgreiche Gmail-Synchronisierung"
+
+msgid "Never"
+msgstr "Nie"
+
+msgid "Next automatic check"
+msgstr "Nächste automatische Prüfung"
+
+msgid "Not scheduled"
+msgstr "Nicht geplant"
+
+msgid "The latest Gmail sync needs attention. Try syncing again or reconnect Google if the problem continues."
+msgstr "Die letzte Gmail-Synchronisierung benötigt Aufmerksamkeit. Versuchen Sie die Synchronisierung erneut oder verbinden Sie Google erneut, falls das Problem weiterhin besteht."
+
+msgid "Search pending suggestions"
+msgstr "Ausstehende Vorschläge durchsuchen"
+
+msgid "All pending suggestions"
+msgstr "Alle ausstehenden Vorschläge"
+
+msgid "Needs application link"
+msgstr "Benötigt Bewerbungszuordnung"
+
+msgid "Sent by me"
+msgstr "Von mir gesendet"
+
+msgid "Application confirmations"
+msgstr "Bewerbungsbestätigungen"
+
+msgid "Rejections"
+msgstr "Absagen"
+
+msgid "Actions required"
+msgstr "Aktion erforderlich"
+
+msgid "Sort by date"
+msgstr "Nach Datum sortieren"
+
+msgid "Newest first"
+msgstr "Neueste zuerst"
+
+msgid "Oldest first"
+msgstr "Älteste zuerst"
+
+msgid "Analysis"
+msgstr "Analyse"
+
+msgid "Rules"
+msgstr "Regeln"
+
+msgid "Confidence"
+msgstr "Zuverlässigkeit"
+
+msgid "Match"
+msgstr "Zuordnung"
+
+msgid "unmatched"
+msgstr "nicht zugeordnet"
+
+msgid "No proposals in this state."
+msgstr "Keine Vorschläge in diesem Status."
+
+msgid "No pending suggestions match these filters."
+msgstr "Keine ausstehenden Vorschläge entsprechen diesen Filtern."
+
+msgid "How do I start AI analysis?"
+msgstr "Wie starte ich die KI-Analyse?"
+
+msgid "Enable AI analysis, then choose a period with Sync Gmail. Processing time depends on the selected period and number of new messages."
+msgstr "Aktivieren Sie die KI-Analyse und wählen Sie dann mit „Gmail synchronisieren“ einen Zeitraum. Die Verarbeitungszeit hängt vom gewählten Zeitraum und der Anzahl neuer Nachrichten ab."
+
+msgid "What does Sync Gmail do?"
+msgstr "Was macht „Gmail synchronisieren“?"
+
+msgid "It searches relevant new Gmail messages and creates reviewable suggestions. Already synced messages are skipped. It never changes an application by itself."
+msgstr "Die Funktion sucht relevante neue Gmail-Nachrichten und erstellt prüfbare Vorschläge. Bereits synchronisierte Nachrichten werden übersprungen. Eine Bewerbung wird niemals selbstständig geändert."
+
+msgid "Why is manual review sometimes necessary?"
+msgstr "Warum ist manchmal eine manuelle Prüfung nötig?"
+
+msgid "Why is a proposal unmatched?"
+msgstr "Warum ist ein Vorschlag nicht zugeordnet?"
+
+msgid "The email could not be matched to one application with enough confidence. Assign an application manually before accepting a status update."
+msgstr "Die E-Mail konnte nicht mit ausreichender Zuverlässigkeit einer Bewerbung zugeordnet werden. Ordnen Sie vor dem Annehmen einer Statusaktualisierung eine Bewerbung manuell zu."
+
+msgid "What are the automation risks and limits?"
+msgstr "Welche Risiken und Grenzen hat die Automatisierung?"
+
+msgid "What is sent to AI?"
+msgstr "Was wird an die KI gesendet?"
+
+msgid "Only sanitized email subject and text are sent to the configured provider. Attachments are never sent."
+msgstr "Nur bereinigter E-Mail-Betreff und -Text werden an den konfigurierten Anbieter gesendet. Anhänge werden niemals gesendet."
+
+msgid "Choose Gmail sync period"
+msgstr "Zeitraum für Gmail-Synchronisierung wählen"
+
+msgid "Only new messages from the selected period will be checked. They are sent to AI analysis only when AI analysis is enabled."
+msgstr "Nur neue Nachrichten aus dem ausgewählten Zeitraum werden geprüft. Sie werden nur an die KI-Analyse gesendet, wenn diese aktiviert ist."
+
+msgid "Previously synced messages are skipped to avoid repeated AI analysis and token usage."
+msgstr "Bereits synchronisierte Nachrichten werden übersprungen, um wiederholte KI-Analysen und Token-Verbrauch zu vermeiden."
+
+msgid "Last day"
+msgstr "Letzter Tag"
+
+msgid "Last 7 days"
+msgstr "Letzte 7 Tage"
+
+msgid "Last 30 days"
+msgstr "Letzte 30 Tage"
+
+msgid "Last 3 months"
+msgstr "Letzte 3 Monate"
+
+msgid "Last 6 months"
+msgstr "Letzte 6 Monate"
+
+msgid "Include applications sent by me"
+msgstr "Von mir gesendete Bewerbungen einbeziehen"
+
+msgid "Searches relevant messages in Sent and labels them myself_sent. This is manual only; automatic checks never scan Sent."
+msgstr "Durchsucht relevante Nachrichten in „Gesendet“ und kennzeichnet sie als myself_sent. Dies erfolgt nur manuell; automatische Prüfungen durchsuchen „Gesendet“ nie."
+
+msgid "Sync new messages"
+msgstr "Neue Nachrichten synchronisieren"
+
+msgid "pending suggestions in this state"
+msgstr "ausstehende Vorschläge in diesem Status"
+
+msgid "AI analysis"
+msgstr "KI-Analyse"
+
+msgid "Model"
+msgstr "Modell"
+
+msgid "Show"
+msgstr "Anzeigen"
+
+msgid "FAQ"
+msgstr "FAQ"
+
+msgid "Companies and recruiting systems format application emails in many different ways. AI may not always recognize an unusual email, identify the correct company or role, or match it to an earlier application. Review lets you verify the suggestion, link the correct application, or create a missing application before anything is changed."
+msgstr "Unternehmen und Bewerbungssysteme formatieren Bewerbungs-E-Mails auf viele verschiedene Arten. Die KI erkennt möglicherweise nicht immer eine ungewöhnliche E-Mail, das richtige Unternehmen oder die passende Stelle oder kann sie nicht einer früheren Bewerbung zuordnen. Bei der Prüfung können Sie den Vorschlag kontrollieren, die richtige Bewerbung verknüpfen oder eine fehlende Bewerbung erstellen, bevor etwas geändert wird."
+
+msgid "Batch creation uses only AI suggestions with confidence of at least 75%, but details can still be wrong or duplicate an existing application. Possible duplicates remain pending. Rejections, interviews, and actions are never included."
+msgstr "Die Stapelerstellung verwendet nur KI-Vorschläge mit einer Zuverlässigkeit von mindestens 75 %, doch Angaben können trotzdem falsch sein oder eine bestehende Bewerbung duplizieren. Mögliche Duplikate bleiben ausstehend. Absagen, Interviews und Aktionen werden nie einbezogen."
+
+msgid "days"
+msgstr "Tage"
+
+msgid "Pending"
+msgstr "Ausstehend"
+
+msgid "Accepted"
+msgstr "Angenommen"
+
+msgid "Ignored"
+msgstr "Ignoriert"
+
+msgid "Token usage"
+msgstr "Token-Verbrauch"
+
+msgid "Input"
+msgstr "Eingabe"
+
+msgid "Output"
+msgstr "Ausgabe"
+
+msgid "Tokens and limits"
+msgstr "Token und Limits"
+
+#: templates/gmail_assistant/assistant.html
+#, python-format
+msgid "Create %(count)s new applications from AI suggestions with confidence of at least %(threshold)s%%? Details may be inaccurate or duplicate an existing application. Continue only if you accept this risk."
+msgstr "%(count)s neue Bewerbungen aus KI-Vorschlägen mit einer Zuverlässigkeit von mindestens %(threshold)s %% erstellen? Angaben können ungenau sein oder eine bestehende Bewerbung duplizieren. Fahren Sie nur fort, wenn Sie dieses Risiko akzeptieren."
+
+#, python-format
+msgid "Create %(count)s new applications from AI suggestions with confidence of at least %(threshold)s%%."
+msgstr "%(count)s neue Bewerbungen aus KI-Vorschlägen mit einer Zuverlässigkeit von mindestens %(threshold)s %% erstellen."
+
+#, python-format
+msgid "Create %(count)s applications"
+msgstr "%(count)s Bewerbungen erstellen"
+
+#, python-format
+msgid "Try to link %(count)s pending suggestions to an exact application match. No proposal will be accepted automatically."
+msgstr "Versuchen Sie, %(count)s ausstehende Vorschläge einer exakten Bewerbungszuordnung zuzuordnen. Es wird kein Vorschlag automatisch angenommen."
+
+#, python-format
+msgid "%(counter)s suggested change"
+msgid_plural "%(counter)s suggested changes"
+msgstr[0] "%(counter)s vorgeschlagene Änderung"
+msgstr[1] "%(counter)s vorgeschlagene Änderungen"
+
+#: templates/reports/ai_statistics.html
+#, python-format
+msgid "During the last %(days)s days"
+msgstr "In den letzten %(days)s Tagen"
+
+#, python-format
+msgid "OpenAI usage during the last %(days)s days"
+msgstr "OpenAI-Verbrauch in den letzten %(days)s Tagen"

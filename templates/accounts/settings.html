@@ -56,7 +56,7 @@
           </div>
         {% endif %}
         {% if profile.telegram_chat_id %}
-          <dl class="row"><dt class="col-sm-4">Telegram user ID</dt><dd class="col-sm-8">{{ profile.telegram_user_id }}</dd><dt class="col-sm-4">Telegram chat ID</dt><dd class="col-sm-8">{{ profile.telegram_chat_id }}</dd><dt class="col-sm-4">{% trans "Connected at" %}</dt><dd class="col-sm-8">{% if profile.telegram_linked_at %}{{ profile.telegram_linked_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></dl>
+          <dl class="row"><dt class="col-sm-4">{% trans "Telegram user ID" %}</dt><dd class="col-sm-8">{{ profile.telegram_user_id }}</dd><dt class="col-sm-4">{% trans "Telegram chat ID" %}</dt><dd class="col-sm-8">{{ profile.telegram_chat_id }}</dd><dt class="col-sm-4">{% trans "Connected at" %}</dt><dd class="col-sm-8">{% if profile.telegram_linked_at %}{{ profile.telegram_linked_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></dl>
           <form method="post">{% csrf_token %}<input type="hidden" name="action" value="telegram_disconnect"><button class="btn btn-outline-danger" type="submit">{% trans "Disconnect Telegram" %}</button></form>
         {% else %}
           <p>{% trans "Generate a one-time connection code, then send it to the JobApply bot. The code expires after 15 minutes." %}</p>
