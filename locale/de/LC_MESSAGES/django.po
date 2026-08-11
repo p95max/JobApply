@@ -960,9 +960,6 @@ msgstr "Alle Statistiken und Daten sind benutzerisoliert (benutzerspezifisch)."
 #~ msgid "Latest first"
 #~ msgstr "Neueste zuerst"
 
-#~ msgid "Oldest first"
-#~ msgstr "Älteste zuerst"
-
 #~ msgid "Company (A-Z)"
 #~ msgstr "Firma (A-Z)"
 

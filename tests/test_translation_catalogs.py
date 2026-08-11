@@ -42,3 +42,17 @@ def test_german_translation_catalogs_do_not_repeat_message_ids():
         duplicates = sorted(msgid for msgid, count in counts.items() if count > 1)
 
         assert not duplicates, f"Duplicate msgid entries in {catalog}: {duplicates}"
+
+
+def test_german_catalogs_do_not_keep_obsolete_entries_for_active_messages():
+    for catalog in CATALOGS:
+        source = catalog.read_text(encoding="utf-8")
+        active = set(_message_ids(catalog))
+        obsolete = {
+            ast.literal_eval(line.removeprefix("#~ msgid "))
+            for line in source.splitlines()
+            if line.startswith("#~ msgid ")
+        }
+
+        duplicates = sorted(active & obsolete)
+        assert not duplicates, f"Obsolete entries duplicate active msgids in {catalog}: {duplicates}"
