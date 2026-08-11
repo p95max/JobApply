@@ -1,6 +1,8 @@
 from django.urls import path, include, reverse
 from django.shortcuts import redirect, render
 from django.contrib import admin
+from django.templatetags.static import static as static_url
+from django.views.generic.base import RedirectView
 
 from apps.accounts.dashboard import dashboard
 from apps.accounts.views_turnstile import google_login_gate
@@ -26,6 +28,7 @@ def google_only_login(request):
 
 urlpatterns = [
     path("", root, name="landing"),
+    path("favicon.ico", RedirectView.as_view(url=static_url("img/jobapply-mark.svg"), permanent=True)),
     path("dashboard/", dashboard, name="dashboard"),
 
     path("accounts/login/", google_only_login),

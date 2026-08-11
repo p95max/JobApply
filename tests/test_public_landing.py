@@ -27,6 +27,13 @@ def test_public_root_renders_landing_page(client):
     assert "data-open-cookie-settings" in content
 
 
+def test_favicon_redirects_to_the_jobapply_mark(client):
+    response = client.get("/favicon.ico")
+
+    assert response.status_code == 301
+    assert response["Location"].endswith("/static/img/jobapply-mark.svg")
+
+
 @pytest.mark.django_db
 def test_authenticated_root_redirects_to_dashboard(client):
     user = get_user_model().objects.create_user(
