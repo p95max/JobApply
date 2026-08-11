@@ -98,3 +98,17 @@ def test_high_confidence_audit_endpoint_can_filter_by_user(client):
     payload = response.json()
     assert payload["count"] == 1
     assert payload["results"][0]["proposal_id"] == own.pk
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_gmail_audit_schema_uses_neutral_name_and_lists_high_confidence_endpoint(client):
+    staff = _staff_user()
+    client.force_login(staff)
+
+    response = client.get(reverse("ai_audit:openapi_schema", kwargs={"audit_key": AUDIT_KEY}))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["info"]["title"] == "JobApply Gmail audit API"
+    assert "/api/high-confidence-applications/" in payload["paths"]
