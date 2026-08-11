@@ -29,25 +29,24 @@ class BulkCreateResult:
     linked_for_review: int
 
 
-def eligible_bulk_create_proposals(*, user):
-    """Return AI-backed, unlinked create proposals suitable for explicit batch review."""
-    candidates = (
-        ApplicationUpdateProposal.objects.filter(
-            user=user,
-            status=ProposalStatus.PENDING,
-            proposal_type=ProposalType.CREATE_APPLICATION,
-            application__isnull=True,
-            analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
-            analysis__confidence__gte=BULK_CREATE_MIN_CONFIDENCE,
-        )
-        .select_related("analysis", "message")
-        .order_by("message__received_at", "pk")
+def eligible_bulk_create_proposals(*, user=None):
+    """Return unlinked high-confidence create proposals suitable for explicit batch review.
+
+    ``user`` is optional so the staff-only audit API can expose the same
+    eligibility logic across users without duplicating filters. Normal product
+    flows always pass the current user explicitly.
+    """
+    candidates = ApplicationUpdateProposal.objects.filter(
+        status=ProposalStatus.PENDING,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        application__isnull=True,
+        analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
+        analysis__confidence__gte=BULK_CREATE_MIN_CONFIDENCE,
     )
-    return [
-        proposal
-        for proposal in candidates
-        if _has_valid_create_changes(proposal)
-    ]
+    if user is not None:
+        candidates = candidates.filter(user=user)
+    candidates = candidates.select_related("analysis", "message").order_by("message__received_at", "pk")
+    return [proposal for proposal in candidates if _has_valid_create_changes(proposal)]
 
 
 def bulk_create_eligible_proposals(*, user) -> BulkCreateResult:
