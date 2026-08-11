@@ -78,13 +78,15 @@ body:has(.landing-shell) main {
 }
 
 .landing-hero {
-  min-height: 680px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr);
+  min-height: 540px;
+  display: flex;
   align-items: center;
-  gap: clamp(2.5rem, 7vw, 7rem);
   padding-top: 5rem;
-  padding-bottom: 7rem;
+  padding-bottom: 4rem;
+}
+
+.landing-hero__copy {
+  max-width: 900px;
 }
 
 .landing-eyebrow {
@@ -144,6 +146,10 @@ body:has(.landing-shell) main {
   box-shadow: 0 35px 95px rgba(0, 0, 0, 0.42);
 }
 
+.landing-flow-section {
+  padding-bottom: 7rem;
+}
+
 .landing-flow::before {
   content: "";
   position: absolute;
@@ -185,7 +191,8 @@ body:has(.landing-shell) main {
 
 .landing-flow__steps {
   display: grid;
-  gap: 0.72rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
   margin: 0;
   padding: 1rem;
   list-style: none;
@@ -194,21 +201,22 @@ body:has(.landing-shell) main {
 
 .landing-flow__step {
   position: relative;
-  display: grid;
-  grid-template-columns: 26px 42px minmax(0, 1fr);
-  gap: 0.8rem;
-  align-items: start;
-  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  min-height: 255px;
+  padding: 1rem;
   border: 1px solid var(--landing-border);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.035);
 }
 
 .landing-flow__step:not(:last-child)::after {
-  content: "↓";
+  content: "→";
   position: absolute;
-  bottom: -0.94rem;
-  left: 1.55rem;
+  top: 50%;
+  right: -1.02rem;
+  left: auto;
   z-index: 1;
   display: grid;
   width: 18px;
@@ -237,6 +245,10 @@ body:has(.landing-shell) main {
   font-weight: 800;
 }
 
+.landing-flow__step > div {
+  flex: 1;
+}
+
 .landing-flow__icon {
   width: 42px;
   height: 42px;
@@ -251,7 +263,7 @@ body:has(.landing-shell) main {
 
 .landing-flow__step h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 800;
 }
 
@@ -265,7 +277,7 @@ body:has(.landing-shell) main {
 .landing-flow__connections,
 .landing-flow__outcomes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0.5rem;
   margin-top: 0.55rem;
 }
@@ -699,7 +711,6 @@ body:has(.landing-shell) main {
 @media (max-width: 991.98px) {
   .landing-hero {
     min-height: auto;
-    grid-template-columns: 1fr;
     padding-top: 4rem;
   }
 
@@ -709,7 +720,15 @@ body:has(.landing-shell) main {
   }
 
   .landing-flow {
-    max-width: 720px;
+    max-width: none;
+  }
+
+  .landing-flow__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-flow__step:not(:last-child)::after {
+    display: none;
   }
 
   .landing-feature-grid {
@@ -789,6 +808,14 @@ body:has(.landing-shell) main {
     display: block;
     margin-top: 0.22rem;
     text-align: left;
+  }
+
+  .landing-flow__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-flow__step {
+    min-height: 0;
   }
 
   .landing-preview__body,
