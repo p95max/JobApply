@@ -126,7 +126,8 @@ def test_audit_documentation_opens_json_endpoints_in_a_new_tab(client):
 
     assert response.status_code == 200
     assert b"<title>Gmail audit API \xc2\xb7 JobApply</title>" in response.content
-    assert response.content.count(b'target="_blank" rel="noopener noreferrer"') == 6
+    assert response.content.count(b'class="audit-endpoint-link"') == 6
+    assert response.content.count(b'target="_blank" rel="noopener noreferrer"') >= 6
 
 
 @pytest.mark.django_db
