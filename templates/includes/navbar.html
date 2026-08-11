@@ -63,7 +63,6 @@
               </div>
               <a href="{% url 'accounts:settings' %}"><span>⚙️</span><span>{% trans "Settings" %}</span></a>
               {% if ai_audit_url %}
-                <a href="{{ ai_audit_url }}" title="{% trans 'Staff-only' %}"><span>🔎</span><span>{% trans "AI audit API (Staff-only)" %}</span></a>
               {% endif %}
               <div class="app-dropdown__separator"></div>
               <a class="app-dropdown__danger" href="/accounts/logout/"><span>↗</span><span>{% trans "Sign out" %}</span></a>

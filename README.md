@@ -34,10 +34,14 @@ The Gmail Assistant is deliberately review-first: it analyses emails and prepare
 
 The public landing page can create an isolated temporary demo workspace without Google OAuth. Demo accounts are marked with `UserProfile.is_demo_user=True`, use the normal application UI with connected-service restrictions, and are intentionally short-lived.
 
-The default demo lifetime is **12 hours** and is configurable with:
+The default demo lifetime is **12 hours**. Demo creation is protected by a per-IP cooldown and daily allowance, so a public portfolio page cannot be used to create unlimited accounts:
 
 ```env
 DEMO_ACCOUNT_TTL_HOURS=12
+DEMO_START_MAX_PER_IP_PER_DAY=3
+DEMO_START_COOLDOWN_SECONDS=60
+# Enable only when the reverse proxy overwrites X-Forwarded-For.
+DEMO_START_TRUST_X_FORWARDED_FOR=0
 ```
 
 The demo session expiry is aligned with the same TTL. Expired demo users are deleted by the `cleanup_demo_users` management command together with related data through Django cascading deletes. On the VPS, `jobapply-demo-cleanup.timer` runs the cleanup regularly, so stale demo workspaces do not accumulate.
@@ -88,7 +92,7 @@ Cards make the analysis source visible:
 
 ### Matching and safety
 
-Matching is deterministic before fuzzy matching is considered. It prioritises Gmail thread history, application/job IDs, verified sender domain, normalized company and title, and only then fallback similarity. Known job platforms such as Stepstone and Indeed are not treated as employers when better company data is available.
+Matching is deterministic before fuzzy matching is considered. It prioritises Gmail thread history, application/job IDs, verified sender domain, normalized company and title, and only then fallback similarity. During a full resync, pending `create_application` suggestions can temporarily act as targets for follow-up emails, so a rejection or interview can be linked before its application is accepted. Known job platforms such as Stepstone and Indeed are not treated as employers when better company data is available.
 
 An unmatched proposal never updates an arbitrary application. Rejections, interviews, offers and requested actions remain pending until the user links and accepts them. New applications can be created only after review or through the dedicated bulk action below.
 
@@ -100,6 +104,8 @@ AI is an opt-in setting for each user. The global configuration only enables the
 
 The Assistant can automatically check opted-in accounts. The interval comes from `GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS`; it is 15 minutes in the example configuration. Syncing a larger period may take from seconds to a few minutes.
 
+Each user can have only one Gmail sync at a time. A simultaneous manual or scheduled attempt is safely skipped, rather than processing the same mailbox twice. Manual requests also have a short per-user cooldown before any Google API calls are made.
+
 `Automatically accept trusted updates` is deliberately restrictive. It applies only low-risk status changes with a verified exact application match and confidence at or above the configured threshold. Rejections, offers, interviews, actions, newly created applications and uncertain matches always remain pending.
 
 The **Create high-confidence applications** action is separate. It creates only unmatched new-application suggestions with AI confidence of at least 75%; it never processes rejections, interviews or actions. Review the resulting applications for duplicates.
@@ -110,6 +116,8 @@ Relevant settings:
 GMAIL_ASSISTANT_AI_ENABLED=0
 GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1
 GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS=900
+GMAIL_SYNC_MANUAL_COOLDOWN_SECONDS=60
+GMAIL_SYNC_LOCK_TIMEOUT_SECONDS=1800
 GMAIL_ASSISTANT_AI_DAILY_LIMIT=50
 GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD=80
 GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED=1
@@ -212,9 +220,30 @@ TELEGRAM_NOTIFICATIONS_ENABLED=1
 TELEGRAM_CALLBACK_TTL_SECONDS=900
 TELEGRAM_RATE_LIMIT_COUNT=20
 TELEGRAM_RATE_LIMIT_WINDOW_SECONDS=60
+TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS=60
 ```
 
 Never commit a Telegram token or real account/chat IDs.
+
+## Abuse controls and resource limits
+
+Expensive or destructive operations are bounded per user before work starts. The database reservation used for CSV imports and Drive operations is atomic, so concurrent requests cannot bypass the daily limit. Gmail syncs use a separate per-user lock.
+
+```env
+# Application records and bulk deletion
+APPLICATIONS_PER_USER_LIMIT=1000
+APPLICATION_BULK_DELETE_MAX_IDS=200
+
+# CSV imports per user
+CSV_IMPORT_DAILY_LIMIT=3
+CSV_IMPORT_COOLDOWN_SECONDS=60
+
+# Manual Google Drive save/restore operations per user
+DRIVE_MANUAL_OPERATION_DAILY_LIMIT=20
+DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS=30
+```
+
+The Google OAuth entry point is protected by Turnstile for anonymous visitors when enabled. Do not add broad URL exemptions for `/accounts/google/`: the verification gate must remain in front of the OAuth redirect.
 
 ## Development with Docker Compose
 
@@ -227,6 +256,7 @@ Create `.env` from `.env.example`, then configure at least:
 
 ```env
 DJANGO_SECRET_KEY=change-me
+OAUTH_TOKEN_ENCRYPTION_KEY=...
 DJANGO_DEBUG=1
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
@@ -304,9 +334,18 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://your-domain.example
 DJANGO_SITE_DOMAIN=your-domain.example
 DJANGO_USE_X_FORWARDED_HOST=1
 DJANGO_SECURE_PROXY_SSL_HEADER=1
+OAUTH_TOKEN_ENCRYPTION_KEY=replace-with-a-separate-long-random-value
+TURNSTILE_ENABLED=1
+TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
 DEMO_ACCOUNT_TTL_HOURS=12
 # Leave empty to allow any Google account. To restrict access, provide a comma-separated list.
 ALLOWED_ACCOUNT_EMAILS=
+# Keep the admin URL non-obvious. Optionally restrict it to known IP addresses.
+ADMIN_URL=backoffice
+ADMIN_ALLOWED_IPS=
+# Enable only when Caddy overwrites X-Forwarded-For.
+ADMIN_TRUST_X_FORWARDED_FOR=0
 ```
 
 `ALLOWED_ACCOUNT_EMAILS` is optional. When empty, any Google account may sign in. When set, only the comma-separated listed accounts may sign in.
@@ -338,7 +377,7 @@ The read-only OpenAPI (Swagger-compatible) audit API is disabled by default. To 
 python3 -c 'import secrets; print(f"AI_AUDIT_URL=ai-audit-{secrets.token_urlsafe(24)}")'
 ```
 
-After restarting the web service, open `https://your-domain.example/<AI_AUDIT_URL>/`. The page links to the OpenAPI schema and exposes only AI processing metadata and linked application fields; it never returns Gmail subjects, bodies, OAuth credentials or private review notes. The endpoint returns `404` for anonymous users, non-staff users and incorrect URLs.
+After restarting the web service, open `https://your-domain.example/<AI_AUDIT_URL>/`. The page opens each JSON resource in a separate browser tab and links to the OpenAPI schema. Available read-only datasets are all applications, applications with pending proposals, high-confidence pending creates, AI proposals, Gmail analyses and the AI history for a selected application. They expose only processing metadata and linked application fields; they never return Gmail subjects, bodies, OAuth credentials or private review notes. The endpoint returns `404` for anonymous users, non-staff users and incorrect URLs.
 
 ## Legal pages and privacy
 
@@ -364,6 +403,7 @@ poetry run pytest -ra -vv
 poetry run ruff check .
 poetry run python manage.py check
 poetry run python manage.py makemigrations --check --dry-run
+poetry check --lock
 ```
 
 With Docker:
@@ -386,11 +426,14 @@ python manage.py compilemessages
 
 ## Security model
 
-- Google OAuth is the only sign-in path.
+- Google OAuth is the standard sign-in path; demo workspaces are isolated, temporary and rate-limited.
 - Gmail permission is read-only; Drive uses the narrow `drive.file` scope.
+- OAuth access and refresh tokens are encrypted at rest, using `OAUTH_TOKEN_ENCRYPTION_KEY` when configured (otherwise the required Django secret key).
 - Attachments are never sent to AI; requests use `store=False`.
 - AI output is validated against a strict structured schema.
 - Cross-user access to applications, Gmail proposals and Drive backups is blocked.
+- Gmail syncs are serialized per account; AI quotas and operation limits are reserved atomically.
+- Admin sign-in is throttled and can be restricted to explicit IP addresses.
 - Gmail/AI/provider failures are isolated to a message or user and do not roll back existing data.
 - Telegram command access requires configured private user and chat allowlists.
 - Deployment is fixed to `master`, confirmation-gated and rejects local changes.
