@@ -247,3 +247,73 @@ def test_generic_rejection_with_multiple_recent_company_applications_stays_ambig
     assert result.suggested is None
     assert {candidate.application.pk for candidate in result.ambiguous} == {first.pk, second.pk}
     assert {candidate.method for candidate in result.ambiguous} == {"company_temporal"}
+
+
+def test_documents_requested_matches_unique_recent_pending_application_at_company():
+    pending_create = PendingCreateTarget(
+        proposal=SimpleNamespace(pk=101),
+        company="ALTEN Consulting Services GmbH",
+        title="Developer",
+        applied_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        thread_id="application-thread",
+    )
+
+    result = match_applications(
+        user_id=10,
+        applications=[],
+        email=email(
+            thread_id="documents-thread",
+            company="ALTEN Consulting Services GmbH",
+            position_title=None,
+            received_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+            event_type="documents_requested",
+        ),
+        pending_create_targets=[pending_create],
+    )
+
+    assert result.suggested is not None
+    assert result.suggested.pending_create_proposal.pk == pending_create.proposal.pk
+    assert result.suggested.method == "pending_create_company_temporal_follow_up"
+    assert result.suggested.score == 90
+
+
+def test_interview_invitation_matches_unique_recent_application_at_company():
+    candidate = application(
+        company="Example GmbH",
+        title="Python Backend Developer",
+        applied_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+    )
+
+    result = match_applications(
+        user_id=10,
+        applications=[candidate],
+        email=email(
+            company="Example GmbH",
+            position_title=None,
+            received_at=datetime(2026, 8, 6, tzinfo=timezone.utc),
+            event_type="interview_invitation",
+        ),
+    )
+
+    assert result.suggested and result.suggested.application.pk == candidate.pk
+    assert result.suggested.method == "company_temporal_follow_up"
+    assert result.suggested.score == 90
+
+
+def test_follow_up_with_multiple_recent_company_applications_stays_ambiguous():
+    first = application(pk=1, company="Example GmbH", title="Backend Developer")
+    second = application(pk=2, company="Example GmbH", title="Frontend Developer")
+
+    result = match_applications(
+        user_id=10,
+        applications=[first, second],
+        email=email(
+            company="Example GmbH",
+            position_title=None,
+            event_type="documents_requested",
+        ),
+    )
+
+    assert result.suggested is None
+    assert {candidate.application.pk for candidate in result.ambiguous} == {1, 2}
+    assert {candidate.method for candidate in result.ambiguous} == {"company_temporal_follow_up"}
