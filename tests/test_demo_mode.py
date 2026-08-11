@@ -48,6 +48,7 @@ def test_guest_can_start_temporary_demo_and_use_manual_workspace(send_notificati
     assert b"Sign in with Google" in dashboard.content
     assert b"Gmail Assistant" in dashboard.content
     assert b"data-theme-toggle" in dashboard.content
+    assert b"app-language-switch__flag" in dashboard.content
     assert application_form.status_code == 200
 
 

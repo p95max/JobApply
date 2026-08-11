@@ -231,6 +231,15 @@
   background: rgba(235, 240, 247, .88);
 }
 
+[data-bs-theme="light"] .app-legal-footer a:hover,
+[data-bs-theme="light"] .landing-footer__links a:hover {
+  color: #182337;
+}
+
+[data-bs-theme="light"] .app-github-link:hover {
+  background: rgba(82, 100, 207, .12);
+}
+
 /* Landing page has its own visual system, so it needs explicit light tokens. */
 [data-bs-theme="light"] body:has(.landing-shell) {
   color: #182337;

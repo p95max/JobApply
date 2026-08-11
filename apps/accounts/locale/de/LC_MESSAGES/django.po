@@ -91,6 +91,12 @@ msgstr "Impressum"
 msgid "Legal navigation"
 msgstr "Rechtliche Navigation"
 
+msgid "GitHub repository"
+msgstr "GitHub-Repository"
+
+msgid "Gmail audit API"
+msgstr "Gmail-Audit-API"
+
 msgid "Privacy policy"
 msgstr "Datenschutzerklärung"
 

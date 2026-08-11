@@ -34,6 +34,14 @@ msgstr "Zum dunklen Design wechseln"
 msgid "AI processing"
 msgstr "KI-Verarbeitung"
 
+#: templates/base.html templates/landing.html
+msgid "GitHub repository"
+msgstr "GitHub-Repository"
+
+#: templates/includes/navbar.html
+msgid "Gmail audit API"
+msgstr "Gmail-Audit-API"
+
 #: templates/includes/apps_list_header.html:53
 msgid "AI processed"
 msgstr "KI-verarbeitet"
