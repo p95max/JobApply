@@ -5,10 +5,6 @@
 {% block navbar %}{% endblock %}
 {% block footer %}{% endblock %}
 
-{% block page_css %}
-<link rel="stylesheet" href="{% static 'css/landing_carousel.css' %}?v=1">
-{% endblock %}
-
 {% block content %}
 <div id="top" class="landing-shell">
   <div class="landing-header-bar">
@@ -55,60 +51,53 @@
         </div>
       </div>
 
-      <div class="landing-carousel" data-landing-carousel aria-label="{% trans 'Product preview' %}">
-        <div class="landing-carousel__viewport">
-          <div class="landing-carousel__track" data-carousel-track>
-            <section class="landing-carousel__slide" data-carousel-slide aria-label="1 / 3">
-              <div class="landing-preview">
-                <div class="landing-preview__topbar"><span></span><span></span><span></span><strong>JobApply</strong></div>
-                <div class="landing-preview__body">
-                  <div class="landing-preview__metric"><small>{% trans "Active applications" %}</small><strong>18</strong><span>+4 {% trans "this week" %}</span></div>
-                  <div class="landing-preview__metric"><small>{% trans "Upcoming interviews" %}</small><strong>3</strong><span>{% trans "Next: Thursday" %}</span></div>
-                  <div class="landing-preview__panel landing-preview__panel--wide">
-                    <div class="landing-preview__panel-title"><span>🤖 {% trans "Gmail Assistant" %}</span><span class="landing-status">● {% trans "Active" %}</span></div>
-                    <div class="landing-preview__mail"><span class="landing-preview__icon">✉</span><div><strong>{% trans "Interview invitation detected" %}</strong><small>{% trans "Review suggested update before applying it" %}</small></div><span class="landing-preview__badge">{% trans "Review" %}</span></div>
-                    <div class="landing-preview__mail"><span class="landing-preview__icon">✓</span><div><strong>{% trans "Application received" %}</strong><small>{% trans "Matched with an existing application" %}</small></div><span class="landing-preview__badge landing-preview__badge--muted">92%</span></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section class="landing-carousel__slide" data-carousel-slide aria-label="2 / 3" aria-hidden="true">
-              <div class="landing-preview">
-                <div class="landing-preview__topbar"><span></span><span></span><span></span><strong>{% trans "Telegram bot notifications" %}</strong></div>
-                <div class="landing-preview__body landing-preview__body--single">
-                  <div class="landing-preview__feature"><span class="landing-preview__feature-icon">1</span><div><strong>{% trans "Connect Telegram and Drive" %}</strong><small>{% trans "Follow the guided setup directly from the website." %}</small></div></div>
-                  <div class="landing-preview__feature"><span class="landing-preview__feature-icon">2</span><div><strong>{% trans "Telegram bot notifications" %}</strong><small>{% trans "Connect the bot through a complete step-by-step setup on the website, then receive private job-search notifications in Telegram." %}</small></div></div>
-                  <div class="landing-preview__feature"><span class="landing-preview__feature-icon">✓</span><div><strong>{% trans "Active" %}</strong><small>Private chat · JobApply production bot</small><div class="landing-preview__progress"><span style="width:100%"></span></div></div></div>
-                </div>
-              </div>
-            </section>
-
-            <section class="landing-carousel__slide" data-carousel-slide aria-label="3 / 3" aria-hidden="true">
-              <div class="landing-preview">
-                <div class="landing-preview__topbar"><span></span><span></span><span></span><strong>{% trans "Google Drive backup integration" %}</strong></div>
-                <div class="landing-preview__body landing-preview__body--single">
-                  <div class="landing-preview__metric"><small>{% trans "Google Drive backups" %}</small><strong>03:00</strong><span>● {% trans "Active" %}</span></div>
-                  <div class="landing-preview__panel landing-preview__panel--wide">
-                    <div class="landing-preview__panel-title"><span><img class="brand-service-icon" src="{% static 'img/brands/google-drive.svg' %}" width="16" height="16" alt=""> {% trans "Google Drive backup integration" %}</span><span class="landing-status">● {% trans "Active" %}</span></div>
-                    <div class="landing-preview__mail"><span class="landing-preview__icon">💾</span><div><strong>jobapply_2026-08-04.dump</strong><small>{% trans "Google Drive backup integration" %}</small></div><span class="landing-preview__badge">12.4 MB</span></div>
-                    <div class="landing-preview__mail"><span class="landing-preview__icon">🛡️</span><div><strong>{% trans "Optional AI and token controls" %}</strong><small>{% trans "Choose whether to use AI and keep token usage under control." %}</small></div><span class="landing-preview__badge landing-preview__badge--muted">4,200</span></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
+      <section class="landing-flow" aria-labelledby="landing-flow-title">
+        <div class="landing-flow__header">
+          <span>{% trans "How JobApply works" %}</span>
+          <small>{% trans "You decide what to connect and what to automate." %}</small>
         </div>
-        <div class="landing-carousel__controls" aria-label="{% trans 'Product preview' %}">
-          <button class="landing-carousel__arrow" type="button" data-carousel-prev aria-label="Previous">‹</button>
-          <div class="landing-carousel__dots">
-            <button class="landing-carousel__dot is-active" type="button" data-carousel-dot aria-label="1" aria-current="true"></button>
-            <button class="landing-carousel__dot" type="button" data-carousel-dot aria-label="2" aria-current="false"></button>
-            <button class="landing-carousel__dot" type="button" data-carousel-dot aria-label="3" aria-current="false"></button>
-          </div>
-          <button class="landing-carousel__arrow" type="button" data-carousel-next aria-label="Next">›</button>
-        </div>
-      </div>
+        <ol class="landing-flow__steps">
+          <li class="landing-flow__step landing-flow__step--workspace">
+            <span class="landing-flow__number">1</span>
+            <span class="landing-flow__icon">📋</span>
+            <div>
+              <h2 id="landing-flow-title">{% trans "Track your applications" %}</h2>
+              <p>{% trans "Start with applications, interviews and notes. Demo mode works without connecting any service." %}</p>
+            </div>
+          </li>
+          <li class="landing-flow__step landing-flow__step--connect">
+            <span class="landing-flow__number">2</span>
+            <span class="landing-flow__icon">🔌</span>
+            <div>
+              <h2>{% trans "Connect only what you need" %}</h2>
+              <div class="landing-flow__connections">
+                <span><span>✉️</span><strong>{% trans "Gmail" %}</strong><small>{% trans "Read-only application emails" %}</small></span>
+                <span><img src="{% static 'img/brands/telegram.svg' %}" alt=""><strong>{% trans "Telegram" %}</strong><small>{% trans "Private notifications" %}</small></span>
+              </div>
+            </div>
+          </li>
+          <li class="landing-flow__step landing-flow__step--analysis">
+            <span class="landing-flow__number">3</span>
+            <span class="landing-flow__icon">🤖</span>
+            <div>
+              <h2>{% trans "Optionally analyse new email" %}</h2>
+              <p>{% trans "Rules classify messages by default. Enable AI only with your consent; attachments are never sent." %}</p>
+              <div class="landing-flow__chips"><span>{% trans "Daily limit" %}</span><span>{% trans "No attachments" %}</span></div>
+            </div>
+          </li>
+          <li class="landing-flow__step landing-flow__step--decision">
+            <span class="landing-flow__number">4</span>
+            <span class="landing-flow__icon">✓</span>
+            <div>
+              <h2>{% trans "Stay in control" %}</h2>
+              <div class="landing-flow__outcomes">
+                <span><strong>{% trans "Manual review" %}</strong><small>{% trans "Inspect every suggestion before applying it." %}</small></span>
+                <span><strong>{% trans "Trusted automation" %}</strong><small>{% trans "Only verified, low-risk updates can be applied automatically." %}</small></span>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </section>
     </section>
 
     <section id="features" class="landing-section container">
@@ -192,6 +181,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{% static 'js/landing_carousel.js' %}?v=1" defer></script>
 <script src="{% static 'js/cookie_consent.js' %}?v=1" defer></script>
 {% endblock %}

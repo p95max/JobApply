@@ -22,6 +22,9 @@ def test_public_root_renders_landing_page(client):
     assert "Telegram bot notifications" in content
     assert "Google Drive backup integration" in content
     assert "control token usage" in content
+    assert "How JobApply works" in content
+    assert "Manual review" in content
+    assert "Trusted automation" in content
     assert "DEMO" in content
     assert reverse("legal:privacy") in content
     assert "data-cookie-consent-modal" in content
