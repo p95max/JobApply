@@ -41,6 +41,18 @@ _GENERIC_POSITION_TITLES = frozenset(
         "it",
     }
 )
+_COMPANY_TEMPORAL_EVENT_TYPES = frozenset(
+    {
+        "rejection",
+        "documents_requested",
+        "interview_invitation",
+        "interview_rescheduled",
+        "interview_cancelled",
+        "application_confirmation_required",
+        "screening",
+        "general_update",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -54,6 +66,7 @@ class EmailMatchData:
     position_title: str | None
     external_application_id: str | None
     is_rejection: bool = False
+    event_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -168,16 +181,14 @@ def match_applications(
         if (candidate := _score_pending_create_candidate(target, email)) is not None
     )
     scored = _outcome(tuple(candidates))
-    # Preserve exact company/title and external-ID outcomes before falling back
-    # to the more permissive rejection-only company/time window.
     if scored.suggested is not None:
         return scored
 
-    temporal_candidates = _rejection_company_temporal_candidates(
+    temporal_candidates = _company_temporal_candidates(
         applications=eligible.values(),
         email=email,
     )
-    temporal_candidates += _pending_rejection_company_temporal_candidates(
+    temporal_candidates += _pending_company_temporal_candidates(
         targets=pending_targets,
         email=email,
     )
@@ -199,6 +210,10 @@ def match_for_message(
     from apps.applications.models import JobApplication
     from apps.gmail_assistant.models import ApplicationUpdateProposal, GmailAnalysis
 
+    if event_type is None:
+        analysis = GmailAnalysis.objects.filter(user=user, message=message).only("event_type").first()
+        event_type = analysis.event_type if analysis is not None else None
+
     email = EmailMatchData(
         thread_id=message.thread_id,
         sender_email=message.from_email,
@@ -207,23 +222,8 @@ def match_for_message(
         position_title=_optional_string(extracted_data.get("position_title")),
         external_application_id=_optional_string(extracted_data.get("external_application_id")),
         is_rejection=event_type == "rejection",
+        event_type=event_type,
     )
-    # The analysis event is stored on the model, rather than in extracted data.
-    # Keep the optional JSON hint for callers outside the sync pipeline, then
-    # replace it below when the analysis exists.
-    if event_type is None:
-        analysis = GmailAnalysis.objects.filter(user=user, message=message).only("event_type").first()
-        event_type = analysis.event_type if analysis is not None else None
-    if event_type is not None:
-        email = EmailMatchData(
-            thread_id=email.thread_id,
-            sender_email=email.sender_email,
-            received_at=email.received_at,
-            company=email.company,
-            position_title=email.position_title,
-            external_application_id=email.external_application_id,
-            is_rejection=event_type == "rejection",
-        )
     applications = JobApplication.objects.filter(user=user).exclude(status__in=_EXCLUDED_STATUSES)
     thread_application_ids = set(
         JobApplication.objects.filter(
@@ -343,12 +343,7 @@ def _score_candidate(application: Any, email: EmailMatchData) -> MatchCandidate 
 
 
 def _score_pending_create_candidate(target: PendingCreateTarget, email: EmailMatchData) -> MatchCandidate | None:
-    """Score a pending create proposal with the same conservative signals as an app.
-
-    The proposal is never treated as a persisted application.  It only prevents
-    duplicate create suggestions and lets later messages wait for the original
-    create proposal to be reviewed.
-    """
+    """Score a pending create proposal with the same conservative signals as an app."""
     company = normalize_company(email.company)
     title = normalize_position(email.position_title)
     target_company = normalize_company(target.company)
@@ -382,30 +377,26 @@ def _score_pending_create_candidate(target: PendingCreateTarget, email: EmailMat
     return MatchCandidate(None, score, method, tuple(evidence), target.proposal)
 
 
-def _rejection_company_temporal_candidates(
+def _company_temporal_candidates(
     *,
     applications: Iterable[Any],
     email: EmailMatchData,
 ) -> tuple[MatchCandidate, ...]:
-    """Resolve a rejection only when one recent active record shares its company.
-
-    Employer replies commonly shorten the role to "Developer" or omit it
-    entirely. A matching company plus a bounded application timeline is more
-    reliable than fuzzy title scoring in that case. Several records remain a
-    manual decision on purpose.
-    """
+    """Resolve one recent application at the same company for lifecycle follow-ups."""
     company = normalize_company(email.company)
-    if not email.is_rejection or not company:
+    if not _supports_company_temporal_match(email) or not company:
         return ()
 
+    method = "company_temporal" if email.is_rejection else "company_temporal_follow_up"
+    base_score = 91 if email.is_rejection and _is_generic_position(email.position_title) else 90
     candidates = [
         MatchCandidate(
             application,
-            91 if _is_generic_position(email.position_title) else 90,
-            "company_temporal",
+            base_score,
+            method,
             (
                 "exact normalized company",
-                "application precedes rejection within configured lookback",
+                "application precedes follow-up within configured lookback",
                 *("generic or missing role ignored" if _is_generic_position(email.position_title) else (),),
             ),
         )
@@ -419,31 +410,34 @@ def _rejection_company_temporal_candidates(
         MatchCandidate(
             candidate.application,
             85,
-            "company_temporal",
+            method,
             candidate.evidence + ("more than one recent application at company",),
         )
         for candidate in candidates
     )
 
 
-def _pending_rejection_company_temporal_candidates(
+def _pending_company_temporal_candidates(
     *,
     targets: Iterable[PendingCreateTarget],
     email: EmailMatchData,
 ) -> tuple[MatchCandidate, ...]:
-    """Return pending create targets for a uniquely identifiable rejection."""
+    """Return one recent pending create target at the same company for a follow-up."""
     company = normalize_company(email.company)
-    if not email.is_rejection or not company:
+    if not _supports_company_temporal_match(email) or not company:
         return ()
+
+    method = "pending_create_company_temporal" if email.is_rejection else "pending_create_company_temporal_follow_up"
+    base_score = 91 if email.is_rejection and _is_generic_position(email.position_title) else 90
     candidates = [
         MatchCandidate(
             None,
-            91 if _is_generic_position(email.position_title) else 90,
-            "pending_create_company_temporal",
+            base_score,
+            method,
             (
                 "pending create proposal",
                 "exact normalized company",
-                "application precedes rejection within configured lookback",
+                "application precedes follow-up within configured lookback",
             ),
             target.proposal,
         )
@@ -457,12 +451,16 @@ def _pending_rejection_company_temporal_candidates(
         MatchCandidate(
             None,
             85,
-            "pending_create_company_temporal",
+            method,
             candidate.evidence + ("more than one recent pending application at company",),
             candidate.pending_create_proposal,
         )
         for candidate in candidates
     )
+
+
+def _supports_company_temporal_match(email: EmailMatchData) -> bool:
+    return email.is_rejection or email.event_type in _COMPANY_TEMPORAL_EVENT_TYPES
 
 
 def _title_contains(left: str, right: str) -> bool:
