@@ -87,6 +87,9 @@ install -o root -g jobapply -m 0750 \
   "$APP_DIR/deploy/vps/jobapply-deploy-notify.sh" \
   /usr/local/bin/jobapply-deploy-notify.sh
 install -o root -g jobapply -m 0750 \
+  "$APP_DIR/deploy/vps/scripts/jobapply-telegram-bot-failure-notify" \
+  /usr/local/bin/jobapply-telegram-bot-failure-notify
+install -o root -g jobapply -m 0750 \
   "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
   /usr/local/sbin/jobapply-deploy
 
@@ -152,7 +155,7 @@ echo "==> Compiling German translations"
 run_django compilemessages -l de
 
 # Run one cleanup immediately after the new application code and migrations are
-# ready. The hourly timer handles subsequent expiry automatically.
+# ready. The 12-hour timer handles subsequent expiry automatically.
 echo "==> Cleaning expired demo accounts"
 systemctl start jobapply-demo-cleanup.service
 
