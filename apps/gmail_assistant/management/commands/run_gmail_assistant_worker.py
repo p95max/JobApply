@@ -11,6 +11,7 @@ from apps.gmail_assistant.models import GmailAssistantSettings
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
+from apps.gmail_stats.services.sync_control import GmailSyncBusyError
 from apps.telegram_bot.heartbeat import GMAIL_WORKER, record_heartbeat
 from apps.telegram_bot.notifications import send_notification_once
 
@@ -91,6 +92,12 @@ class Command(BaseCommand):
                     self.style.SUCCESS(
                         f"user={assistant_settings.user_id} Gmail Assistant sync complete: {result}"
                     )
+                )
+            except GmailSyncBusyError:
+                # A manual sync or another worker already owns the per-user lock.
+                # This is expected coordination, not a failed Gmail connection.
+                self.stdout.write(
+                    f"user={assistant_settings.user_id} Gmail Assistant sync skipped: already running"
                 )
             except Exception as error:
                 assistant_settings.last_error_at = timezone.now()
