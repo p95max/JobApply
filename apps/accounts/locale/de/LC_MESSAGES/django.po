@@ -112,6 +112,36 @@ msgstr "Vorherige Folie"
 msgid "Next slide"
 msgstr "Nächste Folie"
 
+msgid "Switch to light theme"
+msgstr "Zum hellen Design wechseln"
+
+msgid "Switch to dark theme"
+msgstr "Zum dunklen Design wechseln"
+
+msgid "AI statistics"
+msgstr "KI-Statistiken"
+
+msgid "Beta"
+msgstr "Beta"
+
+msgid "JobApply home"
+msgstr "JobApply-Startseite"
+
+msgid "Main navigation"
+msgstr "Hauptnavigation"
+
+msgid "Open navigation"
+msgstr "Navigation öffnen"
+
+msgid "Demo preview — sign in with Google to connect Gmail"
+msgstr "Demo-Vorschau — mit Google anmelden, um Gmail zu verbinden"
+
+msgid "Demo preview — sign in with Google to unlock reports and backups"
+msgstr "Demo-Vorschau — mit Google anmelden, um Berichte und Backups freizuschalten"
+
+msgid "Leave demo"
+msgstr "Demo verlassen"
+
 msgid "Landing navigation"
 msgstr "Navigation der Startseite"
 

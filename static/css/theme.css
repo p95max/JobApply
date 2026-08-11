@@ -1,0 +1,276 @@
+/* Theme tokens and light-mode overrides for the custom JobApply interface. */
+:root {
+  --app-page-bg: #11161b;
+  --app-surface: rgba(18, 28, 42, .86);
+  --app-surface-strong: #1a202d;
+  --app-border: rgba(150, 166, 190, .14);
+  --app-muted: #9da9b8;
+  --app-heading: #eef3f8;
+}
+
+[data-bs-theme="light"] {
+  --app-page-bg: #f4f7fb;
+  --app-surface: rgba(255, 255, 255, .94);
+  --app-surface-strong: #ffffff;
+  --app-border: rgba(35, 53, 78, .14);
+  --app-muted: #5e6c80;
+  --app-heading: #162033;
+  --nav-surface: rgba(255, 255, 255, .9);
+  --nav-surface-strong: #ffffff;
+  --nav-border: rgba(27, 42, 65, .12);
+  --nav-text: #536176;
+  --nav-text-strong: #182337;
+  --nav-accent-soft: rgba(92, 106, 225, .12);
+}
+
+[data-bs-theme="light"] body {
+  color: var(--bs-body-color);
+  background: var(--app-page-bg);
+}
+
+/* Fixed header controls */
+[data-bs-theme="light"] .app-brand,
+[data-bs-theme="light"] .app-profile__trigger,
+[data-bs-theme="light"] .app-language-switch,
+[data-bs-theme="light"] .app-theme-switch,
+[data-bs-theme="light"] .app-menu-toggle {
+  color: var(--nav-text-strong);
+}
+
+[data-bs-theme="light"] .app-nav-link:hover,
+[data-bs-theme="light"] .app-nav-link.is-active,
+[data-bs-theme="light"] .app-dropdown__menu a:hover,
+[data-bs-theme="light"] .app-demo-leave:hover {
+  color: var(--nav-text-strong);
+  background: rgba(77, 95, 220, .09);
+}
+
+[data-bs-theme="light"] .app-language-switch,
+[data-bs-theme="light"] .app-theme-switch,
+[data-bs-theme="light"] .app-profile__trigger,
+[data-bs-theme="light"] .app-menu-toggle {
+  border-color: rgba(27, 42, 65, .14);
+  background: rgba(255, 255, 255, .72);
+}
+
+[data-bs-theme="light"] .app-dropdown__menu {
+  box-shadow: 0 18px 48px rgba(36, 52, 78, .16);
+}
+
+/* Shared page panels, cards, forms and rich HTML content. */
+[data-bs-theme="light"] .dashboard-page,
+[data-bs-theme="light"] .record-page {
+  background:
+    radial-gradient(circle at 75% 8%, rgba(96, 111, 225, .13), transparent 34%),
+    var(--app-page-bg);
+}
+
+[data-bs-theme="light"] .dashboard-card,
+[data-bs-theme="light"] .record-form-card,
+[data-bs-theme="light"] .applications-page .applications-filters,
+[data-bs-theme="light"] .applications-page .application-card,
+[data-bs-theme="light"] .applications-selection {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 16px 42px rgba(38, 54, 80, .1) !important;
+}
+
+[data-bs-theme="light"] .record-hero,
+[data-bs-theme="light"] .interviews-hero {
+  border-color: var(--app-border);
+  background: linear-gradient(135deg, rgba(93, 113, 221, .13), rgba(255, 255, 255, .96) 60%);
+  box-shadow: 0 16px 42px rgba(38, 54, 80, .1);
+}
+
+[data-bs-theme="light"] .dashboard-heading p,
+[data-bs-theme="light"] .dashboard-metric span,
+[data-bs-theme="light"] .dashboard-status,
+[data-bs-theme="light"] .dashboard-feed__body span,
+[data-bs-theme="light"] .dashboard-feed__body small,
+[data-bs-theme="light"] .dashboard-empty,
+[data-bs-theme="light"] .dashboard-empty p,
+[data-bs-theme="light"] .record-hero p,
+[data-bs-theme="light"] .record-form-card .form-text,
+[data-bs-theme="light"] .record-form-note,
+[data-bs-theme="light"] .interviews-hero p,
+[data-bs-theme="light"] .interviews-table-card__header p,
+[data-bs-theme="light"] .interviews-table td small,
+[data-bs-theme="light"] .interviews-empty p,
+[data-bs-theme="light"] .dashboard-connection small {
+  color: var(--app-muted) !important;
+}
+
+[data-bs-theme="light"] .record-form-card .form-label,
+[data-bs-theme="light"] .interviews-application-link {
+  color: var(--app-heading);
+}
+
+[data-bs-theme="light"] .record-form-card .form-control,
+[data-bs-theme="light"] .record-form-card .form-select,
+[data-bs-theme="light"] .interview-status-pill option {
+  color: var(--bs-body-color);
+  border-color: rgba(35, 53, 78, .22);
+  background-color: #fff;
+}
+
+/* Tables: Bootstrap variables cover generic tables; these rules cover the custom table skins. */
+[data-bs-theme="light"] .table {
+  --bs-table-color: #243247;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: rgba(35, 53, 78, .12);
+  --bs-table-hover-color: #17243a;
+  --bs-table-hover-bg: rgba(71, 93, 160, .055);
+}
+
+[data-bs-theme="light"] .table-light,
+[data-bs-theme="light"] .table-light > tr,
+[data-bs-theme="light"] .table-light > tr > th {
+  --bs-table-bg: #eef3f8;
+  --bs-table-color: #435269;
+}
+
+[data-bs-theme="light"] .applications-table-card .table,
+[data-bs-theme="light"] .applications-table-card tbody td,
+[data-bs-theme="light"] .applications-table-card td:nth-child(4),
+[data-bs-theme="light"] .applications-table-card td:nth-child(5),
+[data-bs-theme="light"] .interviews-table,
+[data-bs-theme="light"] .interviews-application-link {
+  color: #243247 !important;
+}
+
+[data-bs-theme="light"] .applications-table-card thead th,
+[data-bs-theme="light"] .interviews-table thead th {
+  color: #5d6b7e !important;
+}
+
+[data-bs-theme="light"] .applications-table-card tbody td,
+[data-bs-theme="light"] .applications-table-card td:nth-child(6),
+[data-bs-theme="light"] .applications-table-card td:nth-child(7),
+[data-bs-theme="light"] .applications-table-card td:nth-child(9) {
+  color: #536176 !important;
+}
+
+[data-bs-theme="light"] .applications-table-card tbody tr:hover td,
+[data-bs-theme="light"] .interviews-table__row:hover {
+  background: rgba(71, 93, 160, .055);
+}
+
+[data-bs-theme="light"] .interview-status-pill {
+  color: var(--status-color);
+}
+
+/* Text fragments rendered from user-controlled HTML, mail excerpts and API payloads. */
+[data-bs-theme="light"] :is(pre, code, kbd, samp) {
+  color: #243247;
+}
+
+[data-bs-theme="light"] pre,
+[data-bs-theme="light"] .proposal-evidence,
+[data-bs-theme="light"] .proposal-changes,
+[data-bs-theme="light"] .proposal-section,
+[data-bs-theme="light"] .gmail-message-card {
+  border-color: var(--app-border);
+  background-color: rgba(239, 244, 250, .82);
+}
+
+[data-bs-theme="light"] .app-legal-footer {
+  border-color: rgba(35, 53, 78, .1);
+  color: #5e6c80;
+  background: rgba(235, 240, 247, .88);
+}
+
+/* Landing page has its own visual system, so it needs explicit light tokens. */
+[data-bs-theme="light"] body:has(.landing-shell) {
+  color: #182337;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(95, 111, 230, .18), transparent 30rem),
+    radial-gradient(circle at 85% 20%, rgba(39, 177, 141, .12), transparent 28rem),
+    #f5f8fc;
+}
+
+[data-bs-theme="light"] .landing-header-bar {
+  border-color: rgba(35, 53, 78, .1);
+  background: rgba(255, 255, 255, .88);
+}
+
+[data-bs-theme="light"] .landing-brand,
+[data-bs-theme="light"] .landing-text-link:hover {
+  color: #182337;
+}
+
+[data-bs-theme="light"] .landing-text-link,
+[data-bs-theme="light"] .landing-lead,
+[data-bs-theme="light"] .landing-trust,
+[data-bs-theme="light"] .landing-flow__header small,
+[data-bs-theme="light"] .landing-flow__step p,
+[data-bs-theme="light"] .landing-flow__connections small,
+[data-bs-theme="light"] .landing-flow__outcomes small {
+  color: #5e6c80;
+}
+
+[data-bs-theme="light"] .landing-flow,
+[data-bs-theme="light"] .landing-preview {
+  box-shadow: 0 24px 70px rgba(42, 59, 90, .14);
+}
+
+[data-bs-theme="light"] .landing-flow__header,
+[data-bs-theme="light"] .landing-flow__steps,
+[data-bs-theme="light"] .landing-preview__topbar,
+[data-bs-theme="light"] .landing-preview__body {
+  background: rgba(255, 255, 255, .96);
+}
+
+[data-bs-theme="light"] .landing-flow__step,
+[data-bs-theme="light"] .landing-preview__metric,
+[data-bs-theme="light"] .landing-preview__panel,
+[data-bs-theme="light"] .landing-preview__feature {
+  border-color: rgba(35, 53, 78, .11);
+  background: rgba(242, 246, 252, .88);
+}
+
+[data-bs-theme="light"] .landing-preview__topbar strong,
+[data-bs-theme="light"] .landing-preview__metric small,
+[data-bs-theme="light"] .landing-preview__mail small,
+[data-bs-theme="light"] .landing-preview__feature small {
+  color: #5e6c80;
+}
+
+[data-bs-theme="light"] .landing-flow__safety-note {
+  color: #17624e !important;
+  background: rgba(39, 177, 141, .09);
+}
+
+[data-bs-theme="light"] .landing-flow__safety-note strong {
+  color: #14513f;
+}
+
+[data-bs-theme="light"] body:has(.auth-page) {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(80, 96, 255, .13), transparent 28rem),
+    radial-gradient(circle at 82% 25%, rgba(39, 197, 158, .09), transparent 24rem),
+    #f4f7fb;
+}
+
+[data-bs-theme="light"] .auth-card {
+  border-color: var(--app-border);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 20px 56px rgba(38, 54, 80, .13);
+}
+
+[data-bs-theme="light"] .auth-intro p,
+[data-bs-theme="light"] .auth-copy,
+[data-bs-theme="light"] .auth-note {
+  color: var(--app-muted);
+}
+
+@media (max-width: 899.98px) {
+  [data-bs-theme="light"] .app-header.is-open .app-navigation {
+    border-color: rgba(27, 42, 65, .12);
+    background: rgba(255, 255, 255, .985);
+    box-shadow: 0 24px 70px rgba(36, 52, 78, .2);
+  }
+
+  [data-bs-theme="light"] .app-header.is-open::before {
+    background: rgba(226, 233, 244, .7);
+  }
+}

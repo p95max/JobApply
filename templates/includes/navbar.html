@@ -43,6 +43,16 @@
         <div class="app-navigation__actions">
           <a class="app-create-action" href="{% url 'applications:create' %}"><span aria-hidden="true">＋</span><span>{% trans "Add" %}</span></a>
 
+          <button
+            class="app-theme-switch"
+            type="button"
+            data-theme-toggle
+            data-light-label="{% trans 'Switch to light theme' %}"
+            data-dark-label="{% trans 'Switch to dark theme' %}"
+            title="{% trans 'Switch to light theme' %}"
+            aria-label="{% trans 'Switch to light theme' %}"
+          ><span data-theme-icon aria-hidden="true">☀️</span></button>
+
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
             <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% trans 'Switch language' %}">
@@ -75,6 +85,15 @@
           <a class="app-nav-link" href="#features"><span>✨</span><span>{% trans "Features" %}</span></a>
         </div>
         <div class="app-navigation__actions">
+          <button
+            class="app-theme-switch"
+            type="button"
+            data-theme-toggle
+            data-light-label="{% trans 'Switch to light theme' %}"
+            data-dark-label="{% trans 'Switch to dark theme' %}"
+            title="{% trans 'Switch to light theme' %}"
+            aria-label="{% trans 'Switch to light theme' %}"
+          ><span data-theme-icon aria-hidden="true">☀️</span></button>
           <form action="{% url 'set_language' %}" method="post" class="app-language-form">
             {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
             <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch"><span>{% if LANGUAGE_CODE == 'de' %}EN{% else %}DE{% endif %}</span></button>

@@ -29,6 +29,8 @@ def test_public_root_renders_landing_page(client):
     assert "AI never deletes your emails, applications or notes." in content
     assert 'data-landing-carousel' in content
     assert 'landing_carousel.js' in content
+    assert 'data-theme-toggle' in content
+    assert 'theme.js' in content
     assert "DEMO" in content
     assert reverse("legal:privacy") in content
     assert "data-cookie-consent-modal" in content

@@ -20,6 +20,15 @@
       </a>
       <nav class="landing-header__actions" aria-label="{% trans 'Landing navigation' %}">
         <a class="landing-text-link" href="#features">{% trans "Features" %}</a>
+        <button
+          class="app-theme-switch landing-theme-switch"
+          type="button"
+          data-theme-toggle
+          data-light-label="{% trans 'Switch to light theme' %}"
+          data-dark-label="{% trans 'Switch to dark theme' %}"
+          title="{% trans 'Switch to light theme' %}"
+          aria-label="{% trans 'Switch to light theme' %}"
+        ><span data-theme-icon aria-hidden="true">☀️</span></button>
         <form action="{% url 'set_language' %}" method="post" class="app-language-form">
           {% csrf_token %}
           <input name="next" type="hidden" value="{{ request.get_full_path }}">

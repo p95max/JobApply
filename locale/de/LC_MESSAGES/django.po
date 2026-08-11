@@ -22,6 +22,14 @@ msgstr ""
 msgid "Search, status, AI, month and sort"
 msgstr "Suche, Status, KI, Monat und Sortierung"
 
+#: templates/includes/navbar.html templates/includes/guest/navbar_demo.html
+msgid "Switch to light theme"
+msgstr "Zum hellen Design wechseln"
+
+#: templates/includes/navbar.html templates/includes/guest/navbar_demo.html
+msgid "Switch to dark theme"
+msgstr "Zum dunklen Design wechseln"
+
 #: templates/includes/apps_list_header.html:50
 msgid "AI processing"
 msgstr "KI-Verarbeitung"
