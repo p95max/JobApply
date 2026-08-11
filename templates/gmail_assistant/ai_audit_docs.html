@@ -5,9 +5,9 @@
   <main class="container py-5">
     <section class="p-4 p-md-5 border rounded-4 bg-body-tertiary shadow-sm">
       <p class="text-uppercase small fw-bold text-info mb-2">{% trans "Staff-only" %}</p>
-      <h1 class="h2 mb-3">{% trans "AI audit API" %}</h1>
+      <h1 class="h2 mb-3">{% trans "Gmail audit API" %}</h1>
       <p class="text-body-secondary mb-4">
-        {% trans "Read-only OpenAPI (Swagger-compatible) endpoints for reviewing which application proposals were processed by AI." %}
+        {% trans "Read-only OpenAPI-compatible endpoints for reviewing Gmail application processing and proposal decisions." %}
         {% trans "Email text, subjects, credentials and private review notes are never returned." %}
       </p>
     </section>
@@ -16,15 +16,20 @@
       <h2 class="h4">{% trans "Available endpoints" %}</h2>
       <dl class="row mb-0">
         <dt class="col-md-4"><a href="{{ applications_url }}"><code>GET /api/applications/</code></a></dt>
-        <dd class="col-md-8">{% trans "Paginated application metadata, including records without AI history." %}</dd>
+        <dd class="col-md-8">{% trans "Paginated application metadata, including records without proposal history." %}</dd>
         <dt class="col-md-4"><a href="{{ pending_applications_url }}"><code>GET /api/pending-applications/</code></a></dt>
         <dd class="col-md-8">{% trans "All pending suggestions with linked or proposed application metadata." %}</dd>
+        <dt class="col-md-4"><a href="{% url 'ai_audit:high_confidence_applications' audit_key=audit_key %}"><code>GET /api/high-confidence-applications/</code></a></dt>
+        <dd class="col-md-8">
+          <strong>{% trans "Create high-confidence applications" %}</strong> —
+          {% trans "the exact pending create proposals currently eligible for the bulk-create action, including the active confidence threshold." %}
+        </dd>
         <dt class="col-md-4"><a href="{{ proposals_url }}"><code>GET /api/ai-proposals/</code></a></dt>
-        <dd class="col-md-8">{% trans "Paginated AI proposal metadata. Supports status, user_id, limit and offset." %}</dd>
+        <dd class="col-md-8">{% trans "Paginated proposal metadata. Supports status, user_id, limit and offset." %}</dd>
         <dt class="col-md-4"><a href="{{ analyses_url }}"><code>GET /api/gmail-analyses/</code></a></dt>
         <dd class="col-md-8">{% trans "Redacted analysis decisions, including records that did not create a proposal." %}</dd>
         <dt class="col-md-4"><a href="{{ schema_url }}" title="{% trans 'Choose an application ID from the applications JSON first' %}"><code>GET /api/applications/{id}/ai-history/</code></a></dt>
-        <dd class="col-md-8">{% trans "Paginated AI proposal history for one linked application. Choose its ID from the applications JSON first." %}</dd>
+        <dd class="col-md-8">{% trans "Paginated proposal history for one linked application. Choose its ID from the applications JSON first." %}</dd>
       </dl>
     </section>
   </main>
