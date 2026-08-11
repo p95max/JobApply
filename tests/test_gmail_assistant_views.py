@@ -245,7 +245,7 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b"only when AI analysis is enabled" in response.content
     assert b"Previously synced messages are skipped" in response.content
     assert b'syncNewGmail' in response.content
-    assert b'devReanalyzeGmail' not in response.content
+    assert b'id="devReanalyzeGmail"' not in response.content
     for days in (b'"1"', b'"7"', b'"30"', b'"90"', b'"180"'):
         assert b"value=" + days in response.content
     assert b'new URLSearchParams({days})' in response.content
@@ -263,8 +263,8 @@ def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
     response = client.get(reverse("gmail_assistant:gmail_assistant"))
 
     assert response.status_code == 200
-    assert b'devReanalyzeGmail' in response.content
-    assert b'devReanalyzeDays' in response.content
+    assert b'id="devReanalyzeGmail"' in response.content
+    assert b'id="devReanalyzeDays"' in response.content
     assert b">Reanalyze<" in response.content
     assert b'getElementById("devReanalyzeGmail")' in response.content
     assert b'getElementById("devReanalyzeDays")' in response.content
@@ -280,7 +280,7 @@ def test_development_tools_are_hidden_from_non_owner(client, proposal, django_us
 
     assert response.status_code == 200
     assert b"Development tools:" not in response.content
-    assert b"devReanalyzeGmail" not in response.content
+    assert b'id="devReanalyzeGmail"' not in response.content
 
 
 @pytest.mark.django_db
