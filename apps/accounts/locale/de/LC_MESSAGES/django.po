@@ -106,6 +106,12 @@ msgstr "Nutzungsbedingungen"
 msgid "Try demo without Google"
 msgstr "Demo ohne Google ausprobieren"
 
+msgid "Previous slide"
+msgstr "Vorherige Folie"
+
+msgid "Next slide"
+msgstr "Nächste Folie"
+
 msgid "Landing navigation"
 msgstr "Navigation der Startseite"
 

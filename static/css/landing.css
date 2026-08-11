@@ -79,14 +79,17 @@ body:has(.landing-shell) main {
 
 .landing-hero {
   min-height: 540px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(390px, 0.95fr);
   align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
   padding-top: 5rem;
   padding-bottom: 4rem;
 }
 
 .landing-hero__copy {
-  max-width: 900px;
+  min-width: 0;
+  max-width: 680px;
 }
 
 .landing-eyebrow {
@@ -730,6 +733,7 @@ body:has(.landing-shell) main {
 
 @media (max-width: 991.98px) {
   .landing-hero {
+    grid-template-columns: 1fr;
     min-height: auto;
     padding-top: 4rem;
   }
