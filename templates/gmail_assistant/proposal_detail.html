@@ -104,7 +104,12 @@
         {% if proposal.proposal_type == "create_application" %}
           <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same application; otherwise create the new application in step 5." %}</p>
         {% else %}
-          <p class="text-muted">{% trans "For a status change or required action, this step is mandatory. For a new application, link an existing record only when it is clearly the same application." %}</p>
+          <p class="text-muted mb-2">{% trans "For a status change or required action, this step is mandatory. Link only the application this email really belongs to." %}</p>
+          <div class="alert alert-light border small py-2 px-3 mb-3">
+            {% trans "If the original application is missing because it was not added earlier or there was no separate application email, create it manually first." %}
+            <a class="fw-semibold ms-1" href="{% url 'applications:create' %}" target="_blank" rel="noopener">{% trans "Create new application" %}</a>.
+            {% trans "Then return here and link it." %}
+          </div>
         {% endif %}
         {% if candidates %}
           <form method="post" action="{% url 'gmail_assistant:assign_gmail_proposal' proposal.pk %}">
