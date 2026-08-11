@@ -38,7 +38,7 @@ msgstr "KI-Verarbeitung"
 msgid "GitHub repository"
 msgstr "GitHub-Repository"
 
-#: templates/includes/navbar.html
+#: templates/includes/navbar.html templates/gmail_assistant/ai_audit_docs.html
 msgid "Gmail audit API"
 msgstr "Gmail-Audit-API"
 
@@ -49,10 +49,6 @@ msgstr "KI-verarbeitet"
 #: templates/includes/apps_list_header.html:54
 msgid "Without AI"
 msgstr "Ohne KI"
-
-#: templates/gmail_assistant/ai_audit_docs.html:4
-msgid "Gmail audit API"
-msgstr "Gmail-Prüf-API"
 
 #: templates/gmail_assistant/ai_audit_docs.html:10
 msgid "Read-only OpenAPI-compatible endpoints for reviewing Gmail application processing and proposal decisions."
