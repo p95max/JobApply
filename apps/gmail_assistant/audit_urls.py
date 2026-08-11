@@ -6,7 +6,7 @@ app_name = "ai_audit"
 
 urlpatterns = [
     path("<slug:audit_key>/", audit_views.swagger, name="swagger"),
-    path("<slug:audit_key>/openapi.json", audit_views.openapi_schema, name="openapi_schema"),
+    path("<slug:audit_key>/openapi.json", audit_high_confidence.openapi_schema, name="openapi_schema"),
     path("<slug:audit_key>/api/applications/", audit_views.applications, name="applications"),
     path(
         "<slug:audit_key>/api/pending-applications/",
