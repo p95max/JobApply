@@ -9,6 +9,7 @@ from django.test import override_settings
 from django.urls import reverse
 
 from apps.accounts.models import UserProfile
+from apps.security.turnstile import TurnstileResult
 
 
 @pytest.fixture(autouse=True)
@@ -53,17 +54,50 @@ def test_guest_can_start_temporary_demo_and_use_manual_workspace(send_notificati
 
 
 @pytest.mark.django_db(transaction=True)
-@override_settings(TURNSTILE_ENABLED=True, DEMO_ACCOUNT_TTL_HOURS=12)
+@override_settings(
+    TURNSTILE_ENABLED=True,
+    TURNSTILE_SITE_KEY="demo-site-key",
+    DEMO_ACCOUNT_TTL_HOURS=12,
+)
+@patch("apps.accounts.views.verify_turnstile", return_value=TurnstileResult(success=True))
 @patch("apps.accounts.views.send_notification_once")
-def test_demo_start_bypasses_google_turnstile_gate(send_notification_mock, client):
-    response = client.post(reverse("accounts:start_demo"))
+def test_demo_start_accepts_verified_turnstile(
+    send_notification_mock,
+    verify_turnstile_mock,
+    client,
+):
+    landing = client.get(reverse("landing"))
+    response = client.post(
+        reverse("accounts:start_demo"),
+        {"cf-turnstile-response": "verified-token"},
+        REMOTE_ADDR="198.51.100.12",
+    )
 
+    assert b"jobapply-turnstile-enabled" in landing.content
+    assert b"demo-site-key" in landing.content
     assert response.status_code == 302
     assert response.url == reverse("dashboard")
     user_id = client.session.get("_auth_user_id")
     assert user_id is not None
     assert UserProfile.objects.get(user_id=user_id).is_demo_user is True
+    verify_turnstile_mock.assert_called_once_with(
+        "verified-token",
+        remote_ip="198.51.100.12",
+    )
     send_notification_mock.assert_called_once()
+
+
+@pytest.mark.django_db(transaction=True)
+@override_settings(TURNSTILE_ENABLED=True, TURNSTILE_SITE_KEY="demo-site-key")
+@patch("apps.accounts.views.verify_turnstile", return_value=TurnstileResult(success=False))
+def test_demo_start_rejects_missing_or_invalid_turnstile(verify_turnstile_mock, client):
+    response = client.post(reverse("accounts:start_demo"), REMOTE_ADDR="198.51.100.13")
+
+    assert response.status_code == 302
+    assert response.url == reverse("landing")
+    assert UserProfile.objects.filter(is_demo_user=True).count() == 0
+    assert client.session.get("_auth_user_id") is None
+    verify_turnstile_mock.assert_called_once_with("", remote_ip="198.51.100.13")
 
 
 @pytest.mark.django_db
