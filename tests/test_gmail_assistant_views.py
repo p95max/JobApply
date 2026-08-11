@@ -266,6 +266,8 @@ def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
     assert b'devReanalyzeGmail' in response.content
     assert b'devReanalyzeDays' in response.content
     assert b">Reanalyze<" in response.content
+    assert b'getElementById("devReanalyzeGmail")' in response.content
+    assert b'getElementById("devReanalyzeDays")' in response.content
 
 
 @pytest.mark.django_db
