@@ -133,3 +133,28 @@ def test_audit_api_returns_only_redacted_ai_proposal_metadata(client):
     assert payload["results"][0]["application"]["id"] == ai_proposal.application_id
     assert "subject" not in response.content.decode()
     assert "Private reviewer note" not in response.content.decode()
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_audit_api_lists_all_applications_including_records_without_ai_history(client):
+    staff = _staff_user()
+    ai_proposal = _ai_proposal(user=staff)
+    manual_application = JobApplication.objects.create(
+        user=staff,
+        company="Manual GmbH",
+        title="Manual application",
+        notes="Private note that must not be exposed",
+    )
+    client.force_login(staff)
+
+    response = client.get(reverse("ai_audit:applications", kwargs={"audit_key": AUDIT_KEY}))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 2
+    assert {item["id"] for item in payload["results"]} == {
+        ai_proposal.application_id,
+        manual_application.pk,
+    }
+    assert "Private note" not in response.content.decode()

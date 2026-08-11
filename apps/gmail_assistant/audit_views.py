@@ -89,6 +89,22 @@ def _proposal_payload(proposal: ApplicationUpdateProposal) -> dict[str, object]:
     }
 
 
+def _application_payload(application: JobApplication) -> dict[str, object]:
+    return {
+        "id": application.pk,
+        "owner_id": application.user_id,
+        "company": application.company,
+        "title": application.title,
+        "location": application.location or None,
+        "source": application.source or None,
+        "status": application.status,
+        "applied_at": _iso(application.applied_at),
+        "recruiter_reply_at": _iso(application.recruiter_reply_at),
+        "created_at": _iso(application.created_at),
+        "updated_at": _iso(application.updated_at),
+    }
+
+
 def _ai_proposals_queryset():
     return (
         ApplicationUpdateProposal.objects.filter(
@@ -109,6 +125,7 @@ def swagger(request: HttpRequest, *, audit_key: str):
         {
             "audit_key": audit_key,
             "schema_url": reverse("ai_audit:openapi_schema", kwargs={"audit_key": audit_key}),
+            "applications_url": reverse("ai_audit:applications", kwargs={"audit_key": audit_key}),
             "proposals_url": reverse("ai_audit:ai_proposals", kwargs={"audit_key": audit_key}),
         },
     )
@@ -158,6 +175,30 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                     "responses": {"200": {"description": "Paginated, redacted audit records."}},
                 }
             },
+            "/api/applications/": {
+                "get": {
+                    "summary": "List all application records",
+                    "description": "Includes applications with and without AI proposal history.",
+                    "parameters": [
+                        {"name": "status", "in": "query", "schema": {"type": "string"}},
+                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "schema": {
+                                "type": "integer",
+                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+                            },
+                        },
+                        {
+                            "name": "offset",
+                            "in": "query",
+                            "schema": {"type": "integer", "minimum": 0},
+                        },
+                    ],
+                    "responses": {"200": {"description": "Paginated application metadata."}},
+                }
+            },
             "/api/applications/{application_id}/ai-history/": {
                 "get": {
                     "summary": "List AI proposal history for one application",
@@ -197,6 +238,40 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
         },
     }
     return JsonResponse(schema)
+
+
+@_require_audit_access
+@require_GET
+@never_cache
+def applications(request: HttpRequest, *, audit_key: str):
+    try:
+        limit = _parse_positive_int(
+            request,
+            "limit",
+            default=50,
+            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+        )
+        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
+        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+    except ValueError as error:
+        return JsonResponse({"detail": str(error)}, status=400)
+
+    queryset = JobApplication.objects.all().order_by("-updated_at", "-pk")
+    status = request.GET.get("status", "").strip()
+    if status:
+        valid_statuses = {choice for choice, _ in JobApplication._meta.get_field("status").choices}
+        if status not in valid_statuses:
+            return JsonResponse({"detail": "status is not valid."}, status=400)
+        queryset = queryset.filter(status=status)
+    if user_id:
+        queryset = queryset.filter(user_id=user_id)
+
+    total = queryset.count()
+    results = [
+        _application_payload(application)
+        for application in queryset[offset : offset + limit]
+    ]
+    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
 
 
 @_require_audit_access

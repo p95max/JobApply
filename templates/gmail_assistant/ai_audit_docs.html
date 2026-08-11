@@ -12,6 +12,7 @@
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ schema_url }}">{% trans "Open OpenAPI schema" %}</a>
+        <a class="btn btn-outline-secondary" href="{{ applications_url }}">{% trans "View applications as JSON" %}</a>
         <a class="btn btn-outline-secondary" href="{{ proposals_url }}">{% trans "View AI proposals as JSON" %}</a>
       </div>
     </section>
@@ -19,6 +20,8 @@
     <section class="mt-4 border rounded-4 p-4">
       <h2 class="h4">{% trans "Available endpoints" %}</h2>
       <dl class="row mb-0">
+        <dt class="col-md-4"><code>GET /api/applications/</code></dt>
+        <dd class="col-md-8">{% trans "Paginated application metadata, including records without AI history." %}</dd>
         <dt class="col-md-4"><code>GET /api/ai-proposals/</code></dt>
         <dd class="col-md-8">{% trans "Paginated AI proposal metadata. Supports status, user_id, limit and offset." %}</dd>
         <dt class="col-md-4"><code>GET /api/applications/{id}/ai-history/</code></dt>
