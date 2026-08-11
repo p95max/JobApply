@@ -85,6 +85,7 @@ class TelegramDeployRequest(models.Model):
     chat_id = models.BigIntegerField()
     current_commit = models.CharField(max_length=64)
     target_commit = models.CharField(max_length=64)
+    target_description = models.CharField(max_length=255, blank=True)
     status = models.CharField(
         max_length=16,
         choices=TelegramDeployRequestStatus.choices,

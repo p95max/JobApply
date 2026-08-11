@@ -123,6 +123,10 @@ def test_confirmed_deploy_is_one_time_and_owner_bound(monkeypatch):
     monkeypatch.setattr("apps.telegram_bot.deployments.current_queue_status", lambda: None)
     monkeypatch.setattr("apps.telegram_bot.deployments._deploy_commits", lambda branch: ("abc1234", "def5678"))
     monkeypatch.setattr("apps.telegram_bot.deployments._commit_date", lambda revision: "2026-08-07T12:00:00+02:00")
+    monkeypatch.setattr(
+        "apps.telegram_bot.deployments._target_commit_description",
+        lambda **_kwargs: "Deploy Gmail matching fixes",
+    )
     monkeypatch.setattr("apps.telegram_bot.deployments._claim_deploy_request", lambda: True)
     monkeypatch.setattr("apps.telegram_bot.deployments._start_deploy_service", lambda: True)
     prepared = prepare_deploy_request(
@@ -154,6 +158,8 @@ def test_confirmed_deploy_is_one_time_and_owner_bound(monkeypatch):
 
     prepared.request.refresh_from_db()
     assert result.outcome == "queued"
+    assert "Commit: <code>def5678</code>" in result.message
+    assert "Description: Deploy Gmail matching fixes" in result.message
     assert prepared.request.status == TelegramDeployRequestStatus.QUEUED
     assert repeat.outcome == "already_processed"
     assert foreign.outcome == "not_found"
@@ -167,8 +173,13 @@ def test_deploy_confirmation_shows_dates_for_current_and_target_commits(monkeypa
         "apps.telegram_bot.deployments._commit_date",
         lambda revision: {"HEAD": "2026-08-06T10:00:00+02:00", "def5678": "2026-08-07T11:00:00+02:00"}[revision],
     )
+    monkeypatch.setattr(
+        "apps.telegram_bot.deployments._target_commit_description",
+        lambda **_kwargs: "Add deploy notification details",
+    )
 
     prepared = prepare_deploy_request(telegram_user_id=200, chat_id=100, branch="master", ttl_seconds=300)
+    assert "Description: Add deploy notification details" in prepared.message
 
     assert "Current: abc1234 · 2026-08-06T10:00:00+02:00" in prepared.message
     assert "Target: def5678 · 2026-08-07T11:00:00+02:00" in prepared.message
@@ -185,6 +196,21 @@ def test_commit_date_uses_a_readable_local_format(monkeypatch):
     assert deployments._commit_date("HEAD") == "07.08.2026 10:50"
     assert calls == [
         ("show", "-s", "--format=%cd", "--date=format-local:%d.%m.%Y %H:%M", "HEAD"),
+    ]
+
+
+def test_target_commit_description_fetches_only_the_configured_branch(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        deployments,
+        "_git_output",
+        lambda *args: calls.append(args) or ("Describe deploy" if args[0] == "show" else ""),
+    )
+
+    assert deployments._target_commit_description(branch="master", revision="def5678") == "Describe deploy"
+    assert calls == [
+        ("fetch", "--quiet", "--no-tags", "origin", "master"),
+        ("show", "-s", "--format=%s", "def5678"),
     ]
 
 

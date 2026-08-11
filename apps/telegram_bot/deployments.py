@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from html import escape
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -65,11 +66,13 @@ def prepare_deploy_request(
         return DeployPreparation(None, "Could not read deploy commits. Check JobApply logs.", "failed")
     current_commit_date = _commit_date("HEAD")
     target_commit_date = _commit_date(target_commit)
+    target_description = _target_commit_description(branch=branch, revision=target_commit)
     request = TelegramDeployRequest.objects.create(
         telegram_user_id=telegram_user_id,
         chat_id=chat_id,
         current_commit=current_commit,
         target_commit=target_commit,
+        target_description=target_description,
         expires_at=timezone.now() + timedelta(seconds=max(1, ttl_seconds)),
     )
     return DeployPreparation(
@@ -77,6 +80,7 @@ def prepare_deploy_request(
         "Deploy confirmation required.\n"
         f"Current: {current_commit} · {current_commit_date}\n"
         f"Target: {target_commit} · {target_commit_date}\n"
+        f"Description: {escape(target_description)}\n"
         "Confirm to queue the fixed production deploy.",
         "pending",
     )
@@ -123,7 +127,9 @@ def apply_deploy_callback(
         request.save(update_fields=["status", "decided_at"])
         return DeployActionResult(
             request,
-            "Deploy queued. You will receive start and completion notifications.",
+            "Deploy queued. You will receive start and completion notifications.\n"
+            f"Commit: <code>{escape(request.target_commit)}</code>\n"
+            f"Description: {escape(request.target_description or 'unavailable')}",
             "queued",
         )
 
@@ -151,6 +157,12 @@ def _commit_date(revision: str) -> str:
         "--date=format-local:%d.%m.%Y %H:%M",
         revision,
     ) or "date unavailable"
+
+
+def _target_commit_description(*, branch: str, revision: str) -> str:
+    """Fetch only the configured production ref so its immutable subject is exact."""
+    _git_output("fetch", "--quiet", "--no-tags", "origin", branch)
+    return (_git_output("show", "-s", "--format=%s", revision) or "description unavailable")[:255]
 
 
 def _git_output(*args: str) -> str:
