@@ -197,6 +197,27 @@ def _record_rule_fallback(
     )
 
 
+def _preserved_ai_analysis(*, user: Any, message: GmailMessage, reanalyze_existing: bool) -> GmailAnalysis | None:
+    """Keep a prior successful AI result when the current reanalysis cannot use AI.
+
+    A temporary provider error or daily quota limit must not replace already
+    extracted company/title data with a weaker rule-only fallback.  Reanalysis
+    can improve a result when AI is available; it must never silently degrade
+    one when AI is unavailable.
+    """
+    if not reanalyze_existing:
+        return None
+    return (
+        GmailAnalysis.objects.filter(
+            user=user,
+            message=message,
+            classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
+        )
+        .order_by("-analyzed_at", "-pk")
+        .first()
+    )
+
+
 def _outbound_application_rule(rule: RuleClassification) -> RuleClassification:
     """Relevant messages from Sent represent an application sent by the user."""
     if not rule.is_job_related:
@@ -329,6 +350,7 @@ def _sync_gmail_messages_for_user(
         "outbound_ignored": 0,
         "outbound_imported": 0,
         "analyses_created": 0,
+        "analyses_preserved": 0,
         "analyzed_by_rules": 0,
         "analyzed_by_ai": 0,
         "ai_limit_reached": 0,
@@ -468,24 +490,32 @@ def _sync_gmail_messages_for_user(
                         )
                         counters["failed"] += 1
                         continue
-                    analysis = _record_rule_fallback(
+                    analysis = _preserved_ai_analysis(
                         user=user,
                         message=message,
-                        rule=rule,
-                        reason=type(error).__name__,
-                        extracted_data=(
-                            _sent_application_data(
-                                _rule_data(rule, fallback_reason=type(error).__name__),
-                                subject=parsed.subject,
-                                recipients=parsed.to_emails,
-                            )
-                            if is_manual_sent_application
-                            else None
-                        ),
+                        reanalyze_existing=reanalyze_existing,
                     )
-                    counters["analyses_created"] += 1
-                    counters["analyzed_by_rules"] += 1
-                    counters["ai_fallbacks"] += 1
+                    if analysis is None:
+                        analysis = _record_rule_fallback(
+                            user=user,
+                            message=message,
+                            rule=rule,
+                            reason=type(error).__name__,
+                            extracted_data=(
+                                _sent_application_data(
+                                    _rule_data(rule, fallback_reason=type(error).__name__),
+                                    subject=parsed.subject,
+                                    recipients=parsed.to_emails,
+                                )
+                                if is_manual_sent_application
+                                else None
+                            ),
+                        )
+                        counters["analyses_created"] += 1
+                        counters["analyzed_by_rules"] += 1
+                        counters["ai_fallbacks"] += 1
+                    else:
+                        counters["analyses_preserved"] += 1
             else:
                 reason = "ai_disabled"
                 if ai_available and not capacity_available:
@@ -499,24 +529,32 @@ def _sync_gmail_messages_for_user(
                     )
                     counters["failed"] += 1
                     continue
-                analysis = _record_rule_fallback(
+                analysis = _preserved_ai_analysis(
                     user=user,
                     message=message,
-                    rule=rule,
-                    reason=reason,
-                    extracted_data=(
-                        _sent_application_data(
-                            _rule_data(rule, fallback_reason=reason),
-                            subject=parsed.subject,
-                            recipients=parsed.to_emails,
-                        )
-                        if is_manual_sent_application
-                        else None
-                    ),
+                    reanalyze_existing=reanalyze_existing,
                 )
-                counters["analyses_created"] += 1
-                counters["analyzed_by_rules"] += 1
-                counters["ai_fallbacks"] += int(reason != "ai_disabled")
+                if analysis is None:
+                    analysis = _record_rule_fallback(
+                        user=user,
+                        message=message,
+                        rule=rule,
+                        reason=reason,
+                        extracted_data=(
+                            _sent_application_data(
+                                _rule_data(rule, fallback_reason=reason),
+                                subject=parsed.subject,
+                                recipients=parsed.to_emails,
+                            )
+                            if is_manual_sent_application
+                            else None
+                        ),
+                    )
+                    counters["analyses_created"] += 1
+                    counters["analyzed_by_rules"] += 1
+                    counters["ai_fallbacks"] += int(reason != "ai_disabled")
+                else:
+                    counters["analyses_preserved"] += 1
 
             match = match_for_message(
                 user=user,

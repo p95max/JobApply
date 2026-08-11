@@ -94,7 +94,11 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
         ).delete()
 
     if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS:
-        if pending_create_proposal is not None:
+        if pending_create_proposal is not None and _same_pending_application_intent(
+            message=message,
+            pending_create_proposal=pending_create_proposal,
+            match_method=match_method,
+        ):
             _record_related_message(proposal=pending_create_proposal, message=message)
             return []
         if not _can_create_application(extracted):
@@ -422,6 +426,23 @@ def _pending_create_duplicate(*, message: Any, changes: dict[str, Any]) -> Appli
         if abs(candidate.message.received_at - message.received_at) <= timedelta(minutes=5):
             return candidate
     return None
+
+
+def _same_pending_application_intent(
+    *,
+    message: Any,
+    pending_create_proposal: ApplicationUpdateProposal,
+    match_method: str,
+) -> bool:
+    """Return whether a matched pending create is an acknowledgement, not a new application.
+
+    Two applications to the same company and role on different dates are valid
+    separate records.  Only an identical Gmail thread or a near-simultaneous
+    duplicate acknowledgement may be collapsed into one pending create.
+    """
+    if match_method == "pending_create_gmail_thread":
+        return True
+    return abs(pending_create_proposal.message.received_at - message.received_at) <= timedelta(minutes=5)
 
 
 def _record_related_message(*, proposal: ApplicationUpdateProposal, message: Any) -> None:

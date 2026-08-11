@@ -369,6 +369,37 @@ def test_first_ai_opt_in_reanalyzes_previously_synced_messages(django_user_model
 
 
 @pytest.mark.django_db
+def test_reanalysis_does_not_replace_existing_ai_analysis_when_ai_is_unavailable(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+    client = FakeGmailClient(
+        {
+            "message-1": message(
+                sender="recruiter@example.org",
+                subject="Interview invitation",
+                text="We would like to invite you to an interview for your application.",
+            )
+        }
+    )
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=FakeAnalyzer())
+    before = GmailAnalysis.objects.get(user=user, message__message_id="message-1")
+    extracted_before = before.extracted_data
+
+    result = sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=client,
+        ai_analyzer=MissingKeyAnalyzer(),
+        reanalyze_existing=True,
+    )
+
+    after = GmailAnalysis.objects.get(pk=before.pk)
+    assert result["analyses_preserved"] == 1
+    assert after.classifier == AnalysisClassifier.AI
+    assert after.extracted_data == extracted_before
+
+
+@pytest.mark.django_db
 def test_manual_reanalysis_includes_cached_messages_outside_incremental_window(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     old_message = GmailMessage.objects.create(

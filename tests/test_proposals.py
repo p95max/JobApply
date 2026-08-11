@@ -237,6 +237,52 @@ def test_matching_pending_create_intent_does_not_create_a_second_application_pro
 
 
 @pytest.mark.django_db
+def test_later_same_company_and_title_is_not_collapsed_into_pending_create(proposal_context):
+    user, _, message = proposal_context
+    first_analysis = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "Separate GmbH", "position_title": "Platform Developer"},
+    )
+    build_proposals(
+        message=message,
+        analysis=first_analysis,
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+    later_message = GmailMessage.objects.create(
+        user=user,
+        message_id="later-application",
+        thread_id="later-thread",
+        received_at=message.received_at + timedelta(days=7),
+        subject="Application received again",
+        from_email="no-reply@example.org",
+    )
+    later_analysis = analysis(
+        user=user,
+        message=later_message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "Separate GmbH", "position_title": "Platform Developer"},
+    )
+    match = match_for_message(
+        user=user,
+        message=later_message,
+        extracted_data=later_analysis.extracted_data,
+        event_type=later_analysis.event_type,
+    )
+    assert match.suggested is not None
+    assert match.suggested.method == "pending_create_exact_company_title"
+
+    build_proposals(message=later_message, analysis=later_analysis, match=match)
+
+    assert ApplicationUpdateProposal.objects.filter(
+        user=user,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).count() == 2
+
+
+@pytest.mark.django_db
 def test_rebuilding_pending_create_proposal_refreshes_extracted_location(proposal_context):
     user, _, message = proposal_context
     record = analysis(
