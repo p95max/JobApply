@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 from apps.gmail_assistant.services.application_matcher import (
     EmailMatchData,
+    PendingCreateTarget,
     match_applications,
     normalize_company,
     normalize_position,
@@ -185,6 +187,28 @@ def test_same_company_with_a_different_title_does_not_match():
     )
 
     assert result.is_unmatched
+
+
+def test_exact_match_can_use_a_pending_create_as_a_temporary_target():
+    pending_create = PendingCreateTarget(
+        proposal=SimpleNamespace(pk=99),
+        company="Example GmbH",
+        title="Python Backend Developer",
+        applied_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
+        thread_id="original-thread",
+    )
+
+    result = match_applications(
+        user_id=10,
+        applications=[],
+        email=email(thread_id="follow-up-thread"),
+        pending_create_targets=[pending_create],
+    )
+
+    assert result.suggested is not None
+    assert result.suggested.application is None
+    assert result.suggested.pending_create_proposal.pk == pending_create.proposal.pk
+    assert result.suggested.method == "pending_create_exact_company_title"
 
 
 def test_generic_rejection_title_matches_one_recent_application_at_company():

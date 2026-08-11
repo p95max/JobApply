@@ -94,6 +94,12 @@
       <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% if proposal.proposal_type == "create_application" %}{% trans "Check for an existing application" %}{% else %}{% trans "Link the correct application" %}{% endif %}</h2>
       {% if proposal.application_id %}
         <p class="mb-0">{% trans "Linked application" %}: <strong>{{ proposal.application.company }} — {{ proposal.application.title }}</strong></p>
+      {% elif review_context.pending_create_proposal %}
+        <p class="text-info mb-0">
+          {% trans "This reply is temporarily linked to a pending new-application suggestion." %}
+          <a href="{% url 'gmail_assistant:gmail_proposal_detail' review_context.pending_create_proposal.pk %}">{% trans "Review and create the original application first" %}</a>.
+          {% trans "This follow-up will then be linked automatically and remain pending for your review." %}
+        </p>
       {% else %}
         {% if proposal.proposal_type == "create_application" %}
           <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same application; otherwise create the new application in step 5." %}</p>
@@ -122,7 +128,7 @@
     </div>
   </section>
 
-  {% if not proposal.application_id and proposal.proposal_type != "create_application" and proposal.analysis.event_type != "rejection" %}
+  {% if not proposal.application_id and not review_context.pending_create_proposal and proposal.proposal_type != "create_application" and proposal.analysis.event_type != "rejection" %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
       {% if proposal.analysis.event_type == "documents_requested" %}
         <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Create and link an application" %}</h2>
@@ -165,7 +171,7 @@
     </div>
   </section>
 
-  {% if not proposal.application_id %}{% if proposal.proposal_type == "create_application" or proposal.changes.interview %}
+  {% if not proposal.application_id and not review_context.pending_create_proposal %}{% if proposal.proposal_type == "create_application" or proposal.changes.interview %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
       <h2 class="proposal-step-title"><span class="proposal-step-number">5a</span> {% trans "Edit before accepting" %}</h2>
       <form method="post" action="{% url 'gmail_assistant:edit_accept_gmail_proposal' proposal.pk %}">

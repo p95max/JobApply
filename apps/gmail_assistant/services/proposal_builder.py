@@ -55,9 +55,11 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
         raise ValueError("message and analysis must belong to the same user")
 
     _normalize_known_event_type(message=message, analysis=analysis)
-    application = match.suggested.application if match.suggested else None
-    match_score = match.suggested.score if match.suggested else 0
-    match_method = match.suggested.method if match.suggested else ""
+    suggested = match.suggested
+    application = suggested.application if suggested else None
+    pending_create_proposal = suggested.pending_create_proposal if suggested else None
+    match_score = suggested.score if suggested else 0
+    match_method = suggested.method if suggested else ""
     extracted = analysis.extracted_data
     action_required = _is_action_required(message=message, event_type=analysis.event_type, extracted=extracted)
     proposals: list[ApplicationUpdateProposal] = []
@@ -70,7 +72,7 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             application.pk if application else None,
             match_method or "unmatched",
             match_score,
-            [candidate.application.pk for candidate in match.ambiguous],
+            [_candidate_label(candidate) for candidate in match.ambiguous],
         )
 
     if application is not None or analysis.event_type not in _CREATE_APPLICATION_EVENTS:
@@ -92,6 +94,9 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
         ).delete()
 
     if application is None and analysis.event_type in _CREATE_APPLICATION_EVENTS:
+        if pending_create_proposal is not None:
+            _record_related_message(proposal=pending_create_proposal, message=message)
+            return []
         if not _can_create_application(extracted):
             ApplicationUpdateProposal.objects.filter(
                 message=message,
@@ -118,6 +123,56 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             return proposals
 
     if application is None:
+        if pending_create_proposal is not None:
+            pending_target = {"pending_create_proposal_id": pending_create_proposal.pk}
+            application_changes = _pending_application_changes(
+                message=message,
+                analysis=analysis,
+                pending_create_proposal=pending_create_proposal,
+            )
+            if application_changes:
+                proposals.append(
+                    _create_pending(
+                        message=message,
+                        analysis=analysis,
+                        application=None,
+                        proposal_type=ProposalType.UPDATE_APPLICATION,
+                        match_score=match_score,
+                        match_method=match_method,
+                        changes={"application": application_changes, **pending_target},
+                    )
+                )
+            if action_required:
+                proposals.append(
+                    _create_pending(
+                        message=message,
+                        analysis=analysis,
+                        application=None,
+                        proposal_type=ProposalType.ACTION_REQUIRED,
+                        match_score=match_score,
+                        match_method=match_method,
+                        changes={"action": _action_changes(extracted), **pending_target},
+                    )
+                )
+            if analysis.event_type == GmailEventType.INTERVIEW_INVITATION:
+                interview_changes, proposal_type = _interview_changes(
+                    event_type=analysis.event_type,
+                    application=None,
+                    extracted=extracted,
+                )
+                if interview_changes:
+                    proposals.append(
+                        _create_pending(
+                            message=message,
+                            analysis=analysis,
+                            application=None,
+                            proposal_type=proposal_type,
+                            match_score=match_score,
+                            match_method=match_method,
+                            changes={"interview": interview_changes, **pending_target},
+                        )
+                    )
+            return proposals
         if analysis.event_type in _MANUAL_ASSIGNMENT_EVENTS:
             proposals.append(
                 _create_pending(
@@ -257,6 +312,27 @@ def _application_changes(*, message: Any, analysis: Any, application: Any) -> di
     return changes
 
 
+def _pending_application_changes(
+    *,
+    message: Any,
+    analysis: Any,
+    pending_create_proposal: ApplicationUpdateProposal,
+) -> dict[str, Any]:
+    """Build a deferred status update for an application that is not persisted yet."""
+    changes: dict[str, Any] = {}
+    status = proposed_status(
+        event_type=analysis.event_type,
+        current_status="applied",
+        message_received_at=message.received_at,
+        application_updated_at=pending_create_proposal.message.received_at,
+    )
+    if status:
+        changes["status"] = {"old": "applied", "new": status}
+    if should_set_recruiter_reply_at(analysis.event_type):
+        changes["recruiter_reply_at"] = {"old": None, "new": message.received_at.isoformat()}
+    return changes
+
+
 def _interview_changes(*, event_type: str, application: Any, extracted: dict[str, Any]) -> tuple[dict[str, Any], str]:
     from apps.interviews.models import InterviewEvent, InterviewStatus
 
@@ -379,3 +455,39 @@ def _create_application_changes(message: Any, extracted: dict[str, Any]) -> dict
 
 def _string_or_none(value: Any) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
+
+
+def _candidate_label(candidate: Any) -> int:
+    """Return an ID suitable for structured logs without assuming a real application."""
+    if candidate.application is not None:
+        return candidate.application.pk
+    if candidate.pending_create_proposal is not None:
+        return candidate.pending_create_proposal.pk
+    return 0
+
+
+def rebuild_pending_proposals_for_user(*, user: Any) -> int:
+    """Rebuild pending proposal links oldest-first after a Gmail sync.
+
+    Gmail returns message IDs in no useful order.  This second, local pass makes
+    initial application messages available as temporary targets before later
+    replies (rejection, interview, required action) are rebuilt.
+    """
+    from apps.gmail_assistant.services.application_matcher import match_for_message
+    from apps.gmail_assistant.models import GmailAnalysis
+
+    rebuilt = 0
+    analyses = (
+        GmailAnalysis.objects.filter(user=user)
+        .select_related("message")
+        .order_by("message__received_at", "message__pk")
+    )
+    for analysis in analyses:
+        match = match_for_message(
+            user=user,
+            message=analysis.message,
+            extracted_data=analysis.extracted_data,
+            event_type=analysis.event_type,
+        )
+        rebuilt += len(build_proposals(message=analysis.message, analysis=analysis, match=match))
+    return rebuilt

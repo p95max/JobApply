@@ -98,9 +98,14 @@ def rematch_pending_proposals(*, user) -> int:
             user=user,
             message=proposal.message,
             extracted_data=proposal.analysis.extracted_data,
+            event_type=proposal.analysis.event_type,
         )
         candidate = match.suggested
-        if candidate is None or candidate.method not in _EXACT_REMATCH_METHODS:
+        if (
+            candidate is None
+            or candidate.application is None
+            or candidate.method not in _EXACT_REMATCH_METHODS
+        ):
             continue
         now = timezone.now()
         linked += ApplicationUpdateProposal.objects.filter(

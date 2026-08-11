@@ -22,7 +22,7 @@ from apps.gmail_assistant.services.ai_policy import AIUsagePolicy, sanitize_emai
 from apps.gmail_assistant.services.auto_apply import auto_apply_trusted_proposals
 from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
-from apps.gmail_assistant.services.proposal_builder import build_proposals
+from apps.gmail_assistant.services.proposal_builder import build_proposals, rebuild_pending_proposals_for_user
 from apps.gmail_assistant.services.queries import build_candidate_query, build_sent_applications_query
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
 from apps.gmail_stats.services.sync_control import acquire_gmail_sync_lock
@@ -545,6 +545,11 @@ def _sync_gmail_messages_for_user(
             )
             _save_failed_message(user=user, message_id=message_id, error=error)
             counters["failed"] += 1
+
+    # Gmail can return newer replies before the original application message.
+    # Rebuild stored analyses chronologically so pending create proposals become
+    # temporary match targets for their later follow-ups.
+    rebuild_pending_proposals_for_user(user=user)
 
     with transaction.atomic():
         state, _ = GmailSyncState.objects.get_or_create(user=user)

@@ -204,11 +204,16 @@ def gmail_proposal_detail(request, pk: int):
         pk=pk,
         user=request.user,
     )
-    match = match_for_message(user=request.user, message=proposal.message, extracted_data=proposal.analysis.extracted_data)
+    match = match_for_message(
+        user=request.user,
+        message=proposal.message,
+        extracted_data=proposal.analysis.extracted_data,
+        event_type=proposal.analysis.event_type,
+    )
     if proposal.proposal_type == ProposalType.CREATE_APPLICATION:
         # A new application must not offer unrelated records for linking. Only
         # matching candidates are relevant here, and a lack of them is expected.
-        candidates = [candidate.application for candidate in match.ambiguous]
+        candidates = [candidate.application for candidate in match.ambiguous if candidate.application is not None]
     else:
         candidates = list(
             JobApplication.objects.filter(user=request.user)
@@ -216,11 +221,24 @@ def gmail_proposal_detail(request, pk: int):
             .order_by("-updated_at", "-pk")
         )
     action = proposal.changes.get("action") if isinstance(proposal.changes.get("action"), dict) else {}
+    pending_create_proposal = None
+    pending_create_id = proposal.changes.get("pending_create_proposal_id")
+    if isinstance(pending_create_id, int):
+        pending_create_proposal = ApplicationUpdateProposal.objects.filter(
+            pk=pending_create_id,
+            user=request.user,
+            proposal_type=ProposalType.CREATE_APPLICATION,
+            status=ProposalStatus.PENDING,
+        ).first()
     review_context = {
         "sender_domain": proposal.message.from_email.rsplit("@", 1)[-1] if "@" in proposal.message.from_email else "",
         "action_url": _first_url(action.get("text"), proposal.message.snippet, proposal.analysis.extracted_data.get("summary")),
-        "match_candidates": match.ambiguous,
-        "can_accept": proposal.application_id is not None or proposal.proposal_type == "create_application",
+        "match_candidates": tuple(candidate for candidate in match.ambiguous if candidate.application is not None),
+        "pending_create_proposal": pending_create_proposal,
+        "can_accept": (
+            proposal.application_id is not None
+            or proposal.proposal_type == "create_application"
+        ) and pending_create_proposal is None,
     }
     return render(
         request,

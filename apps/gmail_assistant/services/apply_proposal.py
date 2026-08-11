@@ -66,11 +66,41 @@ def apply_proposal(
         if application:
             locked.message.application = application
             locked.message.save(update_fields=["application", "updated_at"])
+        if application and locked.proposal_type == ProposalType.CREATE_APPLICATION:
+            _link_deferred_followups(create_proposal=locked, application=application)
         locked.status = ProposalStatus.ACCEPTED
         locked.reviewed_at = timezone.now()
         locked.review_note = review_note
         locked.save(update_fields=["application", "status", "review_note", "reviewed_at", "updated_at"])
         return ApplyProposalResult(locked, application, interview, False)
+
+
+def _link_deferred_followups(*, create_proposal: ApplicationUpdateProposal, application: JobApplication) -> None:
+    """Resolve follow-ups that were safely held against a pending create proposal.
+
+    A Gmail reply must never create a fake application merely because its
+    original application-received message is still pending review.  Once that
+    original create proposal is accepted, its deferred follow-ups become normal
+    pending proposals for the newly persisted application.
+    """
+    followups = (
+        ApplicationUpdateProposal.objects.select_for_update()
+        .select_related("message")
+        .filter(
+            user=create_proposal.user,
+            status=ProposalStatus.PENDING,
+            application__isnull=True,
+        )
+        .exclude(pk=create_proposal.pk)
+    )
+    for followup in followups:
+        if followup.changes.get("pending_create_proposal_id") != create_proposal.pk:
+            continue
+        followup.application = application
+        followup.save(update_fields=["application", "updated_at"])
+        if followup.message.application_id != application.pk:
+            followup.message.application = application
+            followup.message.save(update_fields=["application", "updated_at"])
 
 
 def review_proposal(

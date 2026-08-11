@@ -60,10 +60,27 @@ class EmailMatchData:
 class MatchCandidate:
     """An explainable candidate that requires manual review before any write."""
 
-    application: Any
+    application: Any | None
     score: int
     method: str
     evidence: tuple[str, ...]
+    pending_create_proposal: Any | None = None
+
+    @property
+    def is_pending_create_target(self) -> bool:
+        """Return whether this candidate is a not-yet-accepted create proposal."""
+        return self.pending_create_proposal is not None
+
+
+@dataclass(frozen=True)
+class PendingCreateTarget:
+    """A safe, user-scoped temporary target until its create proposal is accepted."""
+
+    proposal: Any
+    company: str
+    title: str
+    applied_at: datetime
+    thread_id: str
 
 
 @dataclass(frozen=True)
@@ -97,6 +114,7 @@ def match_applications(
     email: EmailMatchData,
     thread_matches: Iterable[Any] = (),
     external_id_matches: Iterable[Any] = (),
+    pending_create_targets: Iterable[PendingCreateTarget] = (),
 ) -> ApplicationMatch:
     """Rank user-scoped applications without changing any application state."""
     eligible = {
@@ -104,12 +122,27 @@ def match_applications(
         for application in applications
         if application.user_id == user_id and application.status not in _EXCLUDED_STATUSES
     }
-    if not eligible:
+    pending_targets = tuple(pending_create_targets)
+    if not eligible and not pending_targets:
         return ApplicationMatch(suggested=None, ambiguous=())
 
     for application in thread_matches:
         if application.pk in eligible:
             return _outcome((MatchCandidate(application, 100, "gmail_thread", ("matching Gmail thread",)),))
+
+    for target in pending_targets:
+        if target.thread_id and target.thread_id == email.thread_id:
+            return _outcome(
+                (
+                    MatchCandidate(
+                        None,
+                        100,
+                        "pending_create_gmail_thread",
+                        ("matching Gmail thread of a pending create proposal",),
+                        target.proposal,
+                    ),
+                )
+            )
 
     for application in external_id_matches:
         if application.pk in eligible:
@@ -129,6 +162,11 @@ def match_applications(
         for application in eligible.values()
         if (candidate := _score_candidate(application, email)) is not None
     ]
+    candidates.extend(
+        candidate
+        for target in pending_targets
+        if (candidate := _score_pending_create_candidate(target, email)) is not None
+    )
     scored = _outcome(tuple(candidates))
     # Preserve exact company/title and external-ID outcomes before falling back
     # to the more permissive rejection-only company/time window.
@@ -137,6 +175,10 @@ def match_applications(
 
     temporal_candidates = _rejection_company_temporal_candidates(
         applications=eligible.values(),
+        email=email,
+    )
+    temporal_candidates += _pending_rejection_company_temporal_candidates(
+        targets=pending_targets,
         email=email,
     )
     if len(temporal_candidates) == 1:
@@ -218,12 +260,41 @@ def match_for_message(
         )
         external_id_matches = tuple(analysis.message.application for analysis in analyses)
 
+    pending_create_targets = tuple(
+        PendingCreateTarget(
+            proposal=proposal,
+            company=changes["company"],
+            title=changes["title"],
+            applied_at=proposal.message.received_at,
+            thread_id=proposal.message.thread_id,
+        )
+        for proposal in (
+            ApplicationUpdateProposal.objects.filter(
+                user=user,
+                proposal_type="create_application",
+                status="pending",
+                application__isnull=True,
+            )
+            .exclude(message=message)
+            .select_related("message")
+            .order_by("pk")
+        )
+        if (changes := proposal.changes.get("application"))
+        and isinstance(changes, dict)
+        and changes.get("operation") == "create"
+        and isinstance(changes.get("company"), str)
+        and changes["company"].strip()
+        and isinstance(changes.get("title"), str)
+        and changes["title"].strip()
+    )
+
     return match_applications(
         user_id=user.pk,
         applications=applications,
         email=email,
         thread_matches=thread_matches,
         external_id_matches=external_id_matches,
+        pending_create_targets=pending_create_targets,
     )
 
 
@@ -271,6 +342,46 @@ def _score_candidate(application: Any, email: EmailMatchData) -> MatchCandidate 
     return MatchCandidate(application, score, method, tuple(evidence))
 
 
+def _score_pending_create_candidate(target: PendingCreateTarget, email: EmailMatchData) -> MatchCandidate | None:
+    """Score a pending create proposal with the same conservative signals as an app.
+
+    The proposal is never treated as a persisted application.  It only prevents
+    duplicate create suggestions and lets later messages wait for the original
+    create proposal to be reviewed.
+    """
+    company = normalize_company(email.company)
+    title = normalize_position(email.position_title)
+    target_company = normalize_company(target.company)
+    target_title = normalize_position(target.title)
+    company_ratio = _ratio(company, target_company)
+    title_ratio = _ratio(title, target_title)
+    generic_title = _is_generic_position(email.position_title)
+    evidence: list[str] = ["pending create proposal"]
+
+    if company and title and company == target_company and title == target_title:
+        score, method = 95, "pending_create_exact_company_title"
+        evidence.extend(("exact normalized company", "exact normalized title"))
+    elif (
+        not generic_title
+        and company
+        and title
+        and company == target_company
+        and _title_contains(title, target_title)
+    ):
+        score, method = 92, "pending_create_exact_company_title_containment"
+        evidence.extend(("exact normalized company", "one normalized title contains the other"))
+    elif not generic_title and company_ratio >= 85 and title_ratio >= 80:
+        score, method = 75, "pending_create_fuzzy_company_title"
+        evidence.extend(("similar normalized company", "similar normalized title"))
+    else:
+        return None
+
+    if _within_application_window(email.received_at, target.applied_at):
+        score = min(100, score + 3)
+        evidence.append("email is near pending application date")
+    return MatchCandidate(None, score, method, tuple(evidence), target.proposal)
+
+
 def _rejection_company_temporal_candidates(
     *,
     applications: Iterable[Any],
@@ -315,17 +426,64 @@ def _rejection_company_temporal_candidates(
     )
 
 
+def _pending_rejection_company_temporal_candidates(
+    *,
+    targets: Iterable[PendingCreateTarget],
+    email: EmailMatchData,
+) -> tuple[MatchCandidate, ...]:
+    """Return pending create targets for a uniquely identifiable rejection."""
+    company = normalize_company(email.company)
+    if not email.is_rejection or not company:
+        return ()
+    candidates = [
+        MatchCandidate(
+            None,
+            91 if _is_generic_position(email.position_title) else 90,
+            "pending_create_company_temporal",
+            (
+                "pending create proposal",
+                "exact normalized company",
+                "application precedes rejection within configured lookback",
+            ),
+            target.proposal,
+        )
+        for target in targets
+        if normalize_company(target.company) == company
+        and _is_recent_application_before_message(target.applied_at, email.received_at)
+    ]
+    if len(candidates) == 1:
+        return tuple(candidates)
+    return tuple(
+        MatchCandidate(
+            None,
+            85,
+            "pending_create_company_temporal",
+            candidate.evidence + ("more than one recent pending application at company",),
+            candidate.pending_create_proposal,
+        )
+        for candidate in candidates
+    )
+
+
 def _title_contains(left: str, right: str) -> bool:
     return bool(left and right and (left in right or right in left))
 
 
 def _outcome(candidates: tuple[MatchCandidate, ...]) -> ApplicationMatch:
-    ordered = tuple(sorted(candidates, key=lambda candidate: (-candidate.score, candidate.application.pk)))
+    ordered = tuple(sorted(candidates, key=lambda candidate: (-candidate.score, _candidate_identity(candidate))))
     high_confidence = tuple(candidate for candidate in ordered if candidate.score >= 90)
     if len(high_confidence) == 1:
         return ApplicationMatch(suggested=high_confidence[0], ambiguous=())
     ambiguous = tuple(candidate for candidate in ordered if candidate.score >= 70)
     return ApplicationMatch(suggested=None, ambiguous=ambiguous)
+
+
+def _candidate_identity(candidate: MatchCandidate) -> int:
+    if candidate.application is not None:
+        return candidate.application.pk
+    if candidate.pending_create_proposal is not None:
+        return candidate.pending_create_proposal.pk
+    return 0
 
 
 def _ratio(left: str, right: str) -> int:

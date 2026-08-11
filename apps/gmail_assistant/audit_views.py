@@ -120,6 +120,7 @@ def _pending_application_payload(proposal: ApplicationUpdateProposal) -> dict[st
         else None
     )
     application = proposal.application
+    temporary_create_id = proposal.changes.get("pending_create_proposal_id") if isinstance(proposal.changes, dict) else None
     return {
         "proposal_id": proposal.pk,
         "owner_id": proposal.user_id,
@@ -130,6 +131,7 @@ def _pending_application_payload(proposal: ApplicationUpdateProposal) -> dict[st
         "matching": {
             "score": proposal.match_score,
             "method": proposal.match_method or None,
+            "temporary_create_proposal_id": temporary_create_id if isinstance(temporary_create_id, int) else None,
         },
         "analysis": {
             "id": proposal.analysis_id,

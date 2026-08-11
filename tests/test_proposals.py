@@ -16,7 +16,7 @@ from apps.gmail_assistant.models import (
 from apps.gmail_stats.models import GmailMessage
 from apps.gmail_assistant.services.application_matcher import ApplicationMatch, MatchCandidate, match_for_message
 from apps.gmail_assistant.services.apply_proposal import ProposalApplyError, apply_proposal, review_proposal
-from apps.gmail_assistant.services.proposal_builder import build_proposals
+from apps.gmail_assistant.services.proposal_builder import build_proposals, rebuild_pending_proposals_for_user
 from apps.interviews.models import InterviewEvent, InterviewStatus
 
 
@@ -442,6 +442,92 @@ def test_accepted_create_proposal_links_itself_and_replies_in_same_thread_match(
     )
     assert match.suggested and match.suggested.application.pk == result.application.pk
     assert match.suggested.method == "gmail_thread"
+
+
+@pytest.mark.django_db
+def test_pending_create_is_a_temporary_target_until_it_is_accepted(proposal_context):
+    user, _, message = proposal_context
+    create_analysis = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "firstwaters", "position_title": "Junior IT Architect"},
+    )
+    create = build_proposals(
+        message=message,
+        analysis=create_analysis,
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )[0]
+    rejection_message = GmailMessage.objects.create(
+        user=user,
+        message_id="pending-create-rejection",
+        thread_id=message.thread_id,
+        received_at=message.received_at + timedelta(days=2),
+        from_email="careers@firstwaters.de",
+    )
+    rejection_analysis = analysis(
+        user=user,
+        message=rejection_message,
+        event_type=GmailEventType.REJECTION,
+        extracted_data={"company": "firstwaters", "position_title": "Developer"},
+    )
+
+    match = match_for_message(
+        user=user,
+        message=rejection_message,
+        extracted_data=rejection_analysis.extracted_data,
+        event_type=rejection_analysis.event_type,
+    )
+    assert match.suggested is not None
+    assert match.suggested.application is None
+    assert match.suggested.pending_create_proposal.pk == create.pk
+    assert match.suggested.method == "pending_create_gmail_thread"
+
+    rejection = build_proposals(message=rejection_message, analysis=rejection_analysis, match=match)[0]
+    assert rejection.application is None
+    assert rejection.changes["pending_create_proposal_id"] == create.pk
+    assert rejection.changes["application"]["status"] == {"old": "applied", "new": "rejected"}
+
+    created = apply_proposal(proposal=create, user=user)
+    rejection.refresh_from_db()
+    assert rejection.application_id == created.application.pk
+    assert rejection.message.application_id == created.application.pk
+
+    apply_proposal(proposal=rejection, user=user)
+    created.application.refresh_from_db()
+    assert created.application.status == ApplicationStatus.REJECTED
+
+
+@pytest.mark.django_db
+def test_full_rebuild_orders_pending_create_before_a_later_followup(proposal_context):
+    user, _, message = proposal_context
+    original = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_RECEIVED,
+        extracted_data={"company": "firstwaters", "position_title": "Junior IT Architect"},
+    )
+    rejection_message = GmailMessage.objects.create(
+        user=user,
+        message_id="ordered-rejection",
+        thread_id="later-thread",
+        received_at=message.received_at + timedelta(days=2),
+        from_email="careers@firstwaters.de",
+    )
+    rejection = analysis(
+        user=user,
+        message=rejection_message,
+        event_type=GmailEventType.REJECTION,
+        extracted_data={"company": "firstwaters", "position_title": "Developer"},
+    )
+
+    rebuild_pending_proposals_for_user(user=user)
+
+    create = ApplicationUpdateProposal.objects.get(analysis=original, proposal_type=ProposalType.CREATE_APPLICATION)
+    update = ApplicationUpdateProposal.objects.get(analysis=rejection, proposal_type=ProposalType.UPDATE_APPLICATION)
+    assert update.application is None
+    assert update.changes["pending_create_proposal_id"] == create.pk
+    assert update.match_method == "pending_create_company_temporal"
 
 
 @pytest.mark.django_db
