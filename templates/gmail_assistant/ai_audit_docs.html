@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+  <main class="container py-5">
+    <section class="p-4 p-md-5 border rounded-4 bg-body-tertiary shadow-sm">
+      <p class="text-uppercase small fw-bold text-info mb-2">{% trans "Staff-only" %}</p>
+      <h1 class="h2 mb-3">{% trans "AI audit API" %}</h1>
+      <p class="text-body-secondary mb-4">
+        {% trans "Read-only OpenAPI (Swagger-compatible) endpoints for reviewing which application proposals were processed by AI." %}
+        {% trans "Email text, subjects, credentials and private review notes are never returned." %}
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{{ schema_url }}">{% trans "Open OpenAPI schema" %}</a>
+        <a class="btn btn-outline-secondary" href="{{ proposals_url }}">{% trans "View AI proposals as JSON" %}</a>
+      </div>
+    </section>
+
+    <section class="mt-4 border rounded-4 p-4">
+      <h2 class="h4">{% trans "Available endpoints" %}</h2>
+      <dl class="row mb-0">
+        <dt class="col-md-4"><code>GET /api/ai-proposals/</code></dt>
+        <dd class="col-md-8">{% trans "Paginated AI proposal metadata. Supports status, user_id, limit and offset." %}</dd>
+        <dt class="col-md-4"><code>GET /api/applications/{id}/ai-history/</code></dt>
+        <dd class="col-md-8">{% trans "Paginated AI proposal history for one linked application." %}</dd>
+      </dl>
+    </section>
+  </main>
+{% endblock %}

@@ -327,6 +327,16 @@ sudo journalctl -u jobapply-deploy.service -n 100 --no-pager -l
 sudo tail -n 180 /var/log/jobapply/deploy-last.log
 ```
 
+### Staff AI audit API
+
+The read-only OpenAPI (Swagger-compatible) audit API is disabled by default. To enable it for staff users only, generate an unguessable path segment and add it to the production `.env`:
+
+```bash
+python3 -c 'import secrets; print(f"AI_AUDIT_URL=ai-audit-{secrets.token_urlsafe(24)}")'
+```
+
+After restarting the web service, open `https://your-domain.example/<AI_AUDIT_URL>/`. The page links to the OpenAPI schema and exposes only AI processing metadata and linked application fields; it never returns Gmail subjects, bodies, OAuth credentials or private review notes. The endpoint returns `404` for anonymous users, non-staff users and incorrect URLs.
+
 ## Legal pages and privacy
 
 Before publishing a public demo, complete the legal values in the environment:

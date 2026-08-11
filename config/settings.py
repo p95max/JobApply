@@ -2,6 +2,7 @@ from __future__ import annotations
 from os import getenv
 
 import os
+import re
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -278,6 +279,17 @@ LEGAL_SUPERVISORY_AUTHORITY = getenv(
 LEGAL_LOG_RETENTION = getenv("LEGAL_LOG_RETENTION", "[Bitte Aufbewahrungsdauer für Server-Logs eintragen]").strip()
 
 ADMIN_URL = os.getenv("ADMIN_URL", "admin").strip("/")
+# Disabled until an unguessable single URL segment is configured on the server.
+# This endpoint is additionally restricted to Django staff users.
+AI_AUDIT_URL = getenv("AI_AUDIT_URL", "").strip("/")
+if AI_AUDIT_URL and not re.fullmatch(r"[A-Za-z0-9_-]{20,128}", AI_AUDIT_URL):
+    raise RuntimeError(
+        "AI_AUDIT_URL must be an unguessable single URL segment of at least 20 characters."
+    )
+try:
+    AI_AUDIT_API_MAX_PAGE_SIZE = max(1, min(500, int(getenv("AI_AUDIT_API_MAX_PAGE_SIZE", "100"))))
+except ValueError:
+    AI_AUDIT_API_MAX_PAGE_SIZE = 100
 ADMIN_ALLOWED_IPS = frozenset(
     value.strip()
     for value in getenv("ADMIN_ALLOWED_IPS", "").split(",")
