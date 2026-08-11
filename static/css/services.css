@@ -230,6 +230,19 @@
 
 .service-empty-state > span { font-size: 1.7rem; }
 
+/* Highlight the Gmail Assistant FAQ explanation about manual review. */
+.container.py-4 > section.card.mt-4 > .card-body > details:nth-of-type(3) {
+  padding: .65rem .8rem;
+  border: 1px solid var(--bs-warning-border-subtle);
+  border-radius: .5rem;
+  background: var(--bs-warning-bg-subtle);
+}
+
+.container.py-4 > section.card.mt-4 > .card-body > details:nth-of-type(3) > summary {
+  color: var(--bs-warning-text-emphasis);
+  font-weight: 700;
+}
+
 @media (max-width: 991.98px) {
   .service-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
