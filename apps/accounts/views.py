@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 
 from apps.gmail_stats.models import GmailSyncState
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
+from apps.security.turnstile import verify_turnstile
 from apps.telegram_bot.notifications import send_notification_once
 
 from .demo_limits import DemoStartRateLimitError, claim_demo_start, client_ip
@@ -58,6 +59,20 @@ def start_demo(request):
     """Create an isolated, temporary workspace without a Google account."""
     if request.user.is_authenticated:
         return redirect("dashboard")
+
+    try:
+        turnstile = verify_turnstile(
+            request.POST.get("cf-turnstile-response", ""),
+            remote_ip=request.META.get("REMOTE_ADDR"),
+        )
+    except Exception:
+        logger.warning("Demo Turnstile verification failed with an upstream error", exc_info=True)
+        messages.error(request, "Security check could not be verified. Please try again.")
+        return redirect("landing")
+
+    if not turnstile.success:
+        messages.error(request, "Complete the security check before starting the demo.")
+        return redirect("landing")
 
     try:
         claim_demo_start(ip_address=client_ip(request))
