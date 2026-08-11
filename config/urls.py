@@ -43,11 +43,14 @@ urlpatterns = [
     path("gmail_stats/", include("apps.gmail_stats.urls")),
     path("gmail_stats/", include("apps.gmail_assistant.urls")),
     path("", include("apps.legal.urls")),
-    path("", include("apps.gmail_assistant.audit_urls")),
 ]
 
 if admin_path:
     urlpatterns.append(path(admin_path, admin.site.urls))
+
+# This final catch-all consumes only configured, unguessable audit paths. It
+# must stay after the configurable admin path and all public/legal routes.
+urlpatterns.append(path("", include("apps.gmail_assistant.audit_urls")))
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
