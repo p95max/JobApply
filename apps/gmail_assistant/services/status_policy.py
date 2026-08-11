@@ -39,13 +39,24 @@ _RECRUITER_REPLY_EVENTS = {
 }
 
 
+def _gmail_precision(value: datetime) -> datetime:
+    """Normalize timestamps to Gmail internalDate millisecond precision."""
+    return value.replace(microsecond=(value.microsecond // 1000) * 1000)
+
+
 def is_stale_message(message_received_at: datetime | None, application_updated_at: datetime | None) -> bool:
-    """Return whether an email predates the application's latest known state."""
+    """Return whether an email clearly predates the application's latest known state.
+
+    Gmail ``internalDate`` is only millisecond-precise while Django timestamps
+    may contain microseconds. Values within the same millisecond are therefore
+    indistinguishable and must not be treated as stale solely because of the
+    extra database precision.
+    """
     if not message_received_at or not application_updated_at:
         return False
     if not timezone.is_aware(message_received_at) or not timezone.is_aware(application_updated_at):
         return False
-    return message_received_at <= application_updated_at
+    return _gmail_precision(message_received_at) < _gmail_precision(application_updated_at)
 
 
 def status_reference_at(application: Any) -> datetime | None:
