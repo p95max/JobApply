@@ -53,6 +53,21 @@ msgstr "Noch keine angenommenen Aktionen"
 msgid "Accepted Gmail changes will appear here."
 msgstr "Angenommene Gmail-Änderungen werden hier angezeigt."
 
+msgid "Application created"
+msgstr "Bewerbung erstellt"
+
+msgid "Accepted after reviewing the source email."
+msgstr "Nach Prüfung der ursprünglichen E-Mail angenommen."
+
+msgid "Interview scheduled"
+msgstr "Vorstellungsgespräch geplant"
+
+msgid "Accepted Gmail action linked to an application."
+msgstr "Angenommene Gmail-Aktion mit einer Bewerbung verknüpft."
+
+msgid "Gmail Assistant preview tabs"
+msgstr "Vorschau-Tabs des Gmail-Assistenten"
+
 #: templates/includes/navbar.html templates/gmail_assistant/ai_audit_docs.html
 msgid "Gmail audit API"
 msgstr "Gmail-Audit-API"

@@ -8,6 +8,24 @@
   {% else %}{% trans "Demo preview" %}{% endif %} · JobApply
 {% endblock %}
 
+{% block page_scripts %}
+  <script>
+    document.querySelectorAll("[data-guest-assistant-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const selected = tab.dataset.guestAssistantTab;
+        document.querySelectorAll("[data-guest-assistant-tab]").forEach((item) => {
+          const active = item === tab;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+        document.querySelectorAll("[data-guest-assistant-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.guestAssistantPanel !== selected;
+        });
+      });
+    });
+  </script>
+{% endblock %}
+
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/guest_service_preview.css' %}?v=2">
@@ -39,6 +57,11 @@
 
     {% if preview_kind == "assistant" %}
       <section class="guest-preview-card guest-preview-card--assistant" aria-label="{% trans 'Gmail Assistant demo interface' %}">
+        <div class="guest-preview-tabs" role="tablist" aria-label="{% trans 'Gmail Assistant' %}">
+          <button class="guest-preview-tab is-active" type="button" role="tab" aria-selected="true" data-guest-assistant-tab="new">{% trans "New suggestions" %}<span>3</span></button>
+          <button class="guest-preview-tab" type="button" role="tab" aria-selected="false" data-guest-assistant-tab="history">{% trans "Action history" %}<span>2</span></button>
+        </div>
+        <div data-guest-assistant-panel="new">
         <div class="guest-preview-card__header">
           <div><span>✨</span><strong>{% trans "Pending suggestions" %}</strong><small>{% trans "Demo data — no mailbox is connected" %}</small></div>
           <span class="guest-preview-badge">3 {% trans "examples" %}</span>
@@ -46,6 +69,11 @@
         <div class="guest-preview-suggestion"><span>✉️</span><div><strong>{% trans "Application received" %}</strong><small>{% trans "A new application can be created after review." %}</small></div><button disabled>{% trans "Review" %}</button></div>
         <div class="guest-preview-suggestion"><span>📅</span><div><strong>{% trans "Interview invitation" %}</strong><small>{% trans "An interview proposal stays pending until you confirm it." %}</small></div><button disabled>{% trans "Review" %}</button></div>
         <div class="guest-preview-suggestion"><span>⚡</span><div><strong>{% trans "Action required" %}</strong><small>{% trans "Required steps are extracted from the email." %}</small></div><button disabled>{% trans "Review" %}</button></div>
+        </div>
+        <div data-guest-assistant-panel="history" hidden>
+          <div class="guest-preview-suggestion guest-preview-suggestion--accepted"><span>✓</span><div><strong>{% trans "Application created" %}</strong><small>{% trans "Accepted after reviewing the source email." %}</small></div><button disabled>{% trans "Open" %}</button></div>
+          <div class="guest-preview-suggestion guest-preview-suggestion--accepted"><span>✓</span><div><strong>{% trans "Interview scheduled" %}</strong><small>{% trans "Accepted Gmail action linked to an application." %}</small></div><button disabled>{% trans "Open" %}</button></div>
+        </div>
       </section>
     {% elif preview_kind == "gmail" %}
       <section class="guest-preview-stats" aria-label="{% trans 'Gmail statistics demo interface' %}">

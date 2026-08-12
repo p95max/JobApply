@@ -19,4 +19,8 @@
       </form>
     </div>
   </div>
+  <div class="dashboard-locked-feature__tabs" aria-label="{% trans 'Gmail Assistant preview tabs' %}">
+    <a href="{% url 'gmail_assistant:gmail_assistant' %}" class="is-active">{% trans "New suggestions" %}<span>3</span></a>
+    <a href="{% url 'gmail_assistant:gmail_assistant' %}">{% trans "Action history" %}<span>2</span></a>
+  </div>
 </section>

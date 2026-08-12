@@ -110,6 +110,9 @@ def test_guest_can_open_safe_connected_service_previews(client):
 
     assert assistant.status_code == 200
     assert b"Gmail Assistant preview" in assistant.content
+    assert b'data-guest-assistant-tab="new"' in assistant.content
+    assert b'data-guest-assistant-tab="history"' in assistant.content
+    assert b"Application created" in assistant.content
     assert reports.status_code == 200
     assert b"Reports preview" in reports.content
 
