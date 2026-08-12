@@ -7,6 +7,14 @@ from django.utils import timezone
 
 from apps.accounts.models import UserProfile
 from apps.applications.models import ApplicationStatus, JobApplication
+from apps.gmail_assistant.models import (
+    ApplicationUpdateProposal,
+    GmailAnalysis,
+    GmailEventType,
+    ProposalStatus,
+    ProposalType,
+)
+from apps.gmail_stats.models import GmailMessage
 from apps.interviews.models import InterviewEvent
 
 
@@ -77,3 +85,54 @@ def test_dashboard_shows_user_metrics_only(client):
     assert response.context["telegram_connected"] is False
     assert response.context["gmail_connected"] is False
     assert response.context["drive_connected"] is False
+
+
+@pytest.mark.django_db
+def test_dashboard_separates_pending_suggestions_from_accepted_action_history(client):
+    user = get_user_model().objects.create_user(username="assistant-dashboard-user")
+    application = JobApplication.objects.create(user=user, company="Example GmbH", title="Python Developer")
+    message = GmailMessage.objects.create(
+        user=user,
+        message_id="dashboard-history-message",
+        thread_id="dashboard-history-thread",
+        received_at=timezone.now(),
+        subject="Application update",
+    )
+    analysis = GmailAnalysis.objects.create(
+        user=user, message=message, event_type=GmailEventType.APPLICATION_RECEIVED
+    )
+    pending = ApplicationUpdateProposal.objects.create(
+        user=user, message=message, analysis=analysis, proposal_type=ProposalType.UPDATE_APPLICATION
+    )
+    accepted_message = GmailMessage.objects.create(
+        user=user,
+        message_id="dashboard-accepted-message",
+        thread_id="dashboard-accepted-thread",
+        received_at=timezone.now(),
+        subject="Interview confirmed",
+    )
+    accepted_analysis = GmailAnalysis.objects.create(
+        user=user, message=accepted_message, event_type=GmailEventType.INTERVIEW_INVITATION
+    )
+    accepted = ApplicationUpdateProposal.objects.create(
+        user=user,
+        message=accepted_message,
+        analysis=accepted_analysis,
+        application=application,
+        proposal_type=ProposalType.CREATE_INTERVIEW,
+        status=ProposalStatus.ACCEPTED,
+        reviewed_at=timezone.now(),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("dashboard"))
+    content = response.content.decode()
+
+    assert response.context["pending_proposal_count"] == 1
+    assert response.context["accepted_proposal_count"] == 1
+    assert list(response.context["pending_proposals"]) == [pending]
+    assert list(response.context["accepted_proposals"]) == [accepted]
+    assert 'data-dashboard-assistant-tab="new"' in content
+    assert 'data-dashboard-assistant-tab="history"' in content
+    assert "Application update" in content
+    assert "Interview confirmed" in content

@@ -4,7 +4,7 @@
 {% block title %}{% trans "Dashboard" %} · JobApply{% endblock %}
 
 {% block page_css %}
-  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=3">
   <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=2">
   <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_guest.css' %}?v=1">
@@ -65,6 +65,16 @@
           </span>
         </div>
 
+        <div class="dashboard-assistant-tabs" role="tablist" aria-label="{% trans 'Gmail Assistant' %}">
+          <button class="dashboard-assistant-tab is-active" type="button" role="tab" id="dashboard-assistant-new-tab" aria-controls="dashboard-assistant-new" aria-selected="true" data-dashboard-assistant-tab="new">
+            {% trans "New suggestions" %}<span>{{ pending_proposal_count }}</span>
+          </button>
+          <button class="dashboard-assistant-tab" type="button" role="tab" id="dashboard-assistant-history-tab" aria-controls="dashboard-assistant-history" aria-selected="false" data-dashboard-assistant-tab="history">
+            {% trans "Action history" %}<span>{{ accepted_proposal_count }}</span>
+          </button>
+        </div>
+
+        <div id="dashboard-assistant-new" role="tabpanel" aria-labelledby="dashboard-assistant-new-tab" data-dashboard-assistant-panel="new">
         {% if pending_proposals %}
           <div class="dashboard-feed">
             {% for proposal in pending_proposals %}
@@ -90,6 +100,36 @@
             <div><strong>{% trans "You're all caught up" %}</strong><p>{% trans "No pending Gmail suggestions." %}</p></div>
           </div>
         {% endif %}
+        </div>
+
+        <div id="dashboard-assistant-history" role="tabpanel" aria-labelledby="dashboard-assistant-history-tab" data-dashboard-assistant-panel="history" hidden>
+        {% if accepted_proposals %}
+          <div class="dashboard-feed">
+            {% for proposal in accepted_proposals %}
+              <article class="dashboard-feed__item dashboard-feed__item--accepted">
+                <div class="dashboard-feed__icon dashboard-feed__icon--accepted" aria-hidden="true">✓</div>
+                <div class="dashboard-feed__body">
+                  <strong>{{ proposal.analysis.get_event_type_display }}</strong>
+                  <span>{{ proposal.message.subject|default:proposal.message.from_name|truncatechars:72 }}</span>
+                  <small>{% trans "Accepted" %} · {{ proposal.reviewed_at|default:proposal.updated_at|date:"d.m.Y H:i" }}</small>
+                </div>
+                <div class="dashboard-feed__actions">
+                  {% if proposal.application %}
+                    <a class="btn btn-sm btn-outline-light" href="{% url 'applications:detail' proposal.application.pk %}">{% trans "Open" %}</a>
+                  {% else %}
+                    <a class="btn btn-sm btn-outline-light" href="{% url 'gmail_assistant:gmail_assistant' %}?status=accepted">{% trans "View" %}</a>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="dashboard-empty">
+            <span>◷</span>
+            <div><strong>{% trans "No accepted actions yet" %}</strong><p>{% trans "Accepted Gmail changes will appear here." %}</p></div>
+          </div>
+        {% endif %}
+        </div>
 
         <div class="dashboard-card__footer">
           <span>
@@ -200,6 +240,19 @@
         event.preventDefault();
         window.location.assign(row.dataset.href);
       }
+    });
+    document.querySelectorAll("[data-dashboard-assistant-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const selected = tab.dataset.dashboardAssistantTab;
+        document.querySelectorAll("[data-dashboard-assistant-tab]").forEach((item) => {
+          const active = item === tab;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+        document.querySelectorAll("[data-dashboard-assistant-panel]").forEach((panel) => {
+          panel.hidden = panel.dataset.dashboardAssistantPanel !== selected;
+        });
+      });
     });
   </script>
 {% endblock %}

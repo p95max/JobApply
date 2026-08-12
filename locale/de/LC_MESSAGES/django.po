@@ -38,6 +38,18 @@ msgstr "KI-Verarbeitung"
 msgid "GitHub repository"
 msgstr "GitHub-Repository"
 
+msgid "New suggestions"
+msgstr "Neue Vorschläge"
+
+msgid "Action history"
+msgstr "Aktionsverlauf"
+
+msgid "No accepted actions yet"
+msgstr "Noch keine angenommenen Aktionen"
+
+msgid "Accepted Gmail changes will appear here."
+msgstr "Angenommene Gmail-Änderungen werden hier angezeigt."
+
 #: templates/includes/navbar.html templates/gmail_assistant/ai_audit_docs.html
 msgid "Gmail audit API"
 msgstr "Gmail-Audit-API"

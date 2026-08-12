@@ -44,6 +44,14 @@ def dashboard(request):
         .select_related("message", "analysis", "application")
         .order_by("-created_at")
     )
+    accepted_proposals = (
+        ApplicationUpdateProposal.objects.filter(
+            user=request.user,
+            status=ProposalStatus.ACCEPTED,
+        )
+        .select_related("message", "analysis", "application")
+        .order_by("-reviewed_at", "-updated_at")
+    )
     assistant_settings = GmailAssistantSettings.objects.filter(user=request.user).first()
     profile = UserProfile.objects.filter(user=request.user).only("telegram_chat_id").first()
     drive_status = get_drive_status(request.user)
@@ -67,6 +75,8 @@ def dashboard(request):
             "recent_applications": applications.order_by("-updated_at")[:5],
             "pending_proposal_count": pending_proposals.count(),
             "pending_proposals": pending_proposals[:5],
+            "accepted_proposal_count": accepted_proposals.count(),
+            "accepted_proposals": accepted_proposals[:5],
             "gmail_assistant_active": bool(
                 assistant_settings and assistant_settings.ai_enabled
             ),
