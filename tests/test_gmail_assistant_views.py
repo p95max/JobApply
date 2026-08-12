@@ -164,8 +164,10 @@ def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
     response = client.get(reverse("gmail_assistant:gmail_assistant"))
 
     assert response.status_code == 200
-    assert b"Pending <span class=\"badge rounded-pill text-bg-light ms-1\">0</span>" in response.content
-    assert b"Accepted <span class=\"badge rounded-pill text-bg-light ms-1\">2</span>" in response.content
+    assert b"New suggestions" in response.content
+    assert b"Action history" in response.content
+    assert b"<span class=\"badge rounded-pill text-bg-primary ms-1\">0</span>" in response.content
+    assert b"<span class=\"badge rounded-pill text-bg-secondary ms-1\">2</span>" in response.content
 
 
 @pytest.mark.django_db

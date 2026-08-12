@@ -169,8 +169,14 @@ def gmail_assistant(request):
                 {"value": value, "label": label, "count": proposal_counts[value]}
                 for value, label in ProposalStatus.choices
             ],
+            "secondary_proposal_status_filters": [
+                {"value": value, "label": label, "count": proposal_counts[value]}
+                for value, label in ProposalStatus.choices
+                if value in {ProposalStatus.REJECTED, ProposalStatus.IGNORED}
+            ],
             "settings": assistant_settings,
             "pending_count": proposal_counts[ProposalStatus.PENDING],
+            "accepted_count": proposal_counts[ProposalStatus.ACCEPTED],
             "technical_event_types": {
                 GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
                 GmailEventType.APPLICATION_SENT,

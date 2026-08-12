@@ -155,9 +155,19 @@
     </div>
   </details>
 
-  <div class="nav nav-pills gap-2 mb-3">
-    {% for filter in proposal_status_filters %}
-      <a class="btn btn-sm {% if selected_status == filter.value %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?status={{ filter.value }}">
+  <div class="nav nav-tabs mb-3" role="tablist" aria-label="{% trans 'Gmail Assistant' %}">
+    <a class="nav-link {% if selected_status == 'pending' %}active{% endif %}" href="?status=pending" role="tab" aria-selected="{% if selected_status == 'pending' %}true{% else %}false{% endif %}">
+      {% trans "New suggestions" %} <span class="badge rounded-pill text-bg-{% if selected_status == 'pending' %}primary{% else %}secondary{% endif %} ms-1">{{ pending_count }}</span>
+    </a>
+    <a class="nav-link {% if selected_status == 'accepted' %}active{% endif %}" href="?status=accepted" role="tab" aria-selected="{% if selected_status == 'accepted' %}true{% else %}false{% endif %}">
+      {% trans "Action history" %} <span class="badge rounded-pill text-bg-{% if selected_status == 'accepted' %}success{% else %}secondary{% endif %} ms-1">{{ accepted_count }}</span>
+    </a>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3 small text-muted">
+    <span>{% trans "Other decisions" %}:</span>
+    {% for filter in secondary_proposal_status_filters %}
+      <a class="btn btn-sm {% if selected_status == filter.value %}btn-secondary{% else %}btn-outline-secondary{% endif %}" href="?status={{ filter.value }}">
         {{ filter.label }} <span class="badge rounded-pill text-bg-light ms-1">{{ filter.count }}</span>
       </a>
     {% endfor %}

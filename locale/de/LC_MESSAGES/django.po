@@ -44,6 +44,9 @@ msgstr "Neue Vorschläge"
 msgid "Action history"
 msgstr "Aktionsverlauf"
 
+msgid "Other decisions"
+msgstr "Weitere Entscheidungen"
+
 msgid "No accepted actions yet"
 msgstr "Noch keine angenommenen Aktionen"
 
