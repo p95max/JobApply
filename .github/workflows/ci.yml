@@ -53,8 +53,20 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
-      - name: Run tests
-        run: poetry run pytest -ra -vv
+      - name: Install coverage tooling
+        run: poetry run pip install pytest-cov
+
+      - name: Run tests with coverage
+        run: poetry run pytest -ra -vv --cov=apps --cov=config --cov-report=xml:coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          disable_search: true
+          fail_ci_if_error: true
+          flags: unittests
 
       - name: Run Ruff
         run: poetry run ruff check .
