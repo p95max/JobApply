@@ -62,8 +62,9 @@
         sitekey: siteKey,
         callback: () => {
           verified = true;
-          button.disabled = false;
-          button.textContent = "Continue to demo";
+          button.disabled = true;
+          button.textContent = "Opening demo…";
+          window.setTimeout(() => form.requestSubmit(), 0);
         },
         "expired-callback": () => {
           verified = false;
