@@ -46,9 +46,12 @@ def test_privacy_page_uses_configured_legal_details(client):
     assert b"privacy@example.com" in response.content
     assert b"14 Tage" in response.content
     assert b"Google-Drive-Backups" in response.content
+    assert b"beschr\xc3\xa4nkten <code>drive.file</code>-Zugriff" in response.content
     assert b"jobapply_cookie_notice" in response.content
     assert b"12 Stunden" in response.content
     assert b"Demo-Placeholder" not in response.content
+    assert response.content.count(b"Optionale AI-Analyse") == 1
+    assert b"erst nach einer Best\xc3\xa4tigung durch den Nutzer" not in response.content
 
 
 @pytest.mark.django_db
@@ -72,7 +75,10 @@ def test_legal_pages_use_english_when_english_is_selected(client):
 
     assert b"Privacy Policy" in privacy.content
     assert b"Google Drive backups" in privacy.content
+    assert b"limited <code>drive.file</code> access" in privacy.content
     assert b"jobapply_cookie_notice" in privacy.content
     assert b"18 hours" in privacy.content
+    assert privacy.content.count(b"Optional AI analysis") == 1
+    assert b"application changes require user confirmation" not in privacy.content
     assert b"Legal notice" in impressum.content
     assert b"Terms of Use" in terms.content
