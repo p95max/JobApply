@@ -596,6 +596,42 @@ def test_sync_api_passes_selected_period_to_assistant(client, django_user_model,
 
 
 @pytest.mark.django_db
+@override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="user@example.com")
+def test_sync_api_can_reanalyze_only_saved_messages_from_today(client, django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    UserProfile.objects.create(user=user, google_data_access_consent=True)
+    synced = []
+
+    class PreflightGmailClient:
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            return []
+
+    monkeypatch.setattr("apps.gmail_stats.views.get_google_credentials_for_user", lambda user: object())
+    monkeypatch.setattr("apps.gmail_stats.views.GmailClient", lambda credentials: PreflightGmailClient())
+    monkeypatch.setattr(
+        "apps.gmail_stats.views.sync_gmail_messages_for_user",
+        lambda **kwargs: synced.append(kwargs) or {"proposals_created": 0},
+    )
+
+    client.force_login(user)
+    response = client.post(reverse("gmail_stats:gmail_sync_api") + "?days=1&reanalyze=1&today_only=1")
+
+    assert response.status_code == 200
+    assert synced[0]["reanalyze_existing"] is True
+    assert synced[0]["reanalyze_today_only"] is True
+
+
+@pytest.mark.django_db
+def test_sync_api_rejects_today_only_without_dev_reanalysis(client, django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    client.force_login(user)
+
+    response = client.post(reverse("gmail_stats:gmail_sync_api") + "?days=1&today_only=1")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
 @override_settings(GMAIL_ASSISTANT_DEV_TOOLS=True, TELEGRAM_OWNER_EMAIL="owner@example.com")
 def test_sync_api_hides_reanalysis_from_non_owner(client, django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")

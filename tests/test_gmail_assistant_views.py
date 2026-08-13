@@ -267,9 +267,11 @@ def test_assistant_shows_reanalysis_only_in_development_mode(client, proposal):
     assert response.status_code == 200
     assert b'id="devReanalyzeGmail"' in response.content
     assert b'id="devReanalyzeDays"' in response.content
+    assert b'value="today"' in response.content
     assert b">Reanalyze<" in response.content
     assert b'getElementById("devReanalyzeGmail")' in response.content
     assert b'getElementById("devReanalyzeDays")' in response.content
+    assert b'params.set("today_only", "1")' in response.content
 
 
 @pytest.mark.django_db

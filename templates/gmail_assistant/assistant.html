@@ -31,6 +31,7 @@
         <div class="d-flex flex-nowrap align-items-center gap-2">
           <label class="small text-nowrap" for="devReanalyzeDays">{% trans "Period" %}</label>
           <select id="devReanalyzeDays" class="form-select form-select-sm w-auto">
+            <option value="today">{% trans "Today only" %}</option>
             <option value="1">{% trans "1 day" %}</option>
             <option value="7" selected>{% trans "1 week" %}</option>
             <option value="30">{% trans "1 month" %}</option>
@@ -416,7 +417,7 @@
     return `{% trans 'Gmail sync and AI analysis' %} ${estimate}. {% trans 'More new messages can take longer. Please keep this page open.' %}${extraWork}`;
   }
 
-  async function syncGmail(days, reanalyze = false, includeSent = false) {
+  async function syncGmail(days, reanalyze = false, includeSent = false, todayOnly = false) {
     const syncModal = document.getElementById("gmailSyncPeriodModal");
     if (syncModal.classList.contains("show")) bootstrap.Modal.getOrCreateInstance(syncModal).hide();
     progressText.textContent = syncDurationMessage(days, reanalyze, includeSent);
@@ -434,6 +435,7 @@
       const params = new URLSearchParams({days});
       if (reanalyze) params.set("reanalyze", "1");
       if (includeSent) params.set("include_sent", "1");
+      if (todayOnly) params.set("today_only", "1");
       const response = await fetch("{% url 'gmail_stats:gmail_sync_api' %}?" + params.toString(), {
         method: "POST",
         headers: {"X-CSRFToken": settingsForm.querySelector("[name=csrfmiddlewaretoken]").value},
@@ -456,8 +458,13 @@
 
   syncNewButton.addEventListener("click", () => syncGmail(syncDays.value, false, syncIncludeSent.checked));
   optionalReanalysisButton?.addEventListener("click", () => {
-    if (window.confirm("{% trans 'Reanalyze saved messages for the selected period? This can consume your daily AI email limit.' %}")) {
-      syncGmail(optionalReanalysisDays.value, true);
+    const todayOnly = optionalReanalysisDays.value === "today";
+    const days = todayOnly ? "1" : optionalReanalysisDays.value;
+    const confirmation = todayOnly
+      ? "{% trans 'Reanalyze only saved messages received today? This can consume your daily AI email limit.' %}"
+      : "{% trans 'Reanalyze saved messages for the selected period? This can consume your daily AI email limit.' %}";
+    if (window.confirm(confirmation)) {
+      syncGmail(days, true, false, todayOnly);
     }
   });
 

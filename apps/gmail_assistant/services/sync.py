@@ -303,6 +303,7 @@ def sync_gmail_messages_for_user(
     max_results_each: int = 500,
     ai_analyzer: OpenAIEmailAnalyzer | None = None,
     reanalyze_existing: bool = False,
+    reanalyze_today_only: bool = False,
     include_sent: bool = False,
 ) -> dict[str, int]:
     """Run the bounded, per-message Gmail assistant pipeline for one user."""
@@ -314,6 +315,7 @@ def sync_gmail_messages_for_user(
             max_results_each=max_results_each,
             ai_analyzer=ai_analyzer,
             reanalyze_existing=reanalyze_existing,
+            reanalyze_today_only=reanalyze_today_only,
             include_sent=include_sent,
         )
 
@@ -326,6 +328,7 @@ def _sync_gmail_messages_for_user(
     max_results_each: int = 500,
     ai_analyzer: OpenAIEmailAnalyzer | None = None,
     reanalyze_existing: bool = False,
+    reanalyze_today_only: bool = False,
     include_sent: bool = False,
 ) -> dict[str, int]:
     """Run the Gmail pipeline after the caller obtained the per-user lock."""
@@ -377,13 +380,16 @@ def _sync_gmail_messages_for_user(
     }
 
     if reanalyze_existing:
-        cached_message_ids = set(
-            GmailMessage.objects.filter(
-                user=user,
-                received_at__gte=datetime.now(timezone.utc) - timedelta(days=days),
-            ).values_list("message_id", flat=True)
-        )
-        message_ids = ids | cached_message_ids
+        cached_messages = GmailMessage.objects.filter(user=user)
+        if reanalyze_today_only:
+            today_start = django_timezone.make_aware(datetime.combine(django_timezone.localdate(), datetime.min.time()))
+            cached_messages = cached_messages.filter(received_at__gte=today_start)
+        else:
+            cached_messages = cached_messages.filter(
+                received_at__gte=datetime.now(timezone.utc) - timedelta(days=days)
+            )
+        cached_message_ids = set(cached_messages.values_list("message_id", flat=True))
+        message_ids = cached_message_ids if reanalyze_today_only else ids | cached_message_ids
     else:
         message_ids = ids - existing
         if include_sent:
