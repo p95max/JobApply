@@ -18,6 +18,10 @@ from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
     ("text", "event_type"),
     [
         ("Bitte bestätigen Sie Ihre Bewerbung.", GmailEventType.APPLICATION_CONFIRMATION_REQUIRED),
+        (
+            "Application draft reminder: Your application was started but not yet submitted.",
+            GmailEventType.APPLICATION_DRAFT_REMINDER,
+        ),
         ("Your application has been submitted.", GmailEventType.APPLICATION_SENT),
         ("Wir haben Ihre Bewerbung erhalten.", GmailEventType.APPLICATION_RECEIVED),
         ("Rückmeldung zu Ihrer Bewerbung: Wir melden uns bald.", GmailEventType.GENERAL_UPDATE),

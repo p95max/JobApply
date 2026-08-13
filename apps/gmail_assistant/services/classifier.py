@@ -110,6 +110,10 @@ def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassifica
     if documents:
         return _result(GmailEventType.DOCUMENTS_REQUESTED, 88, documents)
 
+    draft_reminder = _matching_terms(content, phrases["application_draft_reminder"])
+    if context and draft_reminder:
+        return _result(GmailEventType.APPLICATION_DRAFT_REMINDER, 94, context + draft_reminder)
+
     confirmation_required = _matching_terms(content, phrases["application_confirmation_required"])
     if confirmation_required:
         return _result(GmailEventType.APPLICATION_CONFIRMATION_REQUIRED, 90, confirmation_required)

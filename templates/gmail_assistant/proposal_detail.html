@@ -91,7 +91,7 @@
 
   <section class="card proposal-section proposal-section--assignment mb-3">
     <div class="card-body">
-      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% if proposal.proposal_type == "create_application" %}{% trans "Check for an existing application" %}{% else %}{% trans "Link the correct application" %}{% endif %}</h2>
+      <h2 class="proposal-step-title"><span class="proposal-step-number">4</span> {% if proposal.proposal_type == "create_application" or review_context.is_draft_reminder %}{% trans "Check for an existing application" %}{% else %}{% trans "Link the correct application" %}{% endif %}</h2>
       {% if proposal.application_id %}
         <p class="mb-0">{% trans "Linked application" %}: <strong>{{ proposal.application.company }} — {{ proposal.application.title }}</strong></p>
       {% elif review_context.pending_create_proposal %}
@@ -101,8 +101,12 @@
           {% trans "This follow-up will then be linked automatically and remain pending for your review." %}
         </p>
       {% else %}
-        {% if proposal.proposal_type == "create_application" %}
-          <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same application; otherwise create the new application in step 5." %}</p>
+        {% if proposal.proposal_type == "create_application" or review_context.is_draft_reminder %}
+          {% if review_context.is_draft_reminder %}
+            <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same draft. This reminder will not create an application." %}</p>
+          {% else %}
+            <p class="text-muted">{% trans "This is optional. Link a record only when it is clearly the same application; otherwise create the new application in step 5." %}</p>
+          {% endif %}
         {% else %}
           <p class="text-muted mb-2">{% trans "For a status change or required action, this step is mandatory. Link only the application this email really belongs to." %}</p>
           <div class="alert alert-light border small py-2 px-3 mb-3">
@@ -123,6 +127,8 @@
         {% else %}
           {% if proposal.proposal_type == "create_application" %}
             <p class="text-success mb-0">{% trans "No possible duplicate was detected. You can create this application in step 5." %}</p>
+          {% elif review_context.is_draft_reminder %}
+            <p class="text-info mb-0">{% trans "No application will be created. This reminder only asks you to finish or discard the draft in the employer's portal." %}</p>
           {% elif proposal.analysis.event_type == "rejection" %}
             <p class="text-warning mb-0">{% trans "A rejection cannot create a new application because its date is not proof of when you applied. Link the original application, or ignore this suggestion." %}</p>
           {% else %}
@@ -133,7 +139,7 @@
     </div>
   </section>
 
-  {% if not proposal.application_id and not review_context.pending_create_proposal and proposal.proposal_type != "create_application" and proposal.analysis.event_type != "rejection" %}
+  {% if not proposal.application_id and not review_context.pending_create_proposal and proposal.proposal_type != "create_application" and proposal.analysis.event_type != "rejection" and not review_context.is_draft_reminder %}
     <section class="card proposal-section proposal-section--edit mb-3"><div class="card-body">
       {% if proposal.analysis.event_type == "documents_requested" %}
         <h2 class="proposal-step-title"><span class="proposal-step-number">4a</span> {% trans "Create and link an application" %}</h2>
@@ -157,7 +163,7 @@
   <section class="card proposal-section proposal-section--decision mb-3">
     <div class="card-body">
       <h2 class="proposal-step-title"><span class="proposal-step-number">5</span> {% if proposal.proposal_type == "create_application" %}{% trans "Create the application" %}{% else %}{% trans "Choose the outcome" %}{% endif %}</h2>
-      <p class="text-muted">{% if proposal.proposal_type == "create_application" %}{% trans "Accept creates this new application. Reject and Ignore leave it uncreated." %}{% else %}{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}{% endif %}</p>
+      <p class="text-muted">{% if proposal.proposal_type == "create_application" %}{% trans "Accept creates this new application. Reject and Ignore leave it uncreated." %}{% elif review_context.is_draft_reminder %}{% trans "Accept records this reminder only. It does not create or update an application." %}{% else %}{% trans "Accept applies only the verified change. Reject and Ignore leave the application unchanged." %}{% endif %}</p>
       <form method="post">
         {% csrf_token %}
         <label class="form-label" for="reviewNote">{% trans "Review note" %} <span class="text-muted">({% trans "optional" %})</span></label>

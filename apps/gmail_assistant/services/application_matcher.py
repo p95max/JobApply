@@ -49,6 +49,7 @@ _COMPANY_TEMPORAL_EVENT_TYPES = frozenset(
         "interview_rescheduled",
         "interview_cancelled",
         "application_confirmation_required",
+        "application_draft_reminder",
         "screening",
         "general_update",
     }

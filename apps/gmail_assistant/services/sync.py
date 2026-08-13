@@ -138,6 +138,18 @@ def _rule_data(rule: RuleClassification, *, fallback_reason: str = "") -> dict[s
     return data
 
 
+def _effective_event_type(*, rule_event_type: str, ai_event_type: str) -> str:
+    """Keep unsubmitted-draft reminders from becoming false application records.
+
+    The rule has explicit evidence that the user has *not* applied yet.  It is
+    therefore safer than an AI extraction that may focus only on the word
+    "application" and classify the email as a successful submission.
+    """
+    if rule_event_type == "application_draft_reminder":
+        return rule_event_type
+    return ai_event_type
+
+
 def _ai_data(result: Any, *, requires_manual_review: bool) -> dict[str, Any]:
     interview = None
     if result.interview:
@@ -470,7 +482,11 @@ def _sync_gmail_messages_for_user(
                         rule=rule,
                         classifier=AnalysisClassifier.AI,
                         extracted_data=extracted_data,
-                        event_type=("application_sent" if direction == GmailDirection.OUTBOUND else result.event_type),
+                        event_type=(
+                            "application_sent"
+                            if direction == GmailDirection.OUTBOUND
+                            else _effective_event_type(rule_event_type=rule.event_type, ai_event_type=result.event_type)
+                        ),
                         confidence=result.confidence,
                         is_job_related=(True if direction == GmailDirection.OUTBOUND else result.is_job_related),
                         model_name=config.model,

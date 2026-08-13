@@ -11,6 +11,7 @@ from apps.gmail_stats.models import GmailMessage
 
 class GmailEventType(models.TextChoices):
     APPLICATION_CONFIRMATION_REQUIRED = "application_confirmation_required", "Application confirmation required"
+    APPLICATION_DRAFT_REMINDER = "application_draft_reminder", "Application draft reminder"
     APPLICATION_SENT = "application_sent", "Application sent"
     APPLICATION_RECEIVED = "application_received", "Application received"
     GENERAL_UPDATE = "general_update", "General update"

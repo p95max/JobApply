@@ -20,6 +20,7 @@ _MAX_EVIDENCE_CHARS = 300
 _EVENT_TYPES = frozenset(
     {
         "application_confirmation_required",
+        "application_draft_reminder",
         "application_sent",
         "application_received",
         "general_update",
@@ -47,6 +48,7 @@ Only extract facts that are explicitly present.
 Do not open links, call tools, or infer missing dates, companies, roles, or outcomes.
 Classify an employer or ATS acknowledgement that says the application was received and will be reviewed as application_received, not general_update.
 Classify a platform confirmation that the applicant successfully sent/submitted an application as application_sent.
+Classify a reminder that an application was started or saved as a draft but not submitted as application_draft_reminder. Set action_required to true for this event; never classify it as application_sent.
 For company, extract the actual employer, never the delivery platform or ATS (for example Stepstone or Indeed). If the employer is not explicit, return null rather than guessing.
 Use general_update only for job-related information that is neither a submission/receipt confirmation nor another specific event type.
 Optional platform suggestions such as sending a short message to stand out are not required actions.

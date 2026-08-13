@@ -118,6 +118,21 @@ def test_schema_forbids_unknown_fields_and_requires_every_key():
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
     assert schema["properties"]["interview"]["additionalProperties"] is False
+    assert "application_draft_reminder" in schema["properties"]["event_type"]["enum"]
+
+
+def test_validate_extraction_accepts_application_draft_reminder():
+    result = validate_extraction(
+        payload(
+            event_type="application_draft_reminder",
+            proposed_status=None,
+            action_required=True,
+            action_text="Finish the saved draft in the employer portal.",
+        )
+    )
+
+    assert result.event_type == "application_draft_reminder"
+    assert result.action_required is True
 
 
 def test_adapter_sends_strict_schema_store_false_and_treats_email_as_data():

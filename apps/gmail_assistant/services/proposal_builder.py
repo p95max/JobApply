@@ -19,6 +19,7 @@ from apps.gmail_assistant.services.status_policy import proposed_status, should_
 
 _ACTION_EVENTS = {
     GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+    GmailEventType.APPLICATION_DRAFT_REMINDER,
     GmailEventType.DOCUMENTS_REQUESTED,
 }
 _CREATE_APPLICATION_EVENTS = {

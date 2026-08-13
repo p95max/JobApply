@@ -56,6 +56,7 @@ def _event_tone(event_type: str) -> str:
         return "warning"
     if event_type in {
         GmailEventType.APPLICATION_CONFIRMATION_REQUIRED,
+        GmailEventType.APPLICATION_DRAFT_REMINDER,
         GmailEventType.APPLICATION_SENT,
         GmailEventType.APPLICATION_RECEIVED,
     }:
@@ -244,7 +245,12 @@ def gmail_proposal_detail(request, pk: int):
         "can_accept": (
             proposal.application_id is not None
             or proposal.proposal_type == "create_application"
+            or (
+                proposal.proposal_type == ProposalType.ACTION_REQUIRED
+                and proposal.analysis.event_type == GmailEventType.APPLICATION_DRAFT_REMINDER
+            )
         ) and pending_create_proposal is None,
+        "is_draft_reminder": proposal.analysis.event_type == GmailEventType.APPLICATION_DRAFT_REMINDER,
     }
     return render(
         request,

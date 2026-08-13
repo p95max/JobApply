@@ -128,6 +128,40 @@ def test_unmatched_application_event_can_propose_new_application(proposal_contex
 
 
 @pytest.mark.django_db
+def test_application_draft_reminder_creates_only_an_action_without_an_application(proposal_context):
+    user, _, message = proposal_context
+    record = analysis(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_DRAFT_REMINDER,
+        extracted_data={
+            "company": "Siemens",
+            "position_title": "Software Developer",
+            "action_required": True,
+            "action_text": "Finish the draft application in the employer portal.",
+        },
+    )
+
+    result = build_proposals(
+        message=message,
+        analysis=record,
+        match=ApplicationMatch(suggested=None, ambiguous=()),
+    )
+
+    assert len(result) == 1
+    proposal = result[0]
+    assert proposal.proposal_type == ProposalType.ACTION_REQUIRED
+    assert proposal.application is None
+    assert "application" not in proposal.changes
+
+    accepted = apply_proposal(proposal=proposal, user=user)
+
+    assert accepted.application is None
+    proposal.refresh_from_db()
+    assert proposal.status == ProposalStatus.ACCEPTED
+
+
+@pytest.mark.django_db
 def test_job_board_name_is_not_used_as_a_new_application_company(proposal_context):
     user, _, message = proposal_context
 

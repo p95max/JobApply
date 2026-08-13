@@ -167,6 +167,11 @@ def _apply_application(proposal: ApplicationUpdateProposal, user: Any, overrides
 
     application = proposal.application
     if application is None:
+        if (
+            proposal.proposal_type == ProposalType.ACTION_REQUIRED
+            and proposal.analysis.event_type == "application_draft_reminder"
+        ):
+            return None
         if proposal.proposal_type in {ProposalType.UPDATE_APPLICATION, ProposalType.ACTION_REQUIRED}:
             raise ProposalApplyError("assign an application before accepting this proposal")
         return None
