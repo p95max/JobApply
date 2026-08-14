@@ -279,7 +279,7 @@
             {% blocktrans count counter=group.proposals|length %}{{ counter }} suggested change{% plural %}{{ counter }} suggested changes{% endblocktrans %}
           </div>
           {% for proposal in group.proposals %}
-            <a class="btn btn-sm btn-outline-light d-flex justify-content-between align-items-center gap-2 text-start" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">
+            <a class="btn btn-sm btn-outline-primary d-flex justify-content-between align-items-center gap-2 text-start" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">
               <span>{{ proposal.get_proposal_type_display }}</span>
               <span aria-hidden="true">›</span>
             </a>
