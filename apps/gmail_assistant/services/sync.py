@@ -24,7 +24,11 @@ from apps.gmail_assistant.services.application_matcher import match_for_message
 from apps.gmail_assistant.services.company_resolution import resolve_extracted_company
 from apps.gmail_assistant.services.classifier import RuleClassification, classify_event
 from apps.gmail_assistant.services.proposal_builder import build_proposals, rebuild_pending_proposals_for_user
-from apps.gmail_assistant.services.queries import build_candidate_query, build_sent_applications_query
+from apps.gmail_assistant.services.queries import (
+    build_candidate_query,
+    build_rejections_query,
+    build_sent_applications_query,
+)
 from apps.gmail_stats.models import GmailDirection, GmailMessage, GmailProcessingStatus, GmailSyncState
 from apps.gmail_stats.services.sync_control import acquire_gmail_sync_lock
 from apps.gmail_stats.services.direction import determine_direction
@@ -337,6 +341,16 @@ def _sync_gmail_messages_for_user(
 
     candidate_days = _candidate_days(user=user, requested_days=days)
     ids = set(gmail_client.list_message_ids(build_candidate_query(candidate_days), max_results=max_results_each))
+    # Transactional recruiter mail is occasionally categorised by Gmail as
+    # Promotions (for example, messages sent by ATS platforms). Keep the broad
+    # candidate search bounded, but add a narrow rejection search so those
+    # notices are not silently missed.
+    ids.update(
+        gmail_client.list_message_ids(
+            build_rejections_query(candidate_days),
+            max_results=max_results_each,
+        )
+    )
     if include_sent:
         # Sent import is a user-requested historical backfill. Unlike the
         # incremental inbox scan, it must honour the selected period exactly.

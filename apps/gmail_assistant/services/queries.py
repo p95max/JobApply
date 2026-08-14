@@ -34,16 +34,17 @@ def build_responses_query(days: int) -> str:
 
 
 def build_rejections_query(days: int) -> str:
+    """Find explicit rejections Gmail may have miscategorised as Promotions."""
     return (
         f"newer_than:{days}d "
         "("
-        "leider OR Absage OR \"nicht berücksichtigen\" OR \"haben uns entschieden\" "
+        "leider OR Absage OR bedauern OR \"nicht berücksichtigen\" OR \"haben uns entschieden\" "
         "OR unfortunately OR \"we regret\" OR \"other candidates\""
         ") "
         "("
         "bewerbung OR application OR Stelle OR position OR vacancy"
         ") "
-        "-category:promotions -category:social"
+        "-category:social -from:me"
     )
 
 
