@@ -18,6 +18,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: templates/gmail_assistant/assistant.html
+msgid "Syncing Gmail"
+msgstr "Gmail wird synchronisiert"
+
+#: templates/gmail_assistant/assistant.html
+msgid "Please wait while Gmail messages are checked. This may take a few minutes."
+msgstr "Bitte warten Sie, während Gmail-Nachrichten geprüft werden. Dies kann einige Minuten dauern."
+
+#: templates/gmail_assistant/assistant.html
+msgid "Gmail sync is still running. Close this dialog and continue in the background?"
+msgstr "Die Gmail-Synchronisierung läuft noch. Dialog schließen und im Hintergrund fortsetzen?"
+
 #: templates/accounts/dashboard.html
 msgid "No response for 14+ days"
 msgstr "Seit über 14 Tagen keine Antwort"

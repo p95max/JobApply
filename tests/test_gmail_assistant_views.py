@@ -262,6 +262,10 @@ def test_assistant_explains_initial_ai_analysis_delay(client, proposal):
     assert b'aiAnalysisSpinner' in response.content
     assert b'aiAnalysisSync' in response.content
     assert b'gmailSyncPeriodModal' in response.content
+    assert b'gmailSyncProgressModal' in response.content
+    assert b'data-bs-backdrop="static"' in response.content
+    assert b'closeGmailSyncProgress' in response.content
+    assert b'Gmail sync is still running' in response.content
     assert b"only when AI analysis is enabled" in response.content
     assert b"Previously synced messages are skipped" in response.content
     assert b'syncNewGmail' in response.content

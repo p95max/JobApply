@@ -28,6 +28,21 @@
   text-transform: uppercase;
 }
 
+.gmail-sync-in-progress .modal-backdrop.show {
+  backdrop-filter: blur(7px);
+  background-color: rgba(17, 24, 39, 0.48);
+  opacity: 1;
+}
+
+.gmail-sync-progress-modal {
+  border-color: rgba(var(--bs-primary-rgb), 0.45);
+}
+
+.gmail-sync-progress-modal .spinner-border {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
 .proposal-step-title {
   align-items: center;
   display: flex;

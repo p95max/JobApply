@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -17,7 +17,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 
 from .forms import JobApplicationForm
-from .models import JobApplication
+from .models import ApplicationStatus, JobApplication
 from .services.limits import ApplicationLimitError, ensure_application_capacity
 from apps.gmail_assistant.models import AnalysisClassifier, ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_stats.models import GmailMessage
@@ -46,6 +46,7 @@ def list_applications(request):
         status = (request.GET.get("status") or "").strip()
         ai_filter = (request.GET.get("ai") or "").strip()
         month = (request.GET.get("month") or "").strip()
+        follow_up = request.GET.get("follow_up") == "1"
         sort = (request.GET.get("sort") or "-applied_at").strip()
         print_mode = (request.GET.get("print") == "1")
         all_apps_total = qs.count()
@@ -66,6 +67,13 @@ def list_applications(request):
             qs = qs.filter(has_ai_processed_proposal=False)
         else:
             ai_filter = ""
+
+        if follow_up:
+            qs = qs.filter(
+                status=ApplicationStatus.APPLIED,
+                recruiter_reply_at__isnull=True,
+                applied_at__lt=timezone.now() - timedelta(days=14),
+            )
 
         if month:
             try:
@@ -130,6 +138,7 @@ def list_applications(request):
                 "status": status,
                 "ai_filter": ai_filter,
                 "month": month,
+                "follow_up": follow_up,
                 "sort": sort,
                 "per_page": per_page,
                 "base_qs": base_qs,
@@ -152,6 +161,7 @@ def list_applications(request):
                 "status": "",
                 "ai_filter": "",
                 "month": "",
+                "follow_up": False,
                 "sort": "-applied_at",
                 "per_page": PER_PAGE_DEFAULT,
                 "base_qs": "",

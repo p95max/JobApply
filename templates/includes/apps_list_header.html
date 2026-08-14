@@ -16,11 +16,11 @@
   </div>
 </div>
 
-<details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or ai_filter or month or sort != '-applied_at' %} open{% endif %}>
+<details class="applications-filters card border-0 shadow-sm glass-card mb-3 no-print"{% if q or status or ai_filter or month or follow_up or sort != '-applied_at' %} open{% endif %}>
   <summary class="applications-filters__summary">
     <span class="applications-filters__title"><span aria-hidden="true">🔎</span><span>{% trans "Filters" %}</span></span>
     <span class="applications-filters__meta">
-      {% if q or status or ai_filter or month or sort != '-applied_at' %}
+      {% if q or status or ai_filter or month or follow_up or sort != '-applied_at' %}
         <span class="applications-filters__active">{% trans "Active" %}</span>
       {% else %}
         <span class="text-body-secondary">{% trans "Search, status, AI, month and sort" %}</span>
@@ -57,6 +57,12 @@
       <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small text-body-secondary mb-1">{% trans "Month" %}</label>
         <input type="month" name="month" value="{{ month|default:'' }}" class="form-control" />
+      </div>
+      <div class="col-12 col-sm-6 col-lg-2 d-flex align-items-end">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="follow_up" value="1" id="followUpFilter"{% if follow_up %} checked{% endif %}>
+          <label class="form-check-label" for="followUpFilter">{% trans "No response for 14+ days" %}</label>
+        </div>
       </div>
       <div class="col-12 col-sm-6 col-lg-2">
         <label class="form-label small text-body-secondary mb-1">{% trans "Sort" %}</label>

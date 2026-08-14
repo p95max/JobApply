@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
 from django.utils import timezone
@@ -67,3 +69,37 @@ def test_application_list_filters_by_accepted_ai_processing(client, django_user_
     assert list(processed.context["items"]) == [ai_application]
     assert list(without_ai.context["items"]) == [manual_application]
     assert b'name="ai"' in processed.content
+
+
+@pytest.mark.django_db
+def test_application_list_filters_to_unanswered_applications_older_than_fourteen_days(client, django_user_model):
+    user = django_user_model.objects.create_user("applications-user", email="applications@example.com")
+    due = JobApplication.objects.create(
+        user=user,
+        company="Due GmbH",
+        title="Follow-up Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=15),
+    )
+    JobApplication.objects.create(
+        user=user,
+        company="Fresh GmbH",
+        title="Fresh Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=13),
+    )
+    JobApplication.objects.create(
+        user=user,
+        company="Answered GmbH",
+        title="Answered Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=20),
+        recruiter_reply_at=timezone.now(),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("applications:list"), {"follow_up": "1"})
+
+    assert list(response.context["items"]) == [due]
+    assert response.context["follow_up"] is True
+    assert b'name="follow_up"' in response.content
