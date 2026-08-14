@@ -536,6 +536,12 @@ def _sync_gmail_messages_for_user(
                         result,
                         requires_manual_review=requires_manual_review,
                     )
+                    # Indeed confirmation emails contain the actual employer in
+                    # their transactional body.  Keep that deterministic fact
+                    # when the AI correctly classifies the event but omits the
+                    # company (otherwise the safe create-proposal guard leaves
+                    # the submission invisible to the reviewer).
+                    extracted_data = _indeed_confirmation_data(base=extracted_data, parsed=parsed)
                     if is_manual_sent_application:
                         extracted_data = _sent_application_data(
                             extracted_data,

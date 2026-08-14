@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -235,6 +236,31 @@ def test_rule_only_pipeline_creates_indeed_submission_proposal(django_user_model
     assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
     assert proposal.changes["application"]["company"] == "conexon GmbH"
     assert proposal.changes["application"]["title"] == "Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)"
+
+
+@pytest.mark.django_db
+def test_ai_pipeline_recovers_indeed_company_when_the_model_omits_it(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    class NoCompanyAnalyzer(FakeAnalyzer):
+        def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
+            return replace(super().analyze(email, context), event_type="application_sent", company=None)
+
+    client = FakeGmailClient(
+        {
+            "indeed-confirmation": message(
+                sender="Indeed-Bewerben-Funktion <indeedapply@indeed.com>",
+                subject="Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
+                text="Die folgenden Dokumente wurden an conexon GmbH übermittelt. Viel Erfolg!",
+            )
+        }
+    )
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=NoCompanyAnalyzer())
+
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert proposal.changes["application"]["company"] == "conexon GmbH"
 
 
 @pytest.mark.django_db
