@@ -126,5 +126,4 @@ def test_application_list_keeps_chronological_numbers_when_sorted_newest_first(c
 
     items = list(response.context["items"])
     assert [item.pk for item in items] == [newest.pk, oldest.pk]
-    assert newest.display_number == 2
-    assert oldest.display_number == 1
+    assert [item.display_number for item in items] == [2, 1]
