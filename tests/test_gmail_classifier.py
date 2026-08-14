@@ -61,6 +61,15 @@ def test_classifier_phrase_groups_are_loaded_from_editable_json_file():
     assert "absage" in phrases["rejection"]
 
 
+def test_indeed_confirmation_is_classified_as_an_application_sent():
+    result = classify_event(
+        "Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
+        "Bewerbung gesendet. Die folgenden Dokumente wurden an conexon GmbH übermittelt. Viel Erfolg!",
+    )
+
+    assert result.event_type == GmailEventType.APPLICATION_SENT
+
+
 @pytest.mark.parametrize(
     "fixture",
     GMAIL_ASSISTANT_FIXTURES,
