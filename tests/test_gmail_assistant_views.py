@@ -171,6 +171,23 @@ def test_assistant_displays_a_count_for_each_proposal_status(client, proposal):
 
 
 @pytest.mark.django_db
+def test_accepted_history_uses_compact_rows_with_case_links(client, proposal):
+    proposal.status = ProposalStatus.ACCEPTED
+    proposal.save(update_fields=["status"])
+    client.force_login(proposal.user)
+
+    response = client.get(reverse("gmail_assistant:gmail_assistant"), {"status": "accepted"})
+
+    assert response.status_code == 200
+    assert b"gmail-history-list" in response.content
+    assert b"gmail-history-item" in response.content
+    assert b"css/gmail_assistant.css" in response.content
+    assert proposal.message.subject.encode() in response.content
+    assert reverse("applications:detail", args=[proposal.application_id]).encode() in response.content
+    assert b'id="pendingCards"' not in response.content
+
+
+@pytest.mark.django_db
 def test_assistant_filters_cards_by_selected_status(client, proposal):
     proposal.status = ProposalStatus.ACCEPTED
     proposal.save(update_fields=["status"])

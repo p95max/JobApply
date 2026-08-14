@@ -1,7 +1,11 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
 
 {% block title %}{% trans "Gmail Assistant" %} · JobApply{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'css/gmail_assistant.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -207,6 +211,29 @@
     </section>
   {% endif %}
 
+  {% if selected_status == 'accepted' %}
+    <div class="gmail-history-list" aria-label="{% trans 'Action history' %}">
+      {% for group in proposal_groups %}
+        {% for proposal in group.proposals %}
+          <article class="gmail-history-item">
+            <div class="gmail-history-item__main">
+              <a class="gmail-history-item__subject" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{{ group.message.subject|default:"—" }}</a>
+              <div class="gmail-history-item__meta">{{ group.message.received_at|date:"d.m.Y H:i" }} · {{ proposal.get_proposal_type_display }}</div>
+            </div>
+            <div class="gmail-history-item__links">
+              {% if proposal.application_id %}
+                <a class="gmail-history-item__case" href="{% url 'applications:detail' proposal.application_id %}">{{ proposal.application.company }} — {{ proposal.application.title }}</a>
+              {% else %}
+                <a class="gmail-history-item__review" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{{ proposal.get_proposal_type_display }} ›</a>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      {% empty %}
+        <p class="text-muted mb-0">{% trans "No proposals in this state." %}</p>
+      {% endfor %}
+    </div>
+  {% else %}
   <div id="pendingCards" data-pending-proposal-count="{{ pending_count }}">
   {% for group in proposal_groups %}
     <section class="card mb-3 js-pending-card {% if group.analysis.event_type == 'rejection' %}border-danger{% elif group.analysis.event_type in technical_event_types %}border-primary bg-primary-subtle{% elif group.analysis.event_type in interview_event_types %}border-success bg-success-subtle{% elif group.analysis.event_type == 'offer' %}border-warning bg-warning-subtle{% endif %}"
@@ -257,6 +284,7 @@
   </div>
   {% if selected_status == 'pending' and proposal_groups %}
     <p class="text-muted d-none" id="pendingFilterEmpty">{% trans "No pending suggestions match these filters." %}</p>
+  {% endif %}
   {% endif %}
 
   {% include "includes/_pagination.html" with pagination_kind='assistant' %}
