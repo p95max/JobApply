@@ -126,9 +126,9 @@
 
 .gmail-history-item {
   align-items: center;
-  display: flex;
+  display: grid;
   gap: 1rem;
-  justify-content: space-between;
+  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(13rem, 42%);
   padding: 0.7rem 0.9rem;
 }
 
@@ -184,7 +184,6 @@
 }
 
 .gmail-history-item__links {
-  flex: 0 1 42%;
   min-width: 0;
   text-align: right;
 }
@@ -192,7 +191,9 @@
 .gmail-history-item__case,
 .gmail-history-item__review {
   color: var(--bs-primary);
+  display: inline-block;
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 
@@ -204,11 +205,12 @@
 @media (max-width: 575.98px) {
   .gmail-history-item {
     align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
     gap: 0.35rem;
   }
 
   .gmail-history-item__links {
+    grid-column: 2;
     text-align: left;
   }
 }
