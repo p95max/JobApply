@@ -74,6 +74,27 @@ def test_parser_prefers_plain_text_in_multipart_alternative():
     assert parsed.text == "Plain text version"
 
 
+def test_parser_keeps_sanitized_html_text_for_platform_fact_extraction():
+    parsed = parse_gmail_message(
+        message(
+            {
+                "headers": headers(),
+                "mimeType": "multipart/alternative",
+                "parts": [
+                    text_part("text/plain", "Ihre Bewerbung wurde weitergeleitet. Viel Erfolg!"),
+                    text_part(
+                        "text/html",
+                        "<p>Die folgenden Dokumente wurden an <a href=\"https://example.test\">conexon GmbH</a> übermittelt.</p>",
+                    ),
+                ],
+            }
+        )
+    )
+
+    assert parsed.text == "Ihre Bewerbung wurde weitergeleitet. Viel Erfolg!"
+    assert "conexon GmbH" in parsed.html_text
+
+
 def test_parser_handles_nested_parts_and_ignores_attachments():
     parsed = parse_gmail_message(
         message(

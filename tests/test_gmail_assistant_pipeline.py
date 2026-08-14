@@ -35,20 +35,38 @@ def _body(value: str) -> str:
     return base64.urlsafe_b64encode(value.encode()).decode().rstrip("=")
 
 
-def message(*, sender: str, subject: str, text: str, recipient: str = "user@example.com") -> dict:
+def message(
+    *,
+    sender: str,
+    subject: str,
+    text: str,
+    recipient: str = "user@example.com",
+    html_text: str | None = None,
+) -> dict:
+    payload = {
+        "headers": [
+            {"name": "Subject", "value": subject},
+            {"name": "From", "value": sender},
+            {"name": "To", "value": recipient},
+        ],
+    }
+    if html_text is None:
+        payload.update({"mimeType": "text/plain", "body": {"data": _body(text)}})
+    else:
+        payload.update(
+            {
+                "mimeType": "multipart/alternative",
+                "parts": [
+                    {"mimeType": "text/plain", "body": {"data": _body(text)}},
+                    {"mimeType": "text/html", "body": {"data": _body(html_text)}},
+                ],
+            }
+        )
     return {
         "threadId": "thread-1",
         "internalDate": str(int(datetime.now(timezone.utc).timestamp() * 1000)),
         "snippet": text[:100],
-        "payload": {
-            "mimeType": "text/plain",
-            "headers": [
-                {"name": "Subject", "value": subject},
-                {"name": "From", "value": sender},
-                {"name": "To", "value": recipient},
-            ],
-            "body": {"data": _body(text)},
-        },
+        "payload": payload,
     }
 
 
@@ -252,7 +270,8 @@ def test_ai_pipeline_recovers_indeed_company_when_the_model_omits_it(django_user
             "indeed-confirmation": message(
                 sender="Indeed-Bewerben-Funktion <indeedapply@indeed.com>",
                 subject="Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
-                text="Die folgenden Dokumente wurden an conexon GmbH übermittelt. Viel Erfolg!",
+                text="Ihre Bewerbung wurde weitergeleitet. Viel Erfolg!",
+                html_text="<p>Die folgenden Dokumente wurden an conexon GmbH übermittelt.</p>",
             )
         }
     )
@@ -277,7 +296,8 @@ def test_reanalysis_enriches_a_preserved_indeed_ai_result(django_user_model):
             "indeed-confirmation": message(
                 sender="Indeed-Bewerben-Funktion <indeedapply@indeed.com>",
                 subject="Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
-                text="Die folgenden Dokumente wurden an conexon GmbH übermittelt. Viel Erfolg!",
+                text="Ihre Bewerbung wurde weitergeleitet. Viel Erfolg!",
+                html_text="<p>Die folgenden Dokumente wurden an conexon GmbH übermittelt.</p>",
             )
         }
     )

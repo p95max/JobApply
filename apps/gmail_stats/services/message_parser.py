@@ -52,6 +52,7 @@ class ParsedGmailMessage:
     rfc_message_id: str
     text: str
     content_hash: str
+    html_text: str = ""
 
 
 def _header_value(headers: list[dict[str, Any]], name: str) -> str:
@@ -153,8 +154,12 @@ def parse_gmail_message(raw_message: dict[str, Any], max_chars: int = 12000) -> 
     )
     plain_parts, html_parts = _text_parts(payload)
     raw_text = "\n\n".join(part for part in plain_parts if part)
+    html_text = _normalize_text(
+        "\n\n".join(_html_to_text(part) for part in html_parts if part),
+        max_chars,
+    )
     if not raw_text:
-        raw_text = "\n\n".join(_html_to_text(part) for part in html_parts if part)
+        raw_text = html_text
     text = _normalize_text(raw_text, max_chars)
 
     return ParsedGmailMessage(
@@ -165,4 +170,5 @@ def parse_gmail_message(raw_message: dict[str, Any], max_chars: int = 12000) -> 
         rfc_message_id=_header_value(headers, "Message-ID")[:998],
         text=text,
         content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        html_text=html_text,
     )

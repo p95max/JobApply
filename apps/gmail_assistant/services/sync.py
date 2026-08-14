@@ -167,7 +167,9 @@ def _indeed_confirmation_data(*, base: dict[str, Any], parsed: ParsedGmailMessag
     if parsed.from_email.casefold() != "indeedapply@indeed.com":
         return base
     title_match = _INDEED_CONFIRMATION_SUBJECT_RE.match(parsed.subject)
-    company_match = _INDEED_COMPANY_RE.search(parsed.text)
+    # Indeed's plain-text alternative frequently omits the employer while its
+    # safe HTML text contains it as the job-card link label.
+    company_match = _INDEED_COMPANY_RE.search(f"{parsed.text}\n{parsed.html_text}")
     if not title_match or not company_match:
         return base
 
