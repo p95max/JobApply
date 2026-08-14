@@ -107,12 +107,32 @@ def build_proposals(*, message: Any, analysis: Any, match: Any) -> list[Applicat
             platform_duplicate = _pending_platform_duplicate(message=message, extracted=extracted)
             if platform_duplicate is not None:
                 _record_related_message(proposal=platform_duplicate, message=message)
+            elif _requires_manual_receipt_link(event_type=analysis.event_type, extracted=extracted):
+                proposals.append(
+                    _create_pending(
+                        message=message,
+                        analysis=analysis,
+                        application=None,
+                        proposal_type=ProposalType.ACTION_REQUIRED,
+                        match_score=0,
+                        match_method="unmatched",
+                        changes={
+                            "action": {
+                                "required": True,
+                                "text": "Link this application confirmation to the matching application.",
+                                "deadline_at": None,
+                            }
+                        },
+                    )
+                )
             ApplicationUpdateProposal.objects.filter(
                 message=message,
                 analysis=analysis,
                 proposal_type=ProposalType.CREATE_APPLICATION,
                 status=ProposalStatus.PENDING,
             ).delete()
+            if proposals:
+                return _pending_results(proposals)
         else:
             changes = _create_application_changes(message, extracted)
             duplicate = _pending_create_duplicate(message=message, changes=changes)
@@ -416,6 +436,16 @@ def _create_pending(**kwargs: Any) -> ApplicationUpdateProposal:
 def _can_create_application(extracted: dict[str, Any]) -> bool:
     company = _string_or_none(extracted.get("company"))
     return bool(company and _string_or_none(extracted.get("position_title")) and not _is_job_platform(company))
+
+
+def _requires_manual_receipt_link(*, event_type: str, extracted: dict[str, Any]) -> bool:
+    """Keep a title-less acknowledgement reviewable without inventing an application."""
+    return bool(
+        event_type == GmailEventType.APPLICATION_RECEIVED
+        and _string_or_none(extracted.get("company"))
+        and not _string_or_none(extracted.get("position_title"))
+        and not _is_job_platform(str(extracted["company"]))
+    )
 
 
 def _is_job_platform(company: str) -> bool:

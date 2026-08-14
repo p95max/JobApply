@@ -27,7 +27,7 @@ from apps.gmail_assistant.services.ai_analyzer import (
     AIExtraction,
     InterviewExtraction,
 )
-from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.services.sync import _effective_event_type, sync_gmail_messages_for_user
 from apps.gmail_stats.models import GmailMessage, GmailProcessingStatus, GmailSyncState
 
 
@@ -130,6 +130,13 @@ class MissingKeyAnalyzer(FakeAnalyzer):
 
     def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
         raise AssertionError("AI must not run without an API key")
+
+
+def test_ai_cannot_turn_a_receipt_into_a_rejection():
+    assert _effective_event_type(
+        rule_event_type=GmailEventType.APPLICATION_RECEIVED,
+        ai_event_type=GmailEventType.REJECTION,
+    ) == GmailEventType.APPLICATION_RECEIVED
 
 
 @pytest.mark.django_db
@@ -316,6 +323,39 @@ def test_reanalysis_enriches_a_preserved_indeed_ai_result(django_user_model):
 
     proposal = ApplicationUpdateProposal.objects.get(user=user)
     assert proposal.changes["application"]["company"] == "conexon GmbH"
+
+
+@pytest.mark.django_db
+def test_titleless_receipt_creates_a_manual_link_proposal(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    class TitlelessReceiptAnalyzer(FakeAnalyzer):
+        def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
+            return replace(
+                super().analyze(email, context),
+                event_type="application_received",
+                company="manaTec",
+                position_title=None,
+                action_required=False,
+            )
+
+    client = FakeGmailClient(
+        {
+            "manatec-receipt": message(
+                sender="manaTec Support <crm@manatec.de>",
+                subject="Deine Bewerbung bei manaTec",
+                text="Vielen Dank für die Zusendung deiner Bewerbung. Wir prüfen deine Unterlagen.",
+            )
+        }
+    )
+
+    sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=TitlelessReceiptAnalyzer())
+
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert proposal.proposal_type == ProposalType.ACTION_REQUIRED
+    assert proposal.status == ProposalStatus.PENDING
+    assert proposal.application is None
 
 
 @pytest.mark.django_db

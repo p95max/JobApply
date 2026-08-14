@@ -199,14 +199,29 @@ def _enrich_known_platform_facts(*, analysis: GmailAnalysis, parsed: ParsedGmail
     return analysis
 
 
+def _apply_rule_event_guard(*, analysis: GmailAnalysis, rule: RuleClassification) -> GmailAnalysis:
+    """Correct a preserved AI result with deterministic receipt/draft evidence."""
+    event_type = _effective_event_type(rule_event_type=rule.event_type, ai_event_type=analysis.event_type)
+    if event_type != analysis.event_type:
+        analysis.event_type = event_type
+        analysis.save(update_fields=["event_type", "updated_at"])
+    return analysis
+
+
 def _effective_event_type(*, rule_event_type: str, ai_event_type: str) -> str:
-    """Keep unsubmitted-draft reminders from becoming false application records.
+    """Keep deterministic safety facts from becoming false application events.
 
     The rule has explicit evidence that the user has *not* applied yet.  It is
     therefore safer than an AI extraction that may focus only on the word
     "application" and classify the email as a successful submission.
     """
     if rule_event_type == "application_draft_reminder":
+        return rule_event_type
+    # A receipt that explicitly says the employer will review the application
+    # must never become a rejection solely because of an AI misclassification.
+    # Genuine rejection mail is already caught by the deterministic rejection
+    # rules before it reaches this guard.
+    if rule_event_type in {"application_sent", "application_received"} and ai_event_type == "rejection":
         return rule_event_type
     return ai_event_type
 
@@ -666,6 +681,7 @@ def _sync_gmail_messages_for_user(
                     counters["analyses_preserved"] += 1
 
             analysis = _enrich_known_platform_facts(analysis=analysis, parsed=parsed)
+            analysis = _apply_rule_event_guard(analysis=analysis, rule=rule)
             match = match_for_message(
                 user=user,
                 message=message,
