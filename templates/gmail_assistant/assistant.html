@@ -218,7 +218,16 @@
           <article class="gmail-history-item">
             <div class="gmail-history-item__main">
               <a class="gmail-history-item__subject" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{{ group.message.subject|default:"—" }}</a>
-              <div class="gmail-history-item__meta">{{ group.message.received_at|date:"d.m.Y H:i" }} · {{ proposal.get_proposal_type_display }}</div>
+              <div class="gmail-history-item__meta">
+                {% if proposal.proposal_type == 'create_application' %}✨
+                {% elif proposal.proposal_type == 'update_application' %}📝
+                {% elif proposal.proposal_type == 'create_interview' %}📅
+                {% elif proposal.proposal_type == 'update_interview' %}🔄
+                {% elif proposal.proposal_type == 'action_required' %}⚠️
+                {% else %}✓
+                {% endif %}
+                {{ proposal.get_proposal_type_display }} · {{ group.message.received_at|date:"d.m.Y H:i" }}
+              </div>
             </div>
             <div class="gmail-history-item__links">
               {% if proposal.application_id %}

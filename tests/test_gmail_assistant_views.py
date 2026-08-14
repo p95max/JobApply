@@ -182,6 +182,7 @@ def test_accepted_history_uses_compact_rows_with_case_links(client, proposal):
     assert b"gmail-history-list" in response.content
     assert b"gmail-history-item" in response.content
     assert b"css/gmail_assistant.css" in response.content
+    assert "📝".encode() in response.content
     assert proposal.message.subject.encode() in response.content
     assert reverse("applications:detail", args=[proposal.application_id]).encode() in response.content
     assert b'id="pendingCards"' not in response.content
