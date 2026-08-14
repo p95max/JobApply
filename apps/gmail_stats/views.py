@@ -83,16 +83,20 @@ def gmail_sync_api(request):
     if reanalyze_today_only and not reanalyze_existing:
         return JsonResponse({"error": "today_only requires reanalyze=1"}, status=400)
 
-    try:
-        claim_manual_sync_slot(user=request.user)
-    except GmailSyncCooldownError as error:
-        return JsonResponse(
-            {
-                "error": "Gmail sync was requested recently. Please wait before trying again.",
-                "retry_after_seconds": error.retry_after_seconds,
-            },
-            status=429,
-        )
+    # The configured development owner may deliberately rerun a sync while
+    # investigating an email. The per-user execution lock below still prevents
+    # overlapping Google/API work; only the manual-button cooldown is bypassed.
+    if not has_dev_tools_access(user=request.user):
+        try:
+            claim_manual_sync_slot(user=request.user)
+        except GmailSyncCooldownError as error:
+            return JsonResponse(
+                {
+                    "error": "Gmail sync was requested recently. Please wait before trying again.",
+                    "retry_after_seconds": error.retry_after_seconds,
+                },
+                status=429,
+            )
 
     try:
         credentials = get_google_credentials_for_user(request.user)
