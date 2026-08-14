@@ -18,6 +18,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: templates/accounts/dashboard.html
+msgid "No response for 14+ days"
+msgstr "Seit über 14 Tagen keine Antwort"
+
+#: templates/accounts/dashboard.html
+msgid "Applications worth following up on"
+msgstr "Bewerbungen, bei denen sich eine Nachfrage lohnt"
+
 #: templates/includes/apps_list_header.html:22
 msgid "Search, status, AI, month and sort"
 msgstr "Suche, Status, KI, Monat und Sortierung"

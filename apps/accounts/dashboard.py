@@ -27,6 +27,11 @@ def dashboard(request):
     active_applications = applications.exclude(
         status__in=(ApplicationStatus.REJECTED, ApplicationStatus.ARCHIVED)
     )
+    follow_up_due_applications = applications.filter(
+        status=ApplicationStatus.APPLIED,
+        recruiter_reply_at__isnull=True,
+        applied_at__lt=now - timedelta(days=14),
+    )
     upcoming_interviews = (
         InterviewEvent.objects.filter(
             user=request.user,
@@ -70,7 +75,7 @@ def dashboard(request):
             "applications_this_week": applications.filter(
                 created_at__gte=now - timedelta(days=7)
             ).count(),
-            "upcoming_interview_count": upcoming_interviews.count(),
+            "follow_up_due_count": follow_up_due_applications.count(),
             "next_interview": upcoming_interviews.first(),
             "recent_applications": applications.order_by("-updated_at")[:5],
             "pending_proposal_count": pending_proposals.count(),

@@ -27,15 +27,9 @@
         <small>+{{ applications_this_week }} {% trans "this week" %}</small>
       </article>
       <article class="dashboard-card dashboard-metric">
-        <span>{% trans "Upcoming interviews" %}</span>
-        <strong>{{ upcoming_interview_count }}</strong>
-        <small>
-          {% if next_interview %}
-            {% trans "Next" %}: {{ next_interview.starts_at|date:"d.m.Y H:i" }}
-          {% else %}
-            {% trans "Nothing scheduled" %}
-          {% endif %}
-        </small>
+        <span>{% trans "No response for 14+ days" %}</span>
+        <strong>{{ follow_up_due_count }}</strong>
+        <small>{% trans "Applications worth following up on" %}</small>
       </article>
       <article class="dashboard-card dashboard-metric">
         {% if is_demo_user %}

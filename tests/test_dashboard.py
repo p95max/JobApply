@@ -77,7 +77,7 @@ def test_dashboard_shows_user_metrics_only(client):
     assert f'href="/applications/{application.pk}/"' in content
     assert "js-dashboard-application-row" in content
     assert response.context["active_application_count"] == 1
-    assert response.context["upcoming_interview_count"] == 1
+    assert response.context["follow_up_due_count"] == 0
     assert "Telegram bot" in content
     assert "Gmail" in content
     assert "Drive backups" in content
@@ -85,6 +85,39 @@ def test_dashboard_shows_user_metrics_only(client):
     assert response.context["telegram_connected"] is False
     assert response.context["gmail_connected"] is False
     assert response.context["drive_connected"] is False
+
+
+@pytest.mark.django_db
+def test_dashboard_counts_only_unanswered_applications_older_than_fourteen_days(client):
+    user = get_user_model().objects.create_user(username="follow-up-dashboard-user")
+    JobApplication.objects.create(
+        user=user,
+        company="Due GmbH",
+        title="Python Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=15),
+    )
+    JobApplication.objects.create(
+        user=user,
+        company="Fresh GmbH",
+        title="Fresh Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=13),
+    )
+    JobApplication.objects.create(
+        user=user,
+        company="Answered GmbH",
+        title="Answered Developer",
+        status=ApplicationStatus.APPLIED,
+        applied_at=timezone.now() - timedelta(days=20),
+        recruiter_reply_at=timezone.now(),
+    )
+
+    client.force_login(user)
+    response = client.get(reverse("dashboard"))
+
+    assert response.context["follow_up_due_count"] == 1
+    assert b"No response for 14+ days" in response.content
 
 
 @pytest.mark.django_db
