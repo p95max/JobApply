@@ -215,6 +215,48 @@ def test_manual_sent_import_recognizes_compound_initiativbewerbung_subject(djang
 
 
 @pytest.mark.django_db
+def test_manual_sent_import_recognizes_a_direct_application_without_subject(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+
+    class SentQueryClient(FakeGmailClient):
+        def list_message_ids(self, query: str, max_results: int = 500) -> list[str]:
+            return list(self.messages)
+
+    client = SentQueryClient(
+        {
+            "sellium-application": message(
+                sender="user@example.com",
+                recipient="people@sellium.ai",
+                subject="",
+                text=(
+                    "Sehr geehrte Damen und Herren,\n\n"
+                    "mit großem Interesse bewerbe ich mich als (Junior) KI-Entwickler bei Sellium.\n"
+                    "Meinen Lebenslauf sende ich Ihnen im Anhang."
+                ),
+            )
+        }
+    )
+    # The old Sent filter stored this exact shape as ignored.  A later manual
+    # Sent sync must revisit it once recognition rules improve.
+    GmailMessage.objects.create(
+        user=user,
+        message_id="sellium-application",
+        thread_id="thread-1",
+        direction="outbound",
+        received_at=datetime.now(timezone.utc),
+        processing_status=GmailProcessingStatus.IGNORED,
+    )
+
+    result = sync_gmail_messages_for_user(user=user, gmail_client=client, include_sent=True)
+
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert result["outbound_imported"] == 1
+    assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
+    assert proposal.changes["application"]["company"] == "Sellium"
+    assert proposal.changes["application"]["title"] == "(Junior) KI-Entwickler"
+
+
+@pytest.mark.django_db
 def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     client = FakeGmailClient(

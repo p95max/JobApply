@@ -41,6 +41,11 @@ _DIRECT_APPLICATION_SUBJECT_RE = re.compile(
     r"^\s*(?:(?:(?:initiativ|erneute)\s*)?bewerbung|application)(?:\s+(?:als|for))?\s+(?P<title>.+?)\s*$",
     re.IGNORECASE,
 )
+_DIRECT_APPLICATION_BODY_RE = re.compile(
+    r"\b(?:hiermit\s+)?(?:bewerbe\s+ich\s+mich|möchte\s+ich\s+mich\s+bewerben)\s+"
+    r"(?:als|auf\s+(?:die\s+)?(?:stelle|position)\s+(?:als|für))\s+(?P<title>[^.\n]+)",
+    re.IGNORECASE,
+)
 _INDEED_CONFIRMATION_SUBJECT_RE = re.compile(r"^\s*bewerbung\s+über\s+indeed:\s*(?P<title>.+?)\s*$", re.IGNORECASE)
 _INDEED_COMPANY_RE = re.compile(
     r"(?:die\s+folgenden\s+(?:unterlagen|dokumente)|documents?)\s+(?:wurden\s+)?an\s+(?P<company>.+?)\s+(?:übermittelt|sent)",
@@ -310,8 +315,6 @@ def _preserved_ai_analysis(*, user: Any, message: GmailMessage, reanalyze_existi
 
 def _outbound_application_rule(rule: RuleClassification) -> RuleClassification:
     """Relevant messages from Sent represent an application sent by the user."""
-    if not rule.is_job_related:
-        return rule
     return RuleClassification(
         event_type="application_sent",
         detected_type=rule.detected_type,
@@ -323,9 +326,13 @@ def _outbound_application_rule(rule: RuleClassification) -> RuleClassification:
 
 def _is_direct_sent_application(*, subject: str, text: str, rule: RuleClassification) -> bool:
     """Exclude replies and follow-ups from the explicit Sent import."""
-    if not rule.is_job_related or _REPLY_SUBJECT_RE.match(subject or ""):
+    if _REPLY_SUBJECT_RE.match(subject or ""):
         return False
-    return bool(_DIRECT_APPLICATION_SUBJECT_RE.match(subject or "")) or "hiermit bewerbe ich mich" in (text or "").casefold()
+    return bool(
+        _DIRECT_APPLICATION_SUBJECT_RE.match(subject or "")
+        or _DIRECT_APPLICATION_BODY_RE.search(text or "")
+        or (rule.is_job_related and "hiermit bewerbe ich mich" in (text or "").casefold())
+    )
 
 
 def _company_from_recipient_domain(recipients: list[str]) -> tuple[str, str] | None:
@@ -346,13 +353,20 @@ def _company_from_recipient_domain(recipients: list[str]) -> tuple[str, str] | N
     return None
 
 
-def _sent_application_data(base: dict[str, Any], *, subject: str, recipients: list[str]) -> dict[str, Any]:
+def _sent_application_data(
+    base: dict[str, Any], *, subject: str, text: str, recipients: list[str]
+) -> dict[str, Any]:
     """Add review-only direct-email hints when the email omits employer metadata."""
     data = dict(base)
     data["sent_kind"] = "direct_application"
     title_match = _DIRECT_APPLICATION_SUBJECT_RE.match(subject or "")
     if not data.get("position_title") and title_match:
         data["position_title"] = title_match.group("title").strip()
+    body_match = _DIRECT_APPLICATION_BODY_RE.search(text or "")
+    if not data.get("position_title") and body_match:
+        title = re.sub(r"\s+bei\s+.+$", "", body_match.group("title"), flags=re.IGNORECASE).strip(" .,-")
+        if title:
+            data["position_title"] = title
     if not data.get("company"):
         company = _company_from_recipient_domain(recipients)
         if company:
@@ -486,7 +500,10 @@ def _sync_gmail_messages_for_user(
                     user=user,
                     direction=GmailDirection.OUTBOUND,
                     received_at__gte=datetime.now(timezone.utc) - timedelta(days=days),
-                    processing_status=GmailProcessingStatus.ANALYZED,
+                    processing_status__in=(
+                        GmailProcessingStatus.ANALYZED,
+                        GmailProcessingStatus.IGNORED,
+                    ),
                 ).values_list("message_id", flat=True)
             )
     for message_id in message_ids:
@@ -572,6 +589,7 @@ def _sync_gmail_messages_for_user(
                         extracted_data = _sent_application_data(
                             extracted_data,
                             subject=parsed.subject,
+                            text=parsed.text,
                             recipients=parsed.to_emails,
                         )
                     analysis = _record_analysis(
@@ -625,6 +643,7 @@ def _sync_gmail_messages_for_user(
                                         reason=type(error).__name__,
                                     ),
                                     subject=parsed.subject,
+                                    text=parsed.text,
                                     recipients=parsed.to_emails,
                                 )
                                 if is_manual_sent_application
@@ -668,6 +687,7 @@ def _sync_gmail_messages_for_user(
                             _sent_application_data(
                                 _fallback_data(rule=rule, parsed=parsed, reason=reason),
                                 subject=parsed.subject,
+                                text=parsed.text,
                                 recipients=parsed.to_emails,
                             )
                             if is_manual_sent_application
