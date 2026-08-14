@@ -4,7 +4,7 @@
 {% block title %}{% trans "Gmail Assistant" %} · JobApply{% endblock %}
 
 {% block page_css %}
-  <link rel="stylesheet" href="{% static 'css/gmail_assistant.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/gmail_assistant.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -212,6 +212,7 @@
       {% for group in proposal_groups %}
         {% for proposal in group.proposals %}
           <article class="gmail-history-item">
+            {% include "includes/gmail_event_icon.html" with event_type=group.analysis.event_type sent_kind=group.analysis.extracted_data.sent_kind %}
             <div class="gmail-history-item__main">
               <a class="gmail-history-item__subject" href="{% url 'gmail_assistant:gmail_proposal_detail' proposal.pk %}">{{ group.message.subject|default:"—" }}</a>
               <div class="gmail-history-item__meta">
@@ -250,13 +251,16 @@
       data-proposal-types="{% for proposal in group.proposals %}{{ proposal.proposal_type }} {% endfor %}">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start gap-3">
-          <div class="min-w-0">
-            <div class="fw-semibold">{{ group.message.subject|default:"—" }}</div>
-            <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
-            <div class="small mt-1 text-muted">
-              {% trans "Analysis" %}:
-              <strong>{% if group.analysis.classifier == "ai" %}🤖 AI{% elif group.analysis.classifier == "rule_ai" %}🤖 AI + ⚙️ {% trans "Rules" %}{% else %}⚙️ {% trans "Rules" %}{% endif %}</strong>
-              · {% trans "Confidence" %}: <strong>{{ group.analysis.confidence }}%</strong>
+          <div class="d-flex align-items-start gap-3 min-w-0">
+            {% include "includes/gmail_event_icon.html" with event_type=group.analysis.event_type sent_kind=group.analysis.extracted_data.sent_kind %}
+            <div class="min-w-0">
+              <div class="fw-semibold">{{ group.message.subject|default:"—" }}</div>
+              <div class="small text-muted">{{ group.message.from_email }} · {{ group.message.received_at|date:"d.m.Y H:i" }}</div>
+              <div class="small mt-1 text-muted">
+                {% trans "Analysis" %}:
+                <strong>{% if group.analysis.classifier == "ai" %}🤖 AI{% elif group.analysis.classifier == "rule_ai" %}🤖 AI + ⚙️ {% trans "Rules" %}{% else %}⚙️ {% trans "Rules" %}{% endif %}</strong>
+                · {% trans "Confidence" %}: <strong>{{ group.analysis.confidence }}%</strong>
+              </div>
             </div>
           </div>
           <span class="badge flex-shrink-0 {% if group.analysis.event_type == 'rejection' %}bg-danger{% elif group.analysis.event_type in technical_event_types %}bg-primary{% elif group.analysis.event_type in interview_event_types %}bg-success{% elif group.analysis.event_type == 'offer' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">

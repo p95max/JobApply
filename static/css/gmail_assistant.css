@@ -140,6 +140,28 @@
   min-width: 0;
 }
 
+.gmail-event-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--bs-secondary) 14%, var(--bs-body-bg));
+  border-radius: 0.75rem;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+  height: 2.5rem;
+  justify-content: center;
+  line-height: 1;
+  width: 2.5rem;
+}
+
+.gmail-event-icon--rejection { background: color-mix(in srgb, var(--bs-danger) 16%, var(--bs-body-bg)); }
+.gmail-event-icon--documents_requested { background: color-mix(in srgb, var(--bs-warning) 18%, var(--bs-body-bg)); }
+.gmail-event-icon--interview_invitation,
+.gmail-event-icon--interview_rescheduled { background: color-mix(in srgb, var(--bs-success) 16%, var(--bs-body-bg)); }
+.gmail-event-icon--offer { background: color-mix(in srgb, var(--bs-warning) 22%, var(--bs-body-bg)); }
+.gmail-event-icon--application_sent,
+.gmail-event-icon--application_received,
+.gmail-event-icon--application_confirmation_required { background: color-mix(in srgb, var(--bs-primary) 15%, var(--bs-body-bg)); }
+
 .gmail-history-item__subject {
   color: var(--bs-emphasis-color);
   display: block;

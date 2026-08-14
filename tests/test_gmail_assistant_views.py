@@ -181,6 +181,7 @@ def test_accepted_history_uses_compact_rows_with_case_links(client, proposal):
     assert response.status_code == 200
     assert b"gmail-history-list" in response.content
     assert b"gmail-history-item" in response.content
+    assert b"gmail-event-icon--general_update" in response.content
     assert b"css/gmail_assistant.css" in response.content
     assert "📝".encode() in response.content
     assert proposal.message.subject.encode() in response.content

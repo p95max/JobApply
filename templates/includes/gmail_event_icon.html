@@ -1,0 +1,13 @@
+<span class="gmail-event-icon gmail-event-icon--{{ event_type }}" aria-hidden="true">
+  {% if sent_kind == 'direct_application' or event_type == 'application_sent' %}📤
+  {% elif event_type == 'rejection' %}❌
+  {% elif event_type == 'documents_requested' %}📄
+  {% elif event_type == 'interview_invitation' or event_type == 'interview_rescheduled' %}📅
+  {% elif event_type == 'interview_cancelled' %}🚫
+  {% elif event_type == 'offer' %}🎉
+  {% elif event_type == 'application_confirmation_required' %}✅
+  {% elif event_type == 'application_draft_reminder' %}📝
+  {% elif event_type == 'application_received' %}📨
+  {% elif event_type == 'screening' %}🔎
+  {% else %}✉️{% endif %}
+</span>
