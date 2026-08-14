@@ -20,7 +20,10 @@
 .apps-table .col-num { width: 52px; }
 .apps-table .col-applied { width: 140px; }
 .apps-table .col-status { width: 160px; }
-.apps-table .col-actions { width: 112px; }
+.apps-table .col-actions {
+  width: 116px;
+  text-align: center !important;
+}
 
 .apps-table .col-notes {
   width: auto !important;
@@ -126,6 +129,12 @@
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
+}
+
+.apps-table .app-row-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 38px);
+  justify-content: center;
 }
 
 .app-row-action {
