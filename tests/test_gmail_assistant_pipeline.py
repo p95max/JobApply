@@ -264,6 +264,41 @@ def test_ai_pipeline_recovers_indeed_company_when_the_model_omits_it(django_user
 
 
 @pytest.mark.django_db
+def test_reanalysis_enriches_a_preserved_indeed_ai_result(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    class NoCompanyAnalyzer(FakeAnalyzer):
+        def analyze(self, email, context: AIAnalysisContext) -> AIExtraction:
+            return replace(super().analyze(email, context), event_type="application_sent", company=None)
+
+    client = FakeGmailClient(
+        {
+            "indeed-confirmation": message(
+                sender="Indeed-Bewerben-Funktion <indeedapply@indeed.com>",
+                subject="Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
+                text="Die folgenden Dokumente wurden an conexon GmbH übermittelt. Viel Erfolg!",
+            )
+        }
+    )
+    sync_gmail_messages_for_user(user=user, gmail_client=client, ai_analyzer=NoCompanyAnalyzer())
+    ApplicationUpdateProposal.objects.filter(user=user).delete()
+    analysis = GmailAnalysis.objects.get(user=user)
+    analysis.extracted_data["company"] = None
+    analysis.save(update_fields=["extracted_data", "updated_at"])
+
+    sync_gmail_messages_for_user(
+        user=user,
+        gmail_client=client,
+        ai_analyzer=MissingKeyAnalyzer(),
+        reanalyze_existing=True,
+    )
+
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert proposal.changes["application"]["company"] == "conexon GmbH"
+
+
+@pytest.mark.django_db
 def test_successful_sync_clears_the_previous_safe_error(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     settings = GmailAssistantSettings.objects.create(

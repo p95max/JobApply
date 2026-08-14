@@ -188,6 +188,15 @@ def _fallback_data(*, rule: RuleClassification, parsed: ParsedGmailMessage, reas
     return _indeed_confirmation_data(base=_rule_data(rule, fallback_reason=reason), parsed=parsed)
 
 
+def _enrich_known_platform_facts(*, analysis: GmailAnalysis, parsed: ParsedGmailMessage) -> GmailAnalysis:
+    """Persist deterministic platform facts even when an older AI result is reused."""
+    enriched = _indeed_confirmation_data(base=analysis.extracted_data, parsed=parsed)
+    if enriched != analysis.extracted_data:
+        analysis.extracted_data = resolve_extracted_company(enriched)
+        analysis.save(update_fields=["extracted_data", "updated_at"])
+    return analysis
+
+
 def _effective_event_type(*, rule_event_type: str, ai_event_type: str) -> str:
     """Keep unsubmitted-draft reminders from becoming false application records.
 
@@ -654,6 +663,7 @@ def _sync_gmail_messages_for_user(
                 else:
                     counters["analyses_preserved"] += 1
 
+            analysis = _enrich_known_platform_facts(analysis=analysis, parsed=parsed)
             match = match_for_message(
                 user=user,
                 message=message,
