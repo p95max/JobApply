@@ -43,7 +43,18 @@ _DIRECT_APPLICATION_SUBJECT_RE = re.compile(
 )
 _INDEED_CONFIRMATION_SUBJECT_RE = re.compile(r"^\s*bewerbung\s+über\s+indeed:\s*(?P<title>.+?)\s*$", re.IGNORECASE)
 _INDEED_COMPANY_RE = re.compile(
-    r"(?:die\s+folgenden\s+unterlagen|documents?)\s+(?:wurden\s+)?an\s+(?P<company>.+?)\s+(?:übermittelt|sent)",
+    r"(?:die\s+folgenden\s+(?:unterlagen|dokumente)|documents?)\s+(?:wurden\s+)?an\s+(?P<company>.+?)\s+(?:übermittelt|sent)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+# Use Unicode escapes here so this production-critical parser is independent of
+# the source-file encoding used by local Windows editors.
+_INDEED_CONFIRMATION_SUBJECT_RE = re.compile(
+    r"^\s*bewerbung\s+\u00fcber\s+indeed:\s*(?P<title>.+?)\s*$", re.IGNORECASE
+)
+_INDEED_COMPANY_RE = re.compile(
+    r"(?:die\s+folgenden\s+(?:unterlagen|dokumente)|documents?)\s+(?:wurden\s+)?an\s+(?P<company>.+?)\s+(?:\u00fcbermittelt|sent)",
     re.IGNORECASE | re.DOTALL,
 )
 
