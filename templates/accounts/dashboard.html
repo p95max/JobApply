@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="{% static 'css/dashboard_recent.css' %}?v=2">
   <link rel="stylesheet" href="{% static 'css/dashboard_connections.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'css/dashboard_guest.css' %}?v=1">
+  <style>
+    .dashboard-feed__item--link { color: inherit; text-decoration: none; transition: background-color .18s ease; }
+    .dashboard-feed__item--link:hover { background: rgba(103, 223, 188, .06); }
+    .dashboard-feed__item--link:focus-visible { outline: 3px solid rgba(103, 223, 188, .72); outline-offset: -3px; }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -100,21 +105,21 @@
         {% if accepted_proposals %}
           <div class="dashboard-feed">
             {% for proposal in accepted_proposals %}
-              <article class="dashboard-feed__item dashboard-feed__item--accepted">
-                <div class="dashboard-feed__icon dashboard-feed__icon--accepted" aria-hidden="true">✓</div>
+              {% if proposal.application %}
+                {% url 'applications:detail' proposal.application.pk as history_item_url %}
+              {% else %}
+                {% url 'gmail_assistant:gmail_assistant' as history_item_url %}
+              {% endif %}
+              <a class="dashboard-feed__item dashboard-feed__item--accepted dashboard-feed__item--link" href="{{ history_item_url }}{% if not proposal.application %}?status=accepted{% endif %}">
+                <div class="dashboard-feed__icon dashboard-feed__icon--accepted" aria-hidden="true">
+                  {% if proposal.analysis.event_type == 'rejection' %}❌{% elif proposal.analysis.event_type == 'documents_requested' %}📄{% elif proposal.analysis.event_type == 'interview_invitation' or proposal.analysis.event_type == 'interview_rescheduled' %}📅{% elif proposal.analysis.event_type == 'interview_cancelled' %}🚫{% elif proposal.analysis.event_type == 'offer' %}🎉{% elif proposal.analysis.event_type == 'application_sent' %}📤{% elif proposal.analysis.event_type == 'application_received' %}📨{% elif proposal.analysis.event_type == 'application_draft_reminder' %}📝{% elif proposal.analysis.event_type == 'application_confirmation_required' %}✅{% elif proposal.analysis.event_type == 'screening' %}🔎{% else %}✉️{% endif %}
+                </div>
                 <div class="dashboard-feed__body">
                   <strong>{{ proposal.analysis.get_event_type_display }}</strong>
                   <span>{{ proposal.message.subject|default:proposal.message.from_name|truncatechars:72 }}</span>
                   <small>{% trans "Accepted" %} · {{ proposal.reviewed_at|default:proposal.updated_at|date:"d.m.Y H:i" }}</small>
                 </div>
-                <div class="dashboard-feed__actions">
-                  {% if proposal.application %}
-                    <a class="btn btn-sm btn-outline-light" href="{% url 'applications:detail' proposal.application.pk %}">{% trans "Open" %}</a>
-                  {% else %}
-                    <a class="btn btn-sm btn-outline-light" href="{% url 'gmail_assistant:gmail_assistant' %}?status=accepted">{% trans "View" %}</a>
-                  {% endif %}
-                </div>
-              </article>
+              </a>
             {% endfor %}
           </div>
         {% else %}
@@ -141,13 +146,15 @@
             <a href="/interviews/">{% trans "View all" %}</a>
           </div>
           {% if next_interview %}
-            <div class="dashboard-next__date">{{ next_interview.starts_at|date:"d" }}<span>{{ next_interview.starts_at|date:"M" }}</span></div>
-            <h3>{{ next_interview.application.company }}</h3>
-            <p>{{ next_interview.application.title }}</p>
-            <dl>
-              <div><dt>{% trans "Time" %}</dt><dd>{{ next_interview.starts_at|date:"H:i" }}</dd></div>
-              {% if next_interview.location %}<div><dt>{% trans "Location" %}</dt><dd>{{ next_interview.location }}</dd></div>{% endif %}
-            </dl>
+            <a class="dashboard-next__content" href="{% url 'applications:detail' next_interview.application.pk %}">
+              <div class="dashboard-next__date">{{ next_interview.starts_at|date:"d" }}<span>{{ next_interview.starts_at|date:"M" }}</span></div>
+              <h3>{{ next_interview.application.company }}</h3>
+              <p>{{ next_interview.application.title }}</p>
+              <dl>
+                <div><dt>{% trans "Time" %}</dt><dd>{{ next_interview.starts_at|date:"H:i" }}</dd></div>
+                {% if next_interview.location %}<div><dt>{% trans "Location" %}</dt><dd>{{ next_interview.location }}</dd></div>{% endif %}
+              </dl>
+            </a>
           {% else %}
             <div class="dashboard-empty dashboard-empty--compact"><span>🗓️</span><div><strong>{% trans "No upcoming interviews" %}</strong><p>{% trans "Scheduled interviews will appear here." %}</p></div></div>
           {% endif %}

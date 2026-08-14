@@ -74,6 +74,7 @@ def test_dashboard_shows_user_metrics_only(client):
     assert "Hidden GmbH" not in content
     assert "dashboard-pill--applied" in content
     assert "dashboard-pill--rejected" in content
+    assert 'class="dashboard-next__content"' in content
     assert f'href="/applications/{application.pk}/"' in content
     assert "js-dashboard-application-row" in content
     assert response.context["active_application_count"] == 1
@@ -169,5 +170,7 @@ def test_dashboard_separates_pending_suggestions_from_accepted_action_history(cl
     assert 'data-dashboard-assistant-tab="new"' in content
     assert 'data-dashboard-assistant-tab="history"' in content
     assert 'href="/gmail_stats/gmail/assistant/?status=pending"' in content
+    assert 'dashboard-feed__item--link' in content
+    assert "📅" in content
     assert "Application update" in content
     assert "Interview confirmed" in content
