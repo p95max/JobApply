@@ -73,15 +73,14 @@
     </td>
 
     <td class="text-end text-body-secondary col-num">
-        {% if page_obj %}
-          {{ page_obj.start_index|add:forloop.counter0 }}
-        {% else %}
-          {{ forloop.counter }}
-        {% endif %}
+      {{ app.display_number }}
       </td>
 
     <td class="text-body-secondary col-applied">
-      <time datetime="{{ app.applied_at|date:'c' }}">{{ app.applied_at|date:"d.m.Y · H:i" }}</time>
+      <time datetime="{{ app.applied_at|date:'c' }}">
+        <span class="applied-date">{{ app.applied_at|date:"d.m.Y" }}</span>
+        <span class="applied-time">{{ app.applied_at|date:"H:i" }}</span>
+      </time>
     </td>
     <td class="fw-semibold col-title">
       {{ app.title }}

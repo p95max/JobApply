@@ -18,7 +18,10 @@
 
 .apps-table .col-check { width: 44px; }
 .apps-table .col-num { width: 52px; }
-.apps-table .col-applied { width: 166px; white-space: nowrap !important; }
+.apps-table .col-applied { width: 140px; }
+.apps-table .applied-date,
+.apps-table .applied-time { display: block; }
+.apps-table .applied-time { font-size: 0.8rem; opacity: 0.78; }
 .apps-table .col-status {
   width: 168px;
   padding-inline: 9px !important;

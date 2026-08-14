@@ -41,6 +41,15 @@ def list_applications(request):
         qs = JobApplication.objects.filter(user=request.user).annotate(
             has_ai_processed_proposal=Exists(ai_processed_proposals)
         )
+        # Application numbers are a stable chronological reference, not the
+        # row position of whichever sort/filter is currently displayed.
+        chronological_numbers = {
+            application_id: number
+            for number, application_id in enumerate(
+                qs.order_by("applied_at", "pk").values_list("pk", flat=True),
+                start=1,
+            )
+        }
 
         q = (request.GET.get("q") or "").strip()
         status = (request.GET.get("status") or "").strip()
@@ -122,6 +131,9 @@ def list_applications(request):
             paginator = Paginator(qs, per_page)
             page_obj = paginator.get_page(request.GET.get("page"))
             items = page_obj.object_list
+
+        for app in items:
+            app.display_number = chronological_numbers[app.pk]
 
         params = request.GET.copy()
         params.pop("page", None)

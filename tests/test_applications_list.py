@@ -103,3 +103,28 @@ def test_application_list_filters_to_unanswered_applications_older_than_fourteen
     assert list(response.context["items"]) == [due]
     assert response.context["follow_up"] is True
     assert b'name="follow_up"' in response.content
+
+
+@pytest.mark.django_db
+def test_application_list_keeps_chronological_numbers_when_sorted_newest_first(client, django_user_model):
+    user = django_user_model.objects.create_user("applications-user", email="applications@example.com")
+    oldest = JobApplication.objects.create(
+        user=user,
+        company="Old GmbH",
+        title="Old developer",
+        applied_at=timezone.now() - timedelta(days=2),
+    )
+    newest = JobApplication.objects.create(
+        user=user,
+        company="New GmbH",
+        title="New developer",
+        applied_at=timezone.now() - timedelta(days=1),
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("applications:list"))
+
+    items = list(response.context["items"])
+    assert [item.pk for item in items] == [newest.pk, oldest.pk]
+    assert newest.display_number == 2
+    assert oldest.display_number == 1
