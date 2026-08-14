@@ -118,6 +118,7 @@ def test_dashboard_counts_only_unanswered_applications_older_than_fourteen_days(
 
     assert response.context["follow_up_due_count"] == 1
     assert b"No response for 14+ days" in response.content
+    assert b'href="/applications/?follow_up=1"' in response.content
 
 
 @pytest.mark.django_db
@@ -167,5 +168,6 @@ def test_dashboard_separates_pending_suggestions_from_accepted_action_history(cl
     assert list(response.context["accepted_proposals"]) == [accepted]
     assert 'data-dashboard-assistant-tab="new"' in content
     assert 'data-dashboard-assistant-tab="history"' in content
+    assert 'href="/gmail_stats/gmail/assistant/?status=pending"' in content
     assert "Application update" in content
     assert "Interview confirmed" in content

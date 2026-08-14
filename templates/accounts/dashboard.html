@@ -26,12 +26,12 @@
         <strong>{{ active_application_count }}</strong>
         <small>+{{ applications_this_week }} {% trans "this week" %}</small>
       </article>
-      <article class="dashboard-card dashboard-metric">
+      <a class="dashboard-card dashboard-metric dashboard-metric--link" href="{% url 'applications:list' %}?follow_up=1">
         <span>{% trans "No response for 14+ days" %}</span>
         <strong>{{ follow_up_due_count }}</strong>
         <small>{% trans "Applications worth following up on" %}</small>
-      </article>
-      <article class="dashboard-card dashboard-metric">
+      </a>
+      <a class="dashboard-card dashboard-metric dashboard-metric--link" href="{% url 'gmail_assistant:gmail_assistant' %}?status=pending">
         {% if is_demo_user %}
         <span>{% trans "Demo workspace" %}</span>
         <strong>✓</strong>
@@ -41,7 +41,7 @@
         <strong>{{ pending_proposal_count }}</strong>
         <small>{% trans "From Gmail Assistant" %}</small>
         {% endif %}
-      </article>
+      </a>
     </div>
 
     <div class="dashboard-grid">
