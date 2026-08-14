@@ -210,6 +210,34 @@ def test_rule_only_pipeline_saves_analysis_without_openai(django_user_model):
 
 
 @pytest.mark.django_db
+def test_rule_only_pipeline_creates_indeed_submission_proposal(django_user_model):
+    user = django_user_model.objects.create_user("user", email="user@example.com")
+    client = FakeGmailClient(
+        {
+            "indeed-confirmation": message(
+                sender="Indeed-Bewerben-Funktion <indeedapply@indeed.com>",
+                subject="Bewerbung über Indeed: Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)",
+                text=(
+                    "Bewerbung gesendet. Die folgenden Dokumente wurden an conexon GmbH "
+                    "übermittelt. Viel Erfolg!"
+                ),
+            )
+        }
+    )
+
+    result = sync_gmail_messages_for_user(user=user, gmail_client=client)
+
+    analysis = GmailAnalysis.objects.get(user=user)
+    proposal = ApplicationUpdateProposal.objects.get(user=user)
+    assert result["proposals_created"] == 1
+    assert analysis.classifier == AnalysisClassifier.RULE
+    assert analysis.event_type == GmailEventType.APPLICATION_SENT
+    assert proposal.proposal_type == ProposalType.CREATE_APPLICATION
+    assert proposal.changes["application"]["company"] == "conexon GmbH"
+    assert proposal.changes["application"]["title"] == "Sachbearbeiter IT/ Fachinformatiker o.ä. (m/w/d)"
+
+
+@pytest.mark.django_db
 def test_successful_sync_clears_the_previous_safe_error(django_user_model):
     user = django_user_model.objects.create_user("user", email="user@example.com")
     settings = GmailAssistantSettings.objects.create(

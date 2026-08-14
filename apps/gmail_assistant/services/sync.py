@@ -41,6 +41,11 @@ _DIRECT_APPLICATION_SUBJECT_RE = re.compile(
     r"^\s*(?:(?:(?:initiativ|erneute)\s*)?bewerbung|application)(?:\s+(?:als|for))?\s+(?P<title>.+?)\s*$",
     re.IGNORECASE,
 )
+_INDEED_CONFIRMATION_SUBJECT_RE = re.compile(r"^\s*bewerbung\s+über\s+indeed:\s*(?P<title>.+?)\s*$", re.IGNORECASE)
+_INDEED_COMPANY_RE = re.compile(
+    r"(?:die\s+folgenden\s+unterlagen|documents?)\s+(?:wurden\s+)?an\s+(?P<company>.+?)\s+(?:übermittelt|sent)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _internal_date_to_dt(internal_date_ms: str | int | None) -> datetime:
@@ -140,6 +145,36 @@ def _rule_data(rule: RuleClassification, *, fallback_reason: str = "") -> dict[s
     if fallback_reason:
         data["fallback_reason"] = fallback_reason
     return data
+
+
+def _indeed_confirmation_data(*, base: dict[str, Any], parsed: ParsedGmailMessage) -> dict[str, Any]:
+    """Extract the employer and title from Indeed's deterministic confirmation email.
+
+    This deliberately runs in rule-only mode too.  A successful submission
+    must not disappear merely because the optional AI quota is unavailable.
+    """
+    if parsed.from_email.casefold() != "indeedapply@indeed.com":
+        return base
+    title_match = _INDEED_CONFIRMATION_SUBJECT_RE.match(parsed.subject)
+    company_match = _INDEED_COMPANY_RE.search(parsed.text)
+    if not title_match or not company_match:
+        return base
+
+    data = dict(base)
+    company = re.sub(r"\s+", " ", company_match.group("company")).strip(" .,-")
+    if not data.get("position_title"):
+        data["position_title"] = title_match.group("title").strip()
+    if not data.get("company") or str(data["company"]).casefold() in {"indeed", "indeed ireland operations limited"}:
+        data["company"] = company
+    data["source"] = "indeed"
+    evidence = list(data.get("evidence") or [])
+    evidence.append("Indeed confirmation identifies the employer and submitted documents.")
+    data["evidence"] = evidence[:3]
+    return data
+
+
+def _fallback_data(*, rule: RuleClassification, parsed: ParsedGmailMessage, reason: str) -> dict[str, Any]:
+    return _indeed_confirmation_data(base=_rule_data(rule, fallback_reason=reason), parsed=parsed)
 
 
 def _effective_event_type(*, rule_event_type: str, ai_event_type: str) -> str:
@@ -541,12 +576,20 @@ def _sync_gmail_messages_for_user(
                             reason=type(error).__name__,
                             extracted_data=(
                                 _sent_application_data(
-                                    _rule_data(rule, fallback_reason=type(error).__name__),
+                                    _fallback_data(
+                                        rule=rule,
+                                        parsed=parsed,
+                                        reason=type(error).__name__,
+                                    ),
                                     subject=parsed.subject,
                                     recipients=parsed.to_emails,
                                 )
                                 if is_manual_sent_application
-                                else None
+                                else _fallback_data(
+                                    rule=rule,
+                                    parsed=parsed,
+                                    reason=type(error).__name__,
+                                )
                             ),
                         )
                         counters["analyses_created"] += 1
@@ -580,12 +623,12 @@ def _sync_gmail_messages_for_user(
                         reason=reason,
                         extracted_data=(
                             _sent_application_data(
-                                _rule_data(rule, fallback_reason=reason),
+                                _fallback_data(rule=rule, parsed=parsed, reason=reason),
                                 subject=parsed.subject,
                                 recipients=parsed.to_emails,
                             )
                             if is_manual_sent_application
-                            else None
+                            else _fallback_data(rule=rule, parsed=parsed, reason=reason)
                         ),
                     )
                     counters["analyses_created"] += 1
