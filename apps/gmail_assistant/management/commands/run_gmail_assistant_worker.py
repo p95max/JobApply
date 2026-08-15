@@ -13,7 +13,13 @@ from apps.gmail_stats.services.credentials import get_google_credentials_for_use
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync_control import GmailSyncBusyError
 from apps.telegram_bot.heartbeat import GMAIL_WORKER, record_heartbeat
-from apps.telegram_bot.notifications import send_notification_once
+from apps.telegram_bot.notifications import send_notification_once, url_keyboard
+
+
+def _gmail_assistant_url() -> str:
+    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
+    base_url = domain if domain.startswith(("http://", "https://")) else f"https://{domain}"
+    return f"{base_url}/gmail_stats/gmail/assistant/"
 
 
 class Command(BaseCommand):
@@ -67,6 +73,7 @@ class Command(BaseCommand):
                 f"📝 Manual review needed: <b>{manual_review}</b> suggestions\n"
                 f"✅ Automatically accepted: <b>{auto_applied}</b> trusted updates"
             ),
+            reply_markup=url_keyboard("📨 Open Gmail Assistant", _gmail_assistant_url()),
         )
 
     def _tick(self, *, force: bool = False):
