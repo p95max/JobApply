@@ -65,6 +65,52 @@ def test_gmail_worker_notifies_on_sync_error_without_raising(django_user_model, 
 
 
 @pytest.mark.django_db
+def test_gmail_worker_summary_links_to_gmail_assistant(django_user_model, monkeypatch, settings):
+    settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED = True
+    settings.DJANGO_SITE_DOMAIN = "jobapply.p95max.dev"
+    user = django_user_model.objects.create_user("owner", email="owner@example.com")
+    GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+    notifications = []
+
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.get_google_credentials_for_user",
+        lambda _user: object(),
+    )
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.GmailClient",
+        lambda _credentials: object(),
+    )
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.sync_gmail_messages_for_user",
+        lambda **_kwargs: {
+            "proposals_created": 2,
+            "manual_review_required": 2,
+            "auto_applied": 0,
+            "analyzed_by_ai": 2,
+        },
+    )
+    monkeypatch.setattr(
+        "apps.gmail_assistant.management.commands.run_gmail_assistant_worker.send_notification_once",
+        lambda **kwargs: notifications.append(kwargs) or True,
+    )
+
+    Command()._tick()
+
+    assert len(notifications) == 1
+    assert notifications[0]["event_type"] == "gmail_assistant_summary"
+    assert notifications[0]["reply_markup"] == {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "📨 Open Gmail Assistant",
+                    "url": "https://jobapply.p95max.dev/gmail_stats/gmail/assistant/",
+                }
+            ]
+        ]
+    }
+
+
+@pytest.mark.django_db
 def test_gmail_worker_treats_an_already_running_sync_as_expected(django_user_model, monkeypatch, settings):
     settings.GMAIL_ASSISTANT_AUTO_SYNC_ENABLED = True
     user = django_user_model.objects.create_user("owner", email="owner@example.com")
