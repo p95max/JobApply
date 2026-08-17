@@ -1,0 +1,63 @@
+/* Keep the desktop applications table inside its card without horizontal scrolling. */
+@media (min-width: 768px) {
+  .applications-table-card,
+  .applications-table-card .table-responsive {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .applications-table-card .apps-table {
+    width: 100%;
+    table-layout: fixed !important;
+  }
+
+  .applications-table-card .apps-table th,
+  .applications-table-card .apps-table td {
+    min-width: 0;
+    padding-inline: 8px !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .applications-table-card .apps-table .col-check { width: 36px; }
+  .applications-table-card .apps-table .col-num { width: 42px; }
+  .applications-table-card .apps-table .col-applied { width: 98px; }
+  .applications-table-card .apps-table .col-title { width: 17%; }
+  .applications-table-card .apps-table .col-company { width: 20%; }
+  .applications-table-card .apps-table .col-source { width: 72px; }
+  .applications-table-card .apps-table .col-location { width: 108px; }
+  .applications-table-card .apps-table .col-status { width: 142px; }
+  .applications-table-card .apps-table .col-notes {
+    width: 112px !important;
+    min-width: 0;
+  }
+  .applications-table-card .apps-table .col-actions { width: 92px; }
+
+  .applications-table-card .apps-table .status-select {
+    width: 100%;
+    max-width: 126px;
+  }
+
+  .applications-table-card .apps-table .app-row-actions {
+    grid-template-columns: repeat(2, 34px);
+    gap: 5px;
+  }
+
+  .applications-table-card .apps-table .app-row-action {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .applications-table-card .apps-table {
+    font-size: 0.875rem;
+  }
+
+  .applications-table-card .apps-table .col-applied { width: 88px; }
+  .applications-table-card .apps-table .col-source { width: 64px; }
+  .applications-table-card .apps-table .col-location { width: 92px; }
+  .applications-table-card .apps-table .col-status { width: 128px; }
+  .applications-table-card .apps-table .col-notes { width: 90px !important; }
+  .applications-table-card .apps-table .col-actions { width: 82px; }
+}
