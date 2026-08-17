@@ -70,12 +70,17 @@ def _result(
 
 def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassification:
     """Classify a Gmail message with deterministic, explainable job-email rules."""
+    normalized_subject = _normalize(subject)
     content = _normalize(" ".join((subject or "", snippet or "", text or "")))
     phrases = _phrases()
     context = _matching_terms(content, phrases["job_context"])
+    subject_context = _matching_terms(normalized_subject, phrases["job_context"])
 
     noise = _matching_terms(content, phrases["noise"])
-    if noise:
+    # Recruiting systems often append newsletter/unsubscribe boilerplate to
+    # transactional application emails. A job-related subject is stronger
+    # evidence than footer noise and must still reach rejection/AI analysis.
+    if noise and not subject_context:
         return _result(GmailEventType.NOISE, 90, noise, False)
 
     withdrawal = _matching_terms(content, phrases["withdrawal"])
