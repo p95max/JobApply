@@ -1,3 +1,9 @@
+.gmail-assistant {
+  background: radial-gradient(circle at top right, rgba(var(--bs-primary-rgb), 0.12), transparent 32%),
+              linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.04), rgba(var(--bs-body-bg), 0));
+  border-radius: 1rem;
+}
+
 .proposal-review-header {
   border-left: 4px solid var(--bs-secondary);
   background: color-mix(in srgb, var(--bs-secondary) 10%, var(--bs-body-bg));
