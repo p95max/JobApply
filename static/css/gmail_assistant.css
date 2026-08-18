@@ -314,32 +314,12 @@
     /* Sync status rows in the AI panel */
     .gmail-assistant .ga-status-row { display: flex; align-items: center; gap: .4rem; }
 
-    /* History list (Action history tab) */
-    .gmail-assistant .gmail-history-list { display: flex; flex-direction: column; gap: .5rem; }
-    .gmail-assistant .gmail-history-item {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      padding: .75rem 1rem;
-      background: var(--ga-surface);
-      border: 1px solid var(--ga-border);
-      border-radius: var(--ga-radius-md);
-      transition: box-shadow .15s ease, transform .15s ease;
-    }
-    .gmail-assistant .gmail-history-item:hover { box-shadow: var(--ga-shadow-sm); transform: translateY(-1px); }
-    .gmail-assistant .gmail-history-item__main { flex: 1; min-width: 0; }
-    .gmail-assistant .gmail-history-item__subject { font-weight: 600; color: inherit; text-decoration: none; }
-    .gmail-assistant .gmail-history-item__subject:hover { text-decoration: underline; }
-    .gmail-assistant .gmail-history-item__meta { font-size: .8125rem; color: var(--bs-secondary-color, #6c757d); }
-    .gmail-assistant .gmail-history-item__links { flex-shrink: 0; font-size: .8125rem; font-weight: 600; }
-
     /* FAQ */
     .gmail-assistant details summary { cursor: pointer; }
     .gmail-assistant details summary::marker { color: var(--bs-secondary-color, #6c757d); }
 
     /* Modals (siblings of .gmail-assistant container, so scoped directly) */
     .modal.gmail-assistant .modal-content {
-      border: 0;
       border-radius: var(--ga-radius-lg);
       box-shadow: var(--ga-shadow-lg);
     }
