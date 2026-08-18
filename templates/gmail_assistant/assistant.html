@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 gmail-assistant">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h1 class="h4 mb-1">{% trans "Gmail Assistant" %}</h1>
@@ -128,7 +128,7 @@
       {% endif %}
 
       <div class="small mt-3 d-grid gap-1">
-        <div class="{% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
+        <div class="ga-status-row {% if settings.last_successful_run_at and not settings.last_error_message %}text-success{% else %}text-muted{% endif %}">
           {% if settings.last_successful_run_at and not settings.last_error_message %}✅{% endif %}
           {% trans "Last successful Gmail sync" %}:
           {% if settings.last_successful_run_at %}
@@ -137,7 +137,7 @@
             {% trans "Never" %}
           {% endif %}
         </div>
-        <div class="{% if next_automatic_check_at %}text-success{% else %}text-muted{% endif %}">
+        <div class="ga-status-row {% if next_automatic_check_at %}text-success{% else %}text-muted{% endif %}">
           {% if next_automatic_check_at %}✅{% endif %}
           {% trans "Next automatic check" %}:
           {% if next_automatic_check_at %}
@@ -268,10 +268,12 @@
           </span>
         </div>
 
-        <div class="small mt-2">
-          {% trans "Match" %}:
-          {% if group.representative.match_method %}{{ group.representative.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
-          ({{ group.representative.match_score }})
+        <div class="small mt-2 ga-match-row">
+          <span class="ga-match-label">{% trans "Match" %}</span>
+          <span class="badge text-bg-light ga-match-badge">
+            {% if group.representative.match_method %}{{ group.representative.match_method }}{% else %}{% trans "unmatched" %}{% endif %}
+            ({{ group.representative.match_score }})
+          </span>
         </div>
 
         <div class="mt-3 pt-3 border-top d-grid gap-2">
@@ -329,7 +331,7 @@
   </section>
 </div>
 
-<div class="modal fade" id="gmailSyncPeriodModal" tabindex="-1" aria-labelledby="gmailSyncPeriodModalLabel" aria-hidden="true">
+<div class="modal fade gmail-assistant" id="gmailSyncPeriodModal" tabindex="-1" aria-labelledby="gmailSyncPeriodModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
@@ -360,7 +362,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="gmailSyncProgressModal" tabindex="-1" aria-labelledby="gmailSyncProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade gmail-assistant" id="gmailSyncProgressModal" tabindex="-1" aria-labelledby="gmailSyncProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content gmail-sync-progress-modal">
       <div class="modal-header border-0 pb-0">

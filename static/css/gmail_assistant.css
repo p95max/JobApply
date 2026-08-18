@@ -214,3 +214,144 @@
     text-align: left;
   }
 }
+    /* Modern visual refresh for this page only.
+       Scoped under .gmail-assistant so it can't leak into other templates
+       that reuse the same Bootstrap classes (.card, .btn, .badge, .nav-tabs, .modal).
+       Pure CSS — no markup/JS behavior changed. Safe to promote into
+       gmail_assistant.css later; left inline here since I don't have that file's
+       current contents to merge against. */
+    .gmail-assistant {
+      --ga-radius-lg: 1rem;
+      --ga-radius-md: .75rem;
+      --ga-radius-sm: .5rem;
+      --ga-border: var(--bs-border-color, #e7e9ee);
+      --ga-surface: var(--bs-body-bg, #fff);
+      --ga-shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+      --ga-shadow-md: 0 6px 20px -6px rgba(16, 24, 40, .14);
+      --ga-shadow-lg: 0 16px 40px -12px rgba(16, 24, 40, .22);
+    }
+
+    .gmail-assistant h1 { font-weight: 700; letter-spacing: -.02em; }
+
+    /* Cards, incl. <details> used as a card */
+    .gmail-assistant .card,
+    .gmail-assistant details.card {
+      border: 1px solid var(--ga-border);
+      border-radius: var(--ga-radius-lg);
+      box-shadow: var(--ga-shadow-sm);
+    }
+    .gmail-assistant details.card { overflow: hidden; }
+    .gmail-assistant details.card > summary {
+      cursor: pointer;
+      padding: 1rem 1.25rem;
+    }
+    .gmail-assistant details.card > summary::-webkit-details-marker { display: none; }
+    .gmail-assistant details.card[open] > summary { border-bottom: 1px solid var(--ga-border); }
+    .gmail-assistant .js-pending-card { transition: box-shadow .16s ease, transform .16s ease; }
+    .gmail-assistant .js-pending-card:hover { box-shadow: var(--ga-shadow-md); transform: translateY(-2px); }
+
+    /* Alerts */
+    .gmail-assistant .alert {
+      border: 1px solid var(--ga-border);
+      border-left: 4px solid rgba(var(--bs-warning-rgb), .8);
+      border-radius: var(--ga-radius-md);
+      box-shadow: var(--ga-shadow-sm);
+    }
+
+    /* Badges / pills */
+    .gmail-assistant .badge { font-weight: 600; letter-spacing: .01em; padding: .42em .75em; }
+    .gmail-assistant .badge.rounded-pill { padding: .42em .85em; }
+
+    /* Buttons */
+    .gmail-assistant .btn { border-radius: var(--ga-radius-sm); font-weight: 600; }
+    .gmail-assistant .btn-primary { box-shadow: 0 4px 14px -4px rgba(var(--bs-primary-rgb), .5); }
+    .gmail-assistant .btn:active { transform: scale(.98); }
+    .gmail-assistant a.btn-outline-primary span[aria-hidden="true"] {
+      display: inline-block;
+      transition: transform .15s ease;
+    }
+    .gmail-assistant a.btn-outline-primary:hover span[aria-hidden="true"] { transform: translateX(3px); }
+
+    /* Nav tabs -> segmented control */
+    .gmail-assistant .nav-tabs {
+      border-bottom: 0;
+      display: inline-flex;
+      gap: .25rem;
+      padding: .3rem;
+      background: var(--bs-tertiary-bg, rgba(0, 0, 0, .035));
+      border-radius: 999px;
+    }
+    .gmail-assistant .nav-tabs .nav-link {
+      border: 0;
+      border-radius: 999px;
+      padding: .4rem 1rem;
+      font-weight: 600;
+      color: var(--bs-secondary-color, #6c757d);
+    }
+    .gmail-assistant .nav-tabs .nav-link.active {
+      background: var(--ga-surface);
+      color: var(--bs-body-color);
+      box-shadow: var(--ga-shadow-sm);
+    }
+
+    /* Filter/search controls */
+    .gmail-assistant .form-control,
+    .gmail-assistant .form-select {
+      border-color: var(--ga-border);
+      border-radius: var(--ga-radius-sm);
+    }
+    .gmail-assistant .form-control:focus,
+    .gmail-assistant .form-select:focus {
+      border-color: rgba(var(--bs-primary-rgb), .5);
+      box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .15);
+    }
+
+    /* "Match: ..." row on pending cards */
+    .gmail-assistant .ga-match-row { display: flex; align-items: center; gap: .5rem; }
+    .gmail-assistant .ga-match-label { color: var(--bs-secondary-color, #6c757d); }
+    .gmail-assistant .ga-match-badge { font-weight: 600; }
+
+    /* Sync status rows in the AI panel */
+    .gmail-assistant .ga-status-row { display: flex; align-items: center; gap: .4rem; }
+
+    /* History list (Action history tab) */
+    .gmail-assistant .gmail-history-list { display: flex; flex-direction: column; gap: .5rem; }
+    .gmail-assistant .gmail-history-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .75rem 1rem;
+      background: var(--ga-surface);
+      border: 1px solid var(--ga-border);
+      border-radius: var(--ga-radius-md);
+      transition: box-shadow .15s ease, transform .15s ease;
+    }
+    .gmail-assistant .gmail-history-item:hover { box-shadow: var(--ga-shadow-sm); transform: translateY(-1px); }
+    .gmail-assistant .gmail-history-item__main { flex: 1; min-width: 0; }
+    .gmail-assistant .gmail-history-item__subject { font-weight: 600; color: inherit; text-decoration: none; }
+    .gmail-assistant .gmail-history-item__subject:hover { text-decoration: underline; }
+    .gmail-assistant .gmail-history-item__meta { font-size: .8125rem; color: var(--bs-secondary-color, #6c757d); }
+    .gmail-assistant .gmail-history-item__links { flex-shrink: 0; font-size: .8125rem; font-weight: 600; }
+
+    /* FAQ */
+    .gmail-assistant details summary { cursor: pointer; }
+    .gmail-assistant details summary::marker { color: var(--bs-secondary-color, #6c757d); }
+
+    /* Modals (siblings of .gmail-assistant container, so scoped directly) */
+    .modal.gmail-assistant .modal-content {
+      border: 0;
+      border-radius: var(--ga-radius-lg);
+      box-shadow: var(--ga-shadow-lg);
+    }
+    .modal.gmail-assistant .modal-header { border-bottom: 1px solid var(--ga-border); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gmail-assistant .js-pending-card,
+      .gmail-assistant .gmail-history-item,
+      .gmail-assistant .btn,
+      .gmail-assistant a.btn-outline-primary span[aria-hidden="true"] {
+        transition: none;
+      }
+      .gmail-assistant .js-pending-card:hover,
+      .gmail-assistant .gmail-history-item:hover { transform: none; }
+    }
