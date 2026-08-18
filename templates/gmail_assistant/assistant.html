@@ -56,20 +56,24 @@
     </div>
   {% endif %}
 
-  <details class="card mb-4 border-info bg-info-subtle shadow-sm" open>
-    <summary class="card-header bg-info-subtle d-flex justify-content-between align-items-center gap-3">
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge rounded-pill text-bg-info-subtle border border-info-subtle text-info-emphasis">AI</span>
+  <details class="card mb-4 border-0 shadow-sm" open>
+    <summary class="card-header border-0 bg-body-tertiary d-flex justify-content-between align-items-center gap-3 list-unstyled">
+      <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-semibold" style="width: 2.1rem; height: 2.1rem;">AI</div>
         <div>
-          <span class="fw-semibold d-block">{% trans "AI analysis" %}</span>
-          <small class="text-muted">{% trans "Optional Gmail intelligence and automation" %}</small>
+          <div class="fw-semibold">{% trans "AI analysis" %}</div>
+          <small class="text-muted">{% trans "Gmail intelligence and automation" %}</small>
         </div>
       </div>
-      <span class="small text-muted text-nowrap">{% trans "Show / hide" %}</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge rounded-pill {% if settings.ai_enabled %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+          {% if settings.ai_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}
+        </span>
+      </div>
     </summary>
     <div class="card-body">
-      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3">
-        <div class="flex-grow-1">
+      <div class="row g-3 align-items-start">
+        <div class="col-12 col-lg-8">
           <p class="small text-muted mb-2">
             {% trans "JobApply can review new Gmail messages, suggest relevant applications or interviews, and apply trusted updates automatically." %}
           </p>
@@ -79,27 +83,32 @@
             <span class="badge rounded-pill text-bg-dark" title="{% trans 'Daily AI email limit (per user)' %}">{% trans "Daily limit" %}: {{ ai_daily_limit }}</span>
             <span class="badge rounded-pill text-bg-warning">{% trans "Used" %}: {{ ai_daily_used }}</span>
             <span class="badge rounded-pill text-bg-success">{% trans "Remaining" %}: {{ ai_daily_remaining }}</span>
-            <span class="badge rounded-pill text-bg-primary">{% trans "Review below" %}: {{ ai_confidence_threshold }}%</span>
-            <a class="badge rounded-pill text-bg-light text-decoration-none" href="{% url 'reports:ai_statistics' %}">🤖 {% trans "AI statistics" %}</a>
+            <span class="badge rounded-pill text-bg-primary">{% trans "Review threshold" %}: {{ ai_confidence_threshold }}%</span>
+            <a class="badge rounded-pill text-bg-light text-decoration-none border" href="{% url 'reports:ai_statistics' %}">🤖 {% trans "AI statistics" %}</a>
           </div>
         </div>
 
-        <div class="ms-lg-auto">
-          <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
-            <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
-            <label class="form-check-label fw-semibold" for="aiEnabled">{% trans "Enable AI analysis" %}</label>
+        <div class="col-12 col-lg-4">
+          <div class="border rounded-3 bg-body-tertiary p-3 h-100">
+            <div class="form-check form-switch d-flex align-items-center justify-content-between gap-3 mb-0">
+              <div>
+                <div class="fw-semibold">{% trans "Enable AI analysis" %}</div>
+                <small class="text-muted">{% trans "Process Gmail messages with AI" %}</small>
+              </div>
+              <input class="form-check-input" type="checkbox" name="ai_enabled" value="1" id="aiEnabled" {% if settings.ai_enabled %}checked{% endif %}>
+            </div>
           </div>
         </div>
       </div>
 
-      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="mt-3">
+      <form id="aiAnalysisSettings" method="post" action="{% url 'gmail_assistant:gmail_assistant_settings' %}" class="mt-3 pt-3 border-top">
         {% csrf_token %}
-        <div class="small text-muted">
+        <div class="small text-muted mb-3">
           {% trans "Sanitized email subject and text may be sent to the configured AI provider. Attachments are never sent." %}
         </div>
 
-        <details class="w-100 border-top mt-3 pt-3">
-          <summary class="small text-muted">{% trans "Advanced automation" %}</summary>
+        <details class="w-100">
+          <summary class="small text-muted mb-2">{% trans "Advanced automation" %}</summary>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" name="auto_apply_enabled" value="1" id="autoApplyEnabled" {% if settings.auto_apply_enabled %}checked{% endif %} {% if not settings.ai_enabled %}disabled{% endif %}>
             <label class="form-check-label" for="autoApplyEnabled">{% trans "Automatically accept trusted updates" %}</label>
