@@ -5,10 +5,13 @@ from html import escape
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db.models import Sum
 from django.utils import timezone
 
 from apps.gmail_assistant.models import GmailAssistantSettings
+from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.sync import sync_gmail_messages_for_user
+from apps.gmail_assistant.usage_models import OpenAITokenUsage
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync_control import GmailSyncBusyError
@@ -20,6 +23,17 @@ def _gmail_assistant_url() -> str:
     domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
     base_url = domain if domain.startswith(("http://", "https://")) else f"https://{domain}"
     return f"{base_url}/gmail_stats/gmail/assistant/"
+
+
+def _tokens_used_today(*, user) -> int:
+    totals = OpenAITokenUsage.objects.filter(
+        user=user,
+        created_at__date=timezone.localdate(),
+    ).aggregate(
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+    )
+    return int(totals["input_tokens"] or 0) + int(totals["output_tokens"] or 0)
 
 
 class Command(BaseCommand):
@@ -59,9 +73,15 @@ class Command(BaseCommand):
     def _notify_summary(self, assistant_settings: GmailAssistantSettings, result: dict[str, int]) -> None:
         proposals = result.get("proposals_created", 0)
         auto_applied = result.get("auto_applied", 0)
-        if not proposals and not auto_applied:
+        analyzed_by_ai = result.get("analyzed_by_ai", 0)
+        if not proposals and not auto_applied and not analyzed_by_ai:
             return
+
         manual_review = result.get("manual_review_required", max(0, proposals - auto_applied))
+        policy = AIUsagePolicy.from_environment()
+        used_calls = policy.daily_usage(user=assistant_settings.user)
+        calls_left = max(0, policy.daily_limit - used_calls)
+        tokens_today = _tokens_used_today(user=assistant_settings.user)
         event_key = f"gmail_assistant_summary:{assistant_settings.user_id}:{timezone.now().isoformat()}"
         send_notification_once(
             event_key=event_key,
@@ -69,9 +89,11 @@ class Command(BaseCommand):
             recipient_email=assistant_settings.user.email,
             text=(
                 "📨 <b>Gmail Assistant update</b>\n\n"
-                f"🤖 AI analyzed: <b>{result.get('analyzed_by_ai', 0)}</b> emails\n"
+                f"🤖 AI analyzed: <b>{analyzed_by_ai}</b> emails\n"
                 f"📝 Manual review needed: <b>{manual_review}</b> suggestions\n"
-                f"✅ Automatically accepted: <b>{auto_applied}</b> trusted updates"
+                f"✅ Automatically accepted: <b>{auto_applied}</b> trusted updates\n\n"
+                f"⚡ AI quota left: <b>{calls_left}/{policy.daily_limit} calls</b>\n"
+                f"🪙 OpenAI tokens used today: <b>{tokens_today:,}</b>"
             ),
             reply_markup=url_keyboard("📨 Open Gmail Assistant", _gmail_assistant_url()),
         )
