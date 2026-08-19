@@ -83,6 +83,13 @@ def gmail_sync_api(request):
     if reanalyze_today_only and not reanalyze_existing:
         return JsonResponse({"error": "today_only requires reanalyze=1"}, status=400)
 
+    # Dev Tools reanalysis is explicitly a full investigation pass for the
+    # selected period. Include Sent so direct applications are rediscovered and
+    # reclassified together with inbound recruiter mail. Automatic sync is
+    # unaffected because reanalysis is restricted to the configured dev owner.
+    if reanalyze_existing:
+        include_sent = True
+
     # The configured development owner may deliberately rerun a sync while
     # investigating an email. The per-user execution lock below still prevents
     # overlapping Google/API work; only the manual-button cooldown is bypassed.
