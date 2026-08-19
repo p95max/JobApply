@@ -295,7 +295,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 return
             client.send_message(
                 chat_id,
-                "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send /link <code> or paste the code here.",
+                "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send <code>/link YOUR_CODE</code> or paste the code here.",
             )
             _record_audit(user_id, chat_id, "link_instruction", "not_linked", time.monotonic())
             return
