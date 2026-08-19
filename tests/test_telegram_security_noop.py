@@ -12,6 +12,7 @@ from apps.accounts.models import UserProfile
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import handle_update
 from apps.telegram_bot.permissions import is_update_allowed
+from apps.telegram_bot.selectors import AIUsageSummary
 
 
 def _config(**overrides):
@@ -42,7 +43,7 @@ def test_unauthorized_chat_id_is_rejected():
 
 
 @pytest.mark.django_db
-def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
+def test_unlinked_user_always_gets_styled_connection_instruction():
     class Client:
         def __init__(self):
             self.calls = []
@@ -60,18 +61,15 @@ def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
     }
 
     handle_update(update, client, _config())
-
-    assert client.calls == [
-        (
-            999,
-            "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send <code>/link YOUR_CODE</code> or paste the code here.",
-            None,
-        )
-    ]
-
     handle_update(update, client, _config())
 
-    assert len(client.calls) == 1
+    assert len(client.calls) == 2
+    for chat_id, text, markup in client.calls:
+        assert chat_id == 999
+        assert markup is None
+        assert text.startswith("🔗 <b>Connect Telegram</b>")
+        assert "This chat is not connected to JobApply yet." in text
+        assert "<code>/link YOUR_CODE</code>" in text
 
 
 @pytest.mark.django_db
@@ -95,6 +93,10 @@ def test_linked_user_is_allowed_and_receives_only_their_gmail_summary(monkeypatc
     monkeypatch.setattr(
         "apps.telegram_bot.handlers.get_gmail_summary",
         lambda email: (captured.append(email) or (0, [])),
+    )
+    monkeypatch.setattr(
+        "apps.telegram_bot.handlers.get_ai_usage_summary",
+        lambda email: AIUsageSummary(calls_left=50, daily_limit=50, tokens_used_today=0),
     )
     update = {
         "message": {
