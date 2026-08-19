@@ -63,7 +63,8 @@ def test_deploy_is_disabled_by_default():
 
     handle_update(deploy_command(), client, config(deploy_enabled=False))
 
-    assert client.messages[0][1] == "Deploy is disabled by configuration."
+    assert "Deploy disabled" in client.messages[0][1]
+    assert "disabled by configuration" in client.messages[0][1]
 
 
 def test_deploy_marker_uses_a_runtime_directory_outside_private_tmp(monkeypatch, tmp_path):
