@@ -19,8 +19,13 @@ from django.views.decorators.http import require_POST
 from .forms import JobApplicationForm
 from .models import ApplicationStatus, JobApplication
 from .services.limits import ApplicationLimitError, ensure_application_capacity
-from apps.gmail_assistant.models import AnalysisClassifier, ApplicationUpdateProposal, ProposalStatus
-from apps.gmail_stats.models import GmailMessage
+from apps.gmail_assistant.models import (
+    AnalysisClassifier,
+    ApplicationUpdateProposal,
+    GmailEventType,
+    ProposalStatus,
+)
+from apps.gmail_stats.models import GmailDirection, GmailMessage
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +43,17 @@ def list_applications(request):
             status=ProposalStatus.ACCEPTED,
             analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
         )
-        qs = JobApplication.objects.filter(user=request.user).annotate(
-            has_ai_processed_proposal=Exists(ai_processed_proposals)
+        sent_by_user_proposals = ApplicationUpdateProposal.objects.filter(
+            user=request.user,
+            application_id=OuterRef("pk"),
+            status=ProposalStatus.ACCEPTED,
+            message__direction=GmailDirection.OUTBOUND,
+            analysis__event_type=GmailEventType.APPLICATION_SENT,
         )
-        # Application numbers are a stable chronological reference, not the
-        # row position of whichever sort/filter is currently displayed.
+        qs = JobApplication.objects.filter(user=request.user).annotate(
+            has_ai_processed_proposal=Exists(ai_processed_proposals),
+            has_sent_by_user_proposal=Exists(sent_by_user_proposals),
+        )
         chronological_numbers = {
             application_id: number
             for number, application_id in enumerate(
@@ -57,7 +68,7 @@ def list_applications(request):
         month = (request.GET.get("month") or "").strip()
         follow_up = request.GET.get("follow_up") == "1"
         sort = (request.GET.get("sort") or "-applied_at").strip()
-        print_mode = (request.GET.get("print") == "1")
+        print_mode = request.GET.get("print") == "1"
         all_apps_total = qs.count()
 
         if q:
@@ -91,7 +102,7 @@ def list_applications(request):
                 end = timezone.make_aware(
                     datetime(
                         year + (1 if mon == 12 else 0),
-                        (1 if mon == 12 else mon + 1),
+                        1 if mon == 12 else mon + 1,
                         1,
                         0,
                         0,
@@ -156,7 +167,6 @@ def list_applications(request):
                 "base_qs": base_qs,
                 "print_mode": print_mode,
                 "all_apps_total": all_apps_total,
-
             },
         )
     except Exception:
@@ -181,7 +191,6 @@ def list_applications(request):
                 "all_apps_total": 0,
             },
         )
-
 
 
 @login_required
@@ -294,11 +303,17 @@ def update_status(request, pk: int):
 def application_detail(request, pk: int):
     try:
         app = get_object_or_404(JobApplication, pk=pk, user=request.user)
-        ai_processed = ApplicationUpdateProposal.objects.filter(
+        accepted_proposals = ApplicationUpdateProposal.objects.filter(
             user=request.user,
             application=app,
             status=ProposalStatus.ACCEPTED,
+        )
+        ai_processed = accepted_proposals.filter(
             analysis__classifier__in=(AnalysisClassifier.AI, AnalysisClassifier.RULE_AI),
+        ).exists()
+        sent_by_user = accepted_proposals.filter(
+            message__direction=GmailDirection.OUTBOUND,
+            analysis__event_type=GmailEventType.APPLICATION_SENT,
         ).exists()
         gmail_messages = (
             GmailMessage.objects.filter(user=request.user)
@@ -308,15 +323,24 @@ def application_detail(request, pk: int):
             .distinct()
             .order_by("-received_at")
         )
-        rejection_message = gmail_messages.filter(analysis__event_type="rejection").first()
+        latest_gmail_message = gmail_messages.first()
+        rejection_message = gmail_messages.filter(analysis__event_type=GmailEventType.REJECTION).first()
+        activity_candidates = [app.applied_at]
+        if app.recruiter_reply_at:
+            activity_candidates.append(app.recruiter_reply_at)
+        if latest_gmail_message:
+            activity_candidates.append(latest_gmail_message.received_at)
+        last_activity_at = max(activity_candidates)
         return render(
             request,
             "applications/detail.html",
             {
                 "app": app,
                 "ai_processed": ai_processed,
+                "sent_by_user": sent_by_user,
                 "gmail_messages": gmail_messages,
                 "rejection_at": rejection_message.received_at if rejection_message else None,
+                "last_activity_at": last_activity_at,
             },
         )
     except Http404:
