@@ -93,6 +93,14 @@ install -o root -g jobapply -m 0750 \
   "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
   /usr/local/sbin/jobapply-deploy
 
+# Keep the Telegram unit synchronized on every deploy. RuntimeDirectory creates
+# /run/jobapply with the correct owner before the bot starts, so the atomic
+# deploy marker remains available after reboot or service restart.
+echo "==> Synchronizing Telegram bot systemd unit"
+install -m 0644 \
+  "$APP_DIR/deploy/vps/systemd/jobapply-telegram-bot.service" \
+  "$SYSTEMD_DIR/jobapply-telegram-bot.service"
+
 # Demo cleanup was added after some VPS installations. Keep these units in
 # sync on every normal deploy so production does not depend on re-running the
 # one-time install-ops bootstrap script.
