@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
-import pytest
 
 from apps.gmail_assistant.models import (
     ApplicationUpdateProposal,
@@ -83,7 +83,11 @@ def test_direct_sent_activity_does_not_duplicate_an_existing_proposal():
         event_type=GmailEventType.APPLICATION_SENT,
         is_job_related=True,
         confidence=95,
-        extracted_data={"sent_kind": "direct_application", "company": "Example", "position_title": "Python Developer"},
+        extracted_data={
+            "sent_kind": "direct_application",
+            "company": "Example",
+            "position_title": "Python Developer",
+        },
     )
     ApplicationUpdateProposal.objects.create(
         user=user,
