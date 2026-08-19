@@ -8,10 +8,13 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection
+from django.db.models import Sum
 from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus
+from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
+from apps.gmail_assistant.usage_models import OpenAITokenUsage
 from apps.gmail_stats.models import GmailSyncState
 from apps.interviews.models import InterviewEvent, InterviewStatus
 from apps.telegram_bot.heartbeat import (
@@ -39,6 +42,13 @@ class StatusSnapshot:
 class ApplicationSummary:
     counts: dict[str, int]
     next_interview: InterviewEvent | None
+
+
+@dataclass(frozen=True)
+class AIUsageSummary:
+    calls_left: int
+    daily_limit: int
+    tokens_used_today: int
 
 
 def get_owner(email: str):
@@ -124,6 +134,25 @@ def get_gmail_summary(email: str, limit: int = 5) -> tuple[int, list[Application
         .order_by("-created_at")
     )
     return queryset.count(), list(queryset[:limit])
+
+
+def get_ai_usage_summary(email: str) -> AIUsageSummary:
+    user = get_owner(email)
+    policy = AIUsagePolicy.from_environment()
+    used_calls = policy.daily_usage(user=user)
+    token_totals = OpenAITokenUsage.objects.filter(
+        user=user,
+        created_at__date=timezone.localdate(),
+    ).aggregate(
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+    )
+    tokens_used_today = int(token_totals["input_tokens"] or 0) + int(token_totals["output_tokens"] or 0)
+    return AIUsageSummary(
+        calls_left=max(0, policy.daily_limit - used_calls),
+        daily_limit=policy.daily_limit,
+        tokens_used_today=tokens_used_today,
+    )
 
 
 def get_application_summary(email: str) -> ApplicationSummary:
