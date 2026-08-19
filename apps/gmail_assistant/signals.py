@@ -72,6 +72,47 @@ def notify_significant_gmail_proposal(
     )
 
 
+def _activity_changes(proposal: ApplicationUpdateProposal) -> dict:
+    changes = dict(proposal.changes) if isinstance(proposal.changes, dict) else {}
+    changes["activity"] = {"kind": "application_sent", "source": "gmail_sent"}
+    return changes
+
+
+def _canonicalize_accepted_sent_history(*, existing) -> bool:
+    """Keep one accepted history row for a direct Sent application.
+
+    A deleted application can leave an accepted create proposal orphaned. After
+    the application is recreated, prefer the accepted proposal that points to
+    the current application, turn it into the factual Gmail activity row, and
+    move older orphaned create attempts out of Action history as superseded.
+    """
+    accepted = existing.filter(status=ProposalStatus.ACCEPTED).order_by("-reviewed_at", "-pk")
+    canonical = accepted.filter(application__isnull=False).first() or accepted.first()
+    if canonical is None:
+        return False
+
+    if canonical.proposal_type != ProposalType.ACTIVITY:
+        canonical.proposal_type = ProposalType.ACTIVITY
+        canonical.changes = _activity_changes(canonical)
+        canonical.review_note = (
+            canonical.review_note.strip()
+            or "Recorded as the canonical Gmail Sent activity after the application was accepted."
+        )
+        canonical.save(update_fields=["proposal_type", "changes", "review_note", "updated_at"])
+
+    stale_orphaned = accepted.filter(
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        application__isnull=True,
+    ).exclude(pk=canonical.pk)
+    if stale_orphaned.exists():
+        stale_orphaned.update(
+            status=ProposalStatus.IGNORED,
+            review_note="Superseded after the deleted application was recreated from the same Gmail message.",
+            updated_at=timezone.now(),
+        )
+    return True
+
+
 @receiver(post_save, sender=GmailAssistantSettings)
 def record_proposal_less_sent_activity(
     sender,
@@ -80,12 +121,14 @@ def record_proposal_less_sent_activity(
     update_fields,
     **kwargs,
 ) -> None:
-    """Materialize processed direct Sent applications after a successful sync.
+    """Materialize canonical direct-Sent history after a successful sync.
 
     The normal proposal builder remains authoritative. If an accepted create
     proposal lost its application because that application was deleted, restore
-    a new pending create proposal for review. Otherwise create an accepted
-    activity record only when no proposal exists at all.
+    a new pending create proposal for review. Once a direct-Sent application is
+    accepted, represent it in Action history as one Gmail activity row linked to
+    the current application, while preserving superseded orphaned attempts under
+    Other decisions.
     """
     if created or not instance.last_successful_run_at:
         return
@@ -122,7 +165,15 @@ def record_proposal_less_sent_activity(
             proposal_type=ProposalType.CREATE_APPLICATION,
             status=ProposalStatus.PENDING,
         ).exists()
-        if stale_accepted_create is not None and not has_pending_create:
+        has_current_accepted_application = existing.filter(
+            status=ProposalStatus.ACCEPTED,
+            application__isnull=False,
+        ).exists()
+        if (
+            stale_accepted_create is not None
+            and not has_pending_create
+            and not has_current_accepted_application
+        ):
             application_changes = stale_accepted_create.changes.get("application")
             if isinstance(application_changes, dict) and application_changes.get("operation") == "create":
                 ApplicationUpdateProposal.objects.create(
@@ -139,9 +190,12 @@ def record_proposal_less_sent_activity(
                 )
                 continue
 
-        if existing.exclude(proposal_type=ProposalType.ACTIVITY).exists() or existing.filter(
-            proposal_type=ProposalType.ACTIVITY
-        ).exists():
+        if _canonicalize_accepted_sent_history(existing=existing):
+            continue
+
+        if has_pending_create or existing.exclude(proposal_type=ProposalType.ACTIVITY).exists():
+            continue
+        if existing.filter(proposal_type=ProposalType.ACTIVITY).exists():
             continue
         ApplicationUpdateProposal.objects.create(
             user=instance.user,
