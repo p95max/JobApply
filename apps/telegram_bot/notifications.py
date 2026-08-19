@@ -26,7 +26,7 @@ def _target_chat_id(config: TelegramConfig, *, recipient_email: str | None = Non
 
 
 def url_keyboard(text: str, url: str) -> dict[str, list[list[dict[str, str]]]]:
-    return {"inline_keyboard": [[{"text": text, "url": url}]]
+    return {"inline_keyboard": [[{"text": text, "url": url}]]}
 
 
 def send_notification(
