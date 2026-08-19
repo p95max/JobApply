@@ -85,3 +85,31 @@ def test_atomic_ai_reservations_stop_at_the_daily_limit(django_user_model):
     assert settings_obj.ai_daily_usage_count == 2
     assert settings_obj.ai_daily_usage_date == timezone.localdate()
     assert policy.daily_usage(user=user) == 2
+
+
+@pytest.mark.django_db
+def test_ai_quota_exhaustion_sends_one_telegram_alert_on_transition(django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("quota-alert", email="quota@example.com")
+    policy = AIUsagePolicy(daily_limit=2, confidence_threshold=80, rules_fallback_enabled=True)
+    notifications = []
+
+    monkeypatch.setattr(
+        "apps.telegram_bot.notifications.send_notification_once",
+        lambda **kwargs: notifications.append(kwargs) or True,
+    )
+
+    assert policy.reserve_call(user=user) is True
+    assert notifications == []
+
+    assert policy.reserve_call(user=user) is True
+    assert len(notifications) == 1
+    assert notifications[0]["event_type"] == "ai_quota_exhausted"
+    assert notifications[0]["recipient_email"] == "quota@example.com"
+    assert notifications[0]["event_key"] == (
+        f"ai_quota_exhausted:{user.pk}:{timezone.localdate().isoformat()}"
+    )
+    assert "AI quota exhausted" in notifications[0]["text"]
+    assert "0/2" in notifications[0]["text"]
+
+    assert policy.reserve_call(user=user) is False
+    assert len(notifications) == 1
