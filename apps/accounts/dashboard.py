@@ -55,7 +55,7 @@ def dashboard(request):
             status=ProposalStatus.ACCEPTED,
         )
         .select_related("message", "analysis", "application")
-        .order_by("-reviewed_at", "-updated_at")
+        .order_by("-message__received_at", "-created_at")
     )
     assistant_settings = GmailAssistantSettings.objects.filter(user=request.user).first()
     profile = UserProfile.objects.filter(user=request.user).only("telegram_chat_id").first()
