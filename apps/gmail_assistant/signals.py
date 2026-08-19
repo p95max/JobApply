@@ -78,27 +78,45 @@ def _activity_changes(proposal: ApplicationUpdateProposal) -> dict:
     return changes
 
 
+def _has_created_application(proposal: ApplicationUpdateProposal) -> bool:
+    application_changes = proposal.changes.get("application") if isinstance(proposal.changes, dict) else None
+    return isinstance(application_changes, dict) and application_changes.get("operation") == "create"
+
+
 def _canonicalize_accepted_sent_history(*, existing) -> bool:
     """Keep one accepted history row for a direct Sent application.
 
+    Action history records the action that actually happened. A proposal that
+    created an application therefore remains ``Create application`` while Gmail
+    provenance is stored in ``changes.activity``. Only proposal-less/no-op Sent
+    processing is represented by the generic ``Gmail activity`` type.
+
     A deleted application can leave an accepted create proposal orphaned. After
     the application is recreated, prefer the accepted proposal that points to
-    the current application, turn it into the factual Gmail activity row, and
-    move older orphaned create attempts out of Action history as superseded.
+    the current application and move older orphaned create attempts out of
+    Action history as superseded.
     """
     accepted = existing.filter(status=ProposalStatus.ACCEPTED).order_by("-reviewed_at", "-pk")
     canonical = accepted.filter(application__isnull=False).first() or accepted.first()
     if canonical is None:
         return False
 
-    if canonical.proposal_type != ProposalType.ACTIVITY:
-        canonical.proposal_type = ProposalType.ACTIVITY
-        canonical.changes = _activity_changes(canonical)
-        canonical.review_note = (
-            canonical.review_note.strip()
-            or "Recorded as the canonical Gmail Sent activity after the application was accepted."
-        )
-        canonical.save(update_fields=["proposal_type", "changes", "review_note", "updated_at"])
+    update_fields: list[str] = []
+    if canonical.proposal_type == ProposalType.ACTIVITY and _has_created_application(canonical):
+        canonical.proposal_type = ProposalType.CREATE_APPLICATION
+        update_fields.append("proposal_type")
+
+    activity_changes = _activity_changes(canonical)
+    if canonical.changes != activity_changes:
+        canonical.changes = activity_changes
+        update_fields.append("changes")
+
+    if not canonical.review_note.strip():
+        canonical.review_note = "Recorded with Gmail Sent provenance after the application action was accepted."
+        update_fields.append("review_note")
+
+    if update_fields:
+        canonical.save(update_fields=[*update_fields, "updated_at"])
 
     stale_orphaned = accepted.filter(
         proposal_type=ProposalType.CREATE_APPLICATION,
@@ -125,10 +143,10 @@ def record_proposal_less_sent_activity(
 
     The normal proposal builder remains authoritative. If an accepted create
     proposal lost its application because that application was deleted, restore
-    a new pending create proposal for review. Once a direct-Sent application is
-    accepted, represent it in Action history as one Gmail activity row linked to
-    the current application, while preserving superseded orphaned attempts under
-    Other decisions.
+    a new pending create proposal for review. Accepted application actions keep
+    their semantic proposal type in Action history and receive Gmail provenance;
+    only direct-Sent messages with no application action become generic activity
+    rows.
     """
     if created or not instance.last_successful_run_at:
         return
