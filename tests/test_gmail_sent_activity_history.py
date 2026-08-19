@@ -278,9 +278,9 @@ def test_recreated_sent_application_collapses_to_one_canonical_action_history_ev
     assert stale.status == ProposalStatus.IGNORED
     assert "Superseded" in stale.review_note
     assert current.status == ProposalStatus.ACCEPTED
-    assert current.proposal_type == ProposalType.ACTIVITY
+    assert current.proposal_type == ProposalType.CREATE_APPLICATION
     assert current.application_id == current_application.pk
-    assert current.changes["activity"] == {"kind": "application_sent", "source": "gmail_sent"}
+    assert current.changes["application"]["operation"] == "create"
     assert ApplicationUpdateProposal.objects.filter(
         user=user,
         message=message,
@@ -292,5 +292,5 @@ def test_recreated_sent_application_collapses_to_one_canonical_action_history_ev
     response = client.get(reverse("gmail_assistant:gmail_assistant"), {"status": ProposalStatus.ACCEPTED})
     content = response.content.decode()
     assert content.count("Bewerbung im Bereich Softwareentwicklung") == 1
-    assert "Gmail activity" in content
+    assert "Create application" in content
     assert "Klengel" in content
