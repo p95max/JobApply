@@ -27,6 +27,22 @@ def _bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
     return min(maximum, max(minimum, value))
 
 
+def _notify_quota_exhausted(*, user: Any, daily_limit: int, today: date) -> None:
+    """Send one Telegram alert when the app-level AI call quota reaches zero."""
+    from apps.telegram_bot.notifications import send_notification_once
+
+    send_notification_once(
+        event_key=f"ai_quota_exhausted:{user.pk}:{today.isoformat()}",
+        event_type="ai_quota_exhausted",
+        recipient_email=user.email,
+        text=(
+            "🚨 <b>AI quota exhausted</b>\n\n"
+            f"⚡ AI calls left: <b>0/{daily_limit}</b>\n\n"
+            "Further AI analysis is blocked until the daily quota resets."
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class AIUsagePolicy:
     daily_limit: int
@@ -72,6 +88,7 @@ class AIUsagePolicy:
         if self.daily_limit <= 0:
             return False
         today = timezone.localdate()
+        quota_exhausted_now = False
         with transaction.atomic():
             get_user_model().objects.select_for_update().get(pk=user.pk)
             settings_obj, _ = GmailAssistantSettings.objects.get_or_create(user=user)
@@ -84,11 +101,14 @@ class AIUsagePolicy:
                     settings_obj=settings_obj,
                 )
             if settings_obj.ai_daily_usage_count >= self.daily_limit:
-                if settings_obj.pk:
-                    settings_obj.save(update_fields=["ai_daily_usage_date", "ai_daily_usage_count", "updated_at"])
+                settings_obj.save(update_fields=["ai_daily_usage_date", "ai_daily_usage_count", "updated_at"])
                 return False
             settings_obj.ai_daily_usage_count += 1
+            quota_exhausted_now = settings_obj.ai_daily_usage_count >= self.daily_limit
             settings_obj.save(update_fields=["ai_daily_usage_date", "ai_daily_usage_count", "updated_at"])
+
+        if quota_exhausted_now:
+            _notify_quota_exhausted(user=user, daily_limit=self.daily_limit, today=today)
         return True
 
     @staticmethod
