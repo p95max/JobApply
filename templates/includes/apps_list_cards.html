@@ -18,7 +18,11 @@
       </div>
 
       <header class="application-card__header">
-        <h2 class="application-card__title">{{ app.title }}</h2>
+        <h2 class="application-card__title">
+          {{ app.title }}
+          {% if app.has_ai_processed_proposal %}<span class="badge text-bg-info ms-1" title="{% trans 'Created or updated from an accepted AI suggestion' %}">🤖 AI</span>{% endif %}
+          {% if app.has_sent_by_user_proposal %}<span class="badge text-bg-primary ms-1" title="{% trans 'Application was originally sent from your mailbox' %}">✉ {% trans "Sent by me" %}</span>{% endif %}
+        </h2>
         <div class="application-card__company">{{ app.company }}</div>
       </header>
 
