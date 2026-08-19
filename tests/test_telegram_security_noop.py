@@ -64,7 +64,7 @@ def test_unlinked_user_gets_safe_instruction_for_telegram_connection():
     assert client.calls == [
         (
             999,
-            "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send /link <code> or paste the code here.",
+            "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send <code>/link YOUR_CODE</code> or paste the code here.",
             None,
         )
     ]
