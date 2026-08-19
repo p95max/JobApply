@@ -5,7 +5,7 @@ from django.urls import resolve
 
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import CommandTimedOut, _jobapply_url, handle_update
-from apps.telegram_bot.selectors import ApplicationSummary
+from apps.telegram_bot.selectors import AIUsageSummary, ApplicationSummary
 
 
 class FakeClient:
@@ -50,17 +50,25 @@ def test_jobapply_url_is_https_and_resolves():
 def test_gmail_command_uses_gmail_assistant_button_when_pending(monkeypatch):
     client = FakeClient()
     monkeypatch.setattr("apps.telegram_bot.handlers.get_gmail_summary", lambda email: (0, []))
+    monkeypatch.setattr(
+        "apps.telegram_bot.handlers.get_ai_usage_summary",
+        lambda email: AIUsageSummary(calls_left=37, daily_limit=50, tokens_used_today=12450),
+    )
 
     handle_update(_update("/gmail"), client, _config())
 
     _chat_id, text, markup = client.calls[0]
     assert "No pending proposals" in text
+    assert "AI quota left: <b>37/50 calls</b>" in text
+    assert "OpenAI tokens used today: <b>12,450</b>" in text
     assert markup is None
 
     monkeypatch.setattr("apps.telegram_bot.handlers.get_gmail_summary", lambda email: (2, []))
     handle_update(_update("/gmail"), client, _config())
 
     assert "Pending proposals: <b>2</b>" in client.calls[1][1]
+    assert "AI quota left: <b>37/50 calls</b>" in client.calls[1][1]
+    assert "OpenAI tokens used today: <b>12,450</b>" in client.calls[1][1]
     assert "href=" not in client.calls[1][1]
     assert client.calls[1][2] == {
         "inline_keyboard": [
