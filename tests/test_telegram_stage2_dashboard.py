@@ -87,7 +87,7 @@ def test_ping_confirms_that_bot_is_online():
 
     handle_update(_update("/ping"), client, _config())
 
-    assert client.calls == [(10, "🟢 JobApply bot is online.", None)]
+    assert client.calls == [(10, "🟢 <b>JobApply bot is online</b>", None)]
 
 
 def test_applications_command_uses_web_button(monkeypatch):
@@ -117,7 +117,13 @@ def test_disconnect_deep_link_returns_confirmation():
 
     handle_update(_update("/start disconnected"), client, _config())
 
-    assert client.calls == [(10, "Telegram disconnected from JobApply.", None)]
+    assert client.calls == [
+        (
+            10,
+            "🔌 <b>Telegram disconnected</b>\n\nThis chat is no longer connected to JobApply.",
+            None,
+        )
+    ]
 
 
 def test_timeout_returns_safe_message(monkeypatch):
@@ -134,4 +140,6 @@ def test_timeout_returns_safe_message(monkeypatch):
 
     handle_update(_update("/status"), client, _config())
 
-    assert client.calls == [(10, "Command timed out. Try again later.", None)]
+    assert client.calls == [
+        (10, "⏱ <b>Command timed out</b>\n\nPlease try again in a moment.", None)
+    ]
