@@ -39,6 +39,7 @@ class ProposalType(models.TextChoices):
     CREATE_INTERVIEW = "create_interview", "Create interview"
     UPDATE_INTERVIEW = "update_interview", "Update interview"
     ACTION_REQUIRED = "action_required", "Action required"
+    ACTIVITY = "activity", "Gmail activity"
 
 
 class ProposalStatus(models.TextChoices):
