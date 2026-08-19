@@ -1,0 +1,44 @@
+{% extends "gmail_assistant/assistant.html" %}
+{% load i18n %}
+
+{% block page_scripts %}
+  {{ block.super }}
+  {% if selected_status == 'accepted' %}
+    <script>
+      (() => {
+        const historyList = document.querySelector(".gmail-history-list");
+        if (!historyList) return;
+
+        const form = document.createElement("form");
+        form.method = "get";
+        form.className = "card mb-3";
+        form.setAttribute("aria-label", "{% trans 'Search Action history' %}");
+        form.innerHTML = `
+          <div class="card-body py-3">
+            <input type="hidden" name="status" value="accepted">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-9">
+                <label class="form-label small mb-1" for="historySearch">{% trans "Search Action history" %}</label>
+                <input
+                  id="historySearch"
+                  class="form-control"
+                  type="search"
+                  name="q"
+                  value="{{ history_search|escapejs }}"
+                  placeholder="{% trans 'Search subject, sender, company or role' %}"
+                >
+              </div>
+              <div class="col-12 col-md-3 d-flex gap-2">
+                <button class="btn btn-primary flex-grow-1" type="submit">{% trans "Search" %}</button>
+                {% if history_search %}
+                  <a class="btn btn-outline-secondary" href="?status=accepted">{% trans "Clear" %}</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        `;
+        historyList.before(form);
+      })();
+    </script>
+  {% endif %}
+{% endblock %}
