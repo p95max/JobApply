@@ -105,19 +105,15 @@
         {% if accepted_proposals %}
           <div class="dashboard-feed">
             {% for proposal in accepted_proposals %}
-              {% if proposal.application %}
-                {% url 'applications:detail' proposal.application.pk as history_item_url %}
-              {% else %}
-                {% url 'gmail_assistant:gmail_assistant' as history_item_url %}
-              {% endif %}
-              <a class="dashboard-feed__item dashboard-feed__item--accepted dashboard-feed__item--link" href="{{ history_item_url }}{% if not proposal.application %}?status=accepted{% endif %}">
+              {% url 'gmail_assistant:gmail_proposal_detail' proposal.pk as history_item_url %}
+              <a class="dashboard-feed__item dashboard-feed__item--accepted dashboard-feed__item--link" href="{{ history_item_url }}">
                 <div class="dashboard-feed__icon dashboard-feed__icon--accepted" aria-hidden="true">
-                  {% if proposal.analysis.event_type == 'rejection' %}❌{% elif proposal.analysis.event_type == 'documents_requested' %}📄{% elif proposal.analysis.event_type == 'interview_invitation' or proposal.analysis.event_type == 'interview_rescheduled' %}📅{% elif proposal.analysis.event_type == 'interview_cancelled' %}🚫{% elif proposal.analysis.event_type == 'offer' %}🎉{% elif proposal.analysis.event_type == 'application_sent' %}📤{% elif proposal.analysis.event_type == 'application_received' %}📨{% elif proposal.analysis.event_type == 'application_draft_reminder' %}📝{% elif proposal.analysis.event_type == 'application_confirmation_required' %}✅{% elif proposal.analysis.event_type == 'screening' %}🔎{% else %}✉️{% endif %}
+                  {% if proposal.proposal_type == 'create_application' %}✨{% elif proposal.proposal_type == 'update_application' %}📝{% elif proposal.proposal_type == 'create_interview' %}📅{% elif proposal.proposal_type == 'update_interview' %}🔄{% elif proposal.proposal_type == 'action_required' %}⚠️{% else %}✓{% endif %}
                 </div>
                 <div class="dashboard-feed__body">
-                  <strong>{{ proposal.analysis.get_event_type_display }}</strong>
+                  <strong>{{ proposal.get_proposal_type_display }}</strong>
                   <span>{{ proposal.message.subject|default:proposal.message.from_name|truncatechars:72 }}</span>
-                  <small>{% trans "Accepted" %} · {{ proposal.reviewed_at|default:proposal.updated_at|date:"d.m.Y H:i" }}</small>
+                  <small>{{ proposal.message.received_at|date:"d.m.Y H:i" }}</small>
                 </div>
               </a>
             {% endfor %}
