@@ -6,8 +6,17 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
-from apps.gmail_assistant.models import ApplicationUpdateProposal, GmailEventType
+from apps.gmail_assistant.models import (
+    ApplicationUpdateProposal,
+    GmailAnalysis,
+    GmailAssistantSettings,
+    GmailEventType,
+    ProposalStatus,
+    ProposalType,
+)
+from apps.gmail_stats.models import GmailDirection
 from apps.telegram_bot.notifications import send_notification_once, url_keyboard
 
 
@@ -61,6 +70,61 @@ def notify_significant_gmail_proposal(
             reply_markup=url_keyboard("📨 Open Gmail Assistant", assistant_url),
         )
     )
+
+
+@receiver(post_save, sender=GmailAssistantSettings)
+def record_proposal_less_sent_activity(
+    sender,
+    instance: GmailAssistantSettings,
+    created: bool,
+    update_fields,
+    **kwargs,
+) -> None:
+    """Materialize processed direct Sent applications after a successful sync.
+
+    The normal proposal builder remains authoritative. This only creates an
+    accepted history record when a direct outbound application was analyzed but
+    produced no proposal at all, so processed Gmail activity cannot disappear
+    from the UI while Pending stays free of no-op suggestions.
+    """
+    if created or not instance.last_successful_run_at:
+        return
+    if update_fields is not None and "last_successful_run_at" not in update_fields:
+        return
+
+    analyses = (
+        GmailAnalysis.objects.filter(
+            user=instance.user,
+            event_type=GmailEventType.APPLICATION_SENT,
+            message__direction=GmailDirection.OUTBOUND,
+            extracted_data__sent_kind="direct_application",
+        )
+        .select_related("message")
+        .order_by("message__received_at")
+    )
+    for analysis in analyses:
+        existing = ApplicationUpdateProposal.objects.filter(
+            user=instance.user,
+            message=analysis.message,
+            analysis=analysis,
+        )
+        if existing.exclude(proposal_type=ProposalType.ACTIVITY).exists() or existing.filter(
+            proposal_type=ProposalType.ACTIVITY
+        ).exists():
+            continue
+        ApplicationUpdateProposal.objects.create(
+            user=instance.user,
+            message=analysis.message,
+            analysis=analysis,
+            application=analysis.message.application,
+            proposal_type=ProposalType.ACTIVITY,
+            status=ProposalStatus.ACCEPTED,
+            match_score=100 if analysis.message.application_id else 0,
+            match_method="processed_gmail_activity",
+            changes={"activity": {"kind": "application_sent", "source": "gmail_sent"}},
+            review_note="Recorded automatically after successful Gmail sync; no application change was required.",
+            reviewed_at=timezone.now(),
+        )
 
 
 def _proposal_identity(proposal: ApplicationUpdateProposal) -> tuple[str, str]:
