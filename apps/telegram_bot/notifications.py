@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from apps.accounts.telegram_linking import resolve_linked_chat_id
 
-from .client import TelegramClient
+from .client import TelegramClient, telegram_error_detail
 from .config import TelegramConfig
 from .models import TelegramDelivery, TelegramDeliveryStatus
 
@@ -26,7 +26,7 @@ def _target_chat_id(config: TelegramConfig, *, recipient_email: str | None = Non
 
 
 def url_keyboard(text: str, url: str) -> dict[str, list[list[dict[str, str]]]]:
-    return {"inline_keyboard": [[{"text": text, "url": url}]]}
+    return {"inline_keyboard": [[{"text": text, "url": url}]]
 
 
 def send_notification(
@@ -46,7 +46,7 @@ def send_notification(
         client.send_message(chat_id, text, reply_markup=reply_markup)
         return True
     except Exception as error:
-        logger.warning("Telegram notification delivery failed: %s", type(error).__name__)
+        logger.warning("Telegram notification delivery failed: %s", telegram_error_detail(error))
         return False
     finally:
         client.close()
@@ -94,12 +94,13 @@ def send_notification_once(
     try:
         client.send_message(chat_id, text, reply_markup=reply_markup)
     except Exception as error:
+        detail = telegram_error_detail(error)
         delivery.status = TelegramDeliveryStatus.FAILED
-        delivery.error = type(error).__name__[:120]
+        delivery.error = detail[:120]
         delivery.save(update_fields=["status", "error"])
         logger.warning(
             "Telegram notification delivery failed: %s",
-            type(error).__name__,
+            detail,
             extra={"event_type": event_type},
         )
         return False
