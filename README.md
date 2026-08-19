@@ -3,148 +3,235 @@
 [![CI](https://github.com/p95max/JobApply/actions/workflows/ci.yml/badge.svg)](https://github.com/p95max/JobApply/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/p95max/JobApply/branch/master/graph/badge.svg)](https://codecov.io/gh/p95max/JobApply)
 
-JobApply is a Django application for managing job applications, interviews and recruiter replies. Users sign in with Google, can connect Gmail for read-only analysis, and may store personal CSV backups in their own Google Drive.
+JobApply is a Django application for tracking job applications and interviews and for turning Gmail recruiting traffic into auditable application updates.
 
-The Gmail Assistant is deliberately review-first: it analyses emails and prepares proposals; meaningful changes are reviewed by the user before they affect an application. A narrow opt-in auto-apply mode is available only for trusted, low-risk updates.
+Users sign in with Google, manage applications in the web UI, optionally connect Gmail for read-only analysis, and can save personal CSV backups to their own Google Drive. The Gmail Assistant combines deterministic rules, optional OpenAI analysis, application matching, explicit proposal review, trusted auto-apply, token accounting and Telegram notifications.
 
-## What it provides
+The core design is **review-first and provenance-aware**: an email is analysed first, then represented as a proposal or recorded Gmail activity. Application state is changed only by an accepted action or by the deliberately narrow trusted auto-apply path. Sent applications keep their Gmail provenance and do not masquerade as recruiter replies.
 
-- Google OAuth sign-in with a demo-friendly public landing page
-- Job application tracking: statuses, notes, filters, imports/exports and printable views
-- Interview planning linked to applications
-- Gmail statistics and a Gmail Assistant for recruiter replies and sent applications
-- Rule-based classification with optional OpenAI analysis and per-user daily limits
-- Matching by Gmail thread, application reference, sender/domain, company and normalized role
-- Guided five-step proposal review with evidence, edit fields, optional notes and safe linking
-- Telegram notifications and a private user/administrator bot menu
-- Personal Google Drive CSV backups, manual or automated
-- Docker Compose development and a systemd/Caddy/Gunicorn VPS deployment
+## Current feature set
+
+- Google OAuth sign-in and a rate-limited temporary demo mode
+- Application tracker with statuses, notes, filters, CSV import/export and printable views
+- Interview records linked to applications
+- Gmail statistics plus Gmail Assistant analysis for Inbox and manually selected Sent mail
+- Rule-based classification with optional OpenAI structured analysis
+- Per-user atomic daily AI-call quota and persistent input/output token accounting
+- Deterministic-first application matching using thread history, references, sender/domain, company and normalized role
+- Proposal workflow for create/update application, create/update interview and action-required events
+- Canonical Action history with Gmail provenance, search and pagination
+- Recovery of a deleted application from the already accepted Sent-Gmail history without fabricating a recruiter event
+- Narrow trusted auto-apply for low-risk exact matches
+- Telegram user/admin bot, Gmail summaries, system alerts and AI quota exhaustion alerts
+- Staff AI audit API behind an optional unguessable path
+- Personal Google Drive CSV backups, manual or automatic
+- Local Docker Compose setup and production Caddy + Gunicorn + systemd deployment
 
 ## Stack
 
 - Python 3.13+
 - Django 5.2
-- PostgreSQL
+- PostgreSQL 18 in Docker development
 - Bootstrap 5
-- Poetry, Pytest and Ruff
+- Poetry
+- Pytest / pytest-django
+- Ruff
+- django-allauth
 - Google OAuth, Gmail API and Google Drive API
 - OpenAI Responses API (optional)
 - Telegram Bot API (optional)
 
+## Project structure
+
+The current Django codebase is split into focused apps:
+
+```text
+apps/
+├── accounts/         Google login, profiles, demo users and connected services
+├── applications/     application tracker, imports/exports and application views
+├── interviews/       interview records and application linkage
+├── gmail_stats/      Gmail sync, stored messages, credentials and statistics
+├── gmail_assistant/  classification, AI, matching, proposals, history and token usage
+├── telegram_bot/     bot commands, notifications, health/deploy integration
+├── reports/          reporting and AI/token statistics
+├── security/         security controls and protected entry points
+└── legal/            Impressum, privacy and terms pages
+```
+
+Operational files live under `deploy/vps/`; Docker development uses `docker-compose.yml` and `docker/web/Dockerfile`.
+
 ## Demo mode
 
-The public landing page can create an isolated temporary demo workspace without Google OAuth. Demo accounts are marked with `UserProfile.is_demo_user=True`, use the normal application UI with connected-service restrictions, and are intentionally short-lived.
+The public landing page can create an isolated temporary demo workspace without Google OAuth. Demo accounts use the normal application UI with connected-service restrictions and are intentionally short-lived.
 
-The default demo lifetime is **12 hours**. Demo creation is protected by a per-IP cooldown and daily allowance, so a public portfolio page cannot be used to create unlimited accounts:
+The default lifetime is **12 hours**. Creation is rate-limited per IP:
 
 ```env
 DEMO_ACCOUNT_TTL_HOURS=12
 DEMO_START_MAX_PER_IP_PER_DAY=3
 DEMO_START_COOLDOWN_SECONDS=60
-# Enable only when the reverse proxy overwrites X-Forwarded-For.
 DEMO_START_TRUST_X_FORWARDED_FOR=0
 ```
 
-The demo session expiry is aligned with the same TTL. Expired demo users are deleted by the `cleanup_demo_users` management command together with related data through Django cascading deletes. On the VPS, `jobapply-demo-cleanup.timer` runs the cleanup regularly, so stale demo workspaces do not accumulate.
-
-Manual checks:
+Expired workspaces are deleted by `cleanup_demo_users`. Production runs the cleanup from `jobapply-demo-cleanup.timer`.
 
 ```bash
 python manage.py cleanup_demo_users --dry-run
 python manage.py cleanup_demo_users
 ```
 
-When a visitor enters demo mode from the landing page, the configured Telegram administrator receives a `Demo mode started` notification. The owner-only `/newusers` command reports registered users from the last seven days and shows demo workspaces as a separate count rather than mixing anonymous demos into the email list.
+Starting a demo can notify the configured Telegram administrator. `/newusers` keeps temporary demo workspaces separate from normal registered-user counts.
 
 ## Gmail Assistant
 
-Gmail access uses the read-only OAuth scope:
+Gmail is accessed with the read-only scope:
 
 ```text
 https://www.googleapis.com/auth/gmail.readonly
 ```
 
-The Assistant recognises, among other things:
+The Assistant recognises events including:
 
-- application sent or received
-- confirmations and actions required
-- requests for documents
-- recruiter replies, rejections, interviews, offers and cancellations
-- applications sent manually from the user's own Gmail account
+- application sent / application received
+- application confirmation
+- recruiter/general update
+- action required / documents requested
+- rejection
+- interview invitation, reschedule and cancellation
+- offer
+- manually sent direct applications from the user's Gmail Sent mailbox
 
-It reads inbound mail and can also import relevant messages from **Sent**. Sent messages are labelled `myself_sent`; the user's own email address is never interpreted as an employer.
+Inbound mail is processed by normal sync. Sent scanning is manual: the user explicitly enables **Include applications sent by me** for a sync/reanalysis operation. Automatic background checks do not scan Sent.
+
+### Analysis pipeline
+
+At a high level:
+
+```text
+Gmail API
+  -> GmailMessage
+  -> deterministic rules
+  -> optional OpenAI structured classification
+  -> GmailAnalysis
+  -> application matching
+  -> ApplicationUpdateProposal / accepted Gmail activity
+  -> review or trusted auto-apply
+  -> JobApplication / Interview
+```
+
+Rules are used as the first line of classification and as the configured fallback. AI requests use sanitized bounded email text and structured output. Attachments are never sent to the AI provider.
 
 ### User workflow
 
 1. Sign in with Google and open **Gmail Assistant**.
-2. Optionally enable AI analysis for the current account.
-3. Pick a sync period (one day, week, month, three months or six months) and press **Sync Gmail**.
-4. Filter or search pending suggestions and open a card.
-5. Review the source email, evidence, detected values and matching result.
-6. Link an existing application when appropriate, edit extracted values if required, then accept, reject or ignore.
+2. Enable AI analysis if desired.
+3. Select a Gmail sync period.
+4. Optionally include relevant applications from Sent.
+5. Review pending suggestions and their source email, confidence and matching evidence.
+6. Link or edit the target when necessary.
+7. Accept, reject or ignore the proposal.
+8. Review completed actions in **Action history**.
 
-For a rejection received before any known confirmation, the review page offers **Create rejected application**. This is an explicit manual action and uses the information visible in that email; it does not invent a previous confirmation.
+Pending suggestions support search/filtering. Action history is server-searchable by Gmail subject/sender and linked application company/role and is paginated independently from pending suggestions.
 
-Cards make the analysis source visible:
+The FAQ on the Gmail Assistant page is collapsed by default; individual FAQ questions remain independently expandable.
 
-- `🤖 AI` means OpenAI produced the final structured classification.
-- `⚙️` means deterministic rules were used.
-- Every card displays its confidence and matching result.
+### Action history and provenance
+
+Action history records the **action that actually happened**, not just the classifier event that triggered it.
+
+Examples:
+
+- an outbound direct application that created a tracker entry is shown as `Create application`;
+- a rejection that changed an existing application is shown as `Update application`;
+- a processed Gmail event that required no create/update action can be represented as `Gmail activity`.
+
+The Gmail event remains the provenance source. This prevents an outbound application from being presented as an HR reply.
+
+For direct applications imported from Sent, JobApply preserves the original Gmail timestamp and marks the application as sent by the user. If that application is later deleted while its accepted Gmail history still exists, a subsequent successful Gmail processing cycle can reconstruct a pending create operation from the stale accepted record. Once recreated and accepted, obsolete orphaned duplicates are superseded so Action history contains one canonical accepted event.
+
+The application detail/list UI derives activity dates from semantic Gmail/application events rather than treating a later database update timestamp as a recruiter interaction.
 
 ### Matching and safety
 
-Matching is deterministic before fuzzy matching is considered. It prioritises Gmail thread history, application/job IDs, verified sender domain, normalized company and title, and only then fallback similarity. During a full resync, pending `create_application` suggestions can temporarily act as targets for follow-up emails, so a rejection or interview can be linked before its application is accepted. Known job platforms such as Stepstone and Indeed are not treated as employers when better company data is available.
+Matching is deterministic before fuzzy similarity is considered. Important signals include:
 
-An unmatched proposal never updates an arbitrary application. Rejections, interviews, offers and requested actions remain pending until the user links and accepts them. New applications can be created only after review or through the dedicated bulk action below.
+- Gmail thread history
+- application/job/reference IDs
+- verified sender/domain
+- normalized employer name
+- normalized role/title
+- controlled fallback similarity
 
-### AI analysis and limits
+Known job platforms such as Indeed and Stepstone are not treated as the employer when better company evidence exists.
 
-Only sanitised sender metadata, subject and bounded plain-text email content may be sent to OpenAI. Attachments are never sent. Requests use `store=False`.
+An unmatched proposal never updates an arbitrary application. Rejections, interviews, offers and requested actions stay pending until a safe link exists or the user resolves the match.
 
-AI is an opt-in setting for each user. The global configuration only enables the capability; it does not grant consent for any account. The default limit is **50 emails per user per day**. The same Gmail message is not repeatedly charged: already analysed messages are reused unless a deliberate reanalysis is requested.
+`Automatically accept trusted updates` is intentionally narrow: only low-risk updates with a verified exact application match and sufficiently high confidence are eligible. Rejections, offers, interviews, action-required items, newly created applications and uncertain matches remain reviewable.
 
-The Assistant can automatically check opted-in accounts. The interval comes from `GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS`; it is 15 minutes in the example configuration. Syncing a larger period may take from seconds to a few minutes.
+The separate **Create high-confidence applications** operation can create unmatched new-application suggestions above its confidence threshold; it does not bulk-accept rejections/interviews/actions.
 
-Each user can have only one Gmail sync at a time. A simultaneous manual or scheduled attempt is safely skipped, rather than processing the same mailbox twice. Manual requests also have a short per-user cooldown before any Google API calls are made.
+### AI quota and token usage
 
-`Automatically accept trusted updates` is deliberately restrictive. It applies only low-risk status changes with a verified exact application match and confidence at or above the configured threshold. Rejections, offers, interviews, actions, newly created applications and uncertain matches always remain pending.
+AI is opt-in per user. The app-level default is **50 potentially billable AI calls per user per day**.
 
-The **Create high-confidence applications** action is separate. It creates only unmatched new-application suggestions with AI confidence of at least 75%; it never processes rejections, interviews or actions. Review the resulting applications for duplicates.
+The reservation is atomic: concurrent workers cannot consume more than the configured daily limit. Reusing an already analysed Gmail message does not consume another reservation unless deliberate reanalysis is requested.
 
-Relevant settings:
+Successful OpenAI responses are persisted in `OpenAITokenUsage` with:
+
+- user
+- Gmail message
+- model name
+- input tokens
+- output tokens
+- timestamp
+
+The reporting UI provides request/token totals, daily history, model breakdown and estimated cost. Cost is an estimate, not an OpenAI invoice balance.
+
+JobApply does **not** know the remaining OpenAI account balance. It knows the remaining internal daily AI-call quota and the tokens already consumed by recorded successful requests.
+
+The Gmail background worker includes both in Telegram summaries, for example:
+
+```text
+⚡ AI quota left: 37/50 calls
+🪙 OpenAI tokens used today: 12,450
+```
+
+When the last available app-level call is reserved, Telegram sends a deduplicated daily critical notification:
+
+```text
+🚨 AI quota exhausted
+⚡ AI calls left: 0/50
+```
+
+Further AI analysis is blocked until the app-level daily quota resets. Rule fallback can continue where the processing path permits it.
+
+Relevant configuration:
 
 ```env
 GMAIL_ASSISTANT_AI_ENABLED=0
 GMAIL_ASSISTANT_AUTO_SYNC_ENABLED=1
 GMAIL_ASSISTANT_AUTO_SYNC_INTERVAL_SECONDS=900
-GMAIL_SYNC_MANUAL_COOLDOWN_SECONDS=60
-GMAIL_SYNC_LOCK_TIMEOUT_SECONDS=1800
 GMAIL_ASSISTANT_AI_DAILY_LIMIT=50
 GMAIL_ASSISTANT_AI_CONFIDENCE_THRESHOLD=80
 GMAIL_ASSISTANT_RULES_FALLBACK_ENABLED=1
-# A rejection can be linked to one active application at the same company
-# when its application date is within this lookback period.
 GMAIL_REJECTION_MATCH_LOOKBACK_DAYS=90
 OPENAI_API_KEY=...
 OPENAI_EMAIL_MODEL=gpt-5.4-nano
 ```
 
-Development reset and reanalysis tools are shown only when both conditions apply:
+Development reset/reanalysis controls are visible only for the configured owner account when dev tools are enabled:
 
 ```env
 GMAIL_ASSISTANT_DEV_TOOLS=1
 TELEGRAM_OWNER_EMAIL=owner@example.com
 ```
 
-The signed-in email must equal `TELEGRAM_OWNER_EMAIL`. These tools reset only that account's Gmail Assistant data or daily AI counter; they do not remove the Google connection.
-
-### Token usage
-
-The Token usage page records successful OpenAI requests per user and message: model, input/output tokens and timestamp. It provides 7/30-day totals, daily history, model breakdown and an estimated cost. The amount is an estimate, not an invoice total.
+They reset only the current owner's Gmail Assistant data or daily AI counter; they do not remove the Google connection.
 
 ## Google OAuth and APIs
 
-Enable **Gmail API** and **Google Drive API** in the Google Cloud project. JobApply asks for:
+Enable Gmail API and Google Drive API in the Google Cloud project. JobApply requests:
 
 ```text
 openid
@@ -154,7 +241,7 @@ https://www.googleapis.com/auth/gmail.readonly
 https://www.googleapis.com/auth/drive.file
 ```
 
-`drive.file` allows only files created by JobApply. It does not grant access to every file in a user's Drive.
+`drive.file` limits Drive access to files created/opened through JobApply rather than granting blanket access to the user's Drive.
 
 Register the correct callback for each environment:
 
@@ -163,40 +250,46 @@ http://localhost:8000/accounts/google/login/callback/
 https://your-domain.example/accounts/google/login/callback/
 ```
 
-For a Codespaces public port, use its public HTTPS domain in `DJANGO_SITE_DOMAIN`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` and the Google callback. Do not use `0.0.0.0:8000` as an external OAuth callback.
+For a public Codespaces port, use its HTTPS host in `DJANGO_SITE_DOMAIN`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` and the Google OAuth callback.
+
+OAuth access/refresh tokens are encrypted at rest. Configure a stable secret separate from the Django secret when possible:
+
+```env
+OAUTH_TOKEN_ENCRYPTION_KEY=...
+```
 
 ## Personal Google Drive backups
 
 In **Services → Cloud backups**, a connected user can:
 
-- save an application CSV backup manually with **Save backup manually**;
+- save an application CSV backup manually;
 - restore a saved CSV backup;
 - enable personal automatic backups.
 
-Automatic personal backups retain the latest three CSV files in that user's JobApply Drive folder. The worker checks enabled accounts every five minutes but uploads only when the configured interval is due; the default is six hours:
+Automatic personal backups retain the latest three application CSV files created by JobApply. The default backup interval is six hours:
 
 ```env
 PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS=21600
 ```
 
-The personal backup worker must run in every environment. In Docker Compose it is `backup-worker`; on a VPS it is `jobapply-drive-backup-worker.service`.
+Docker service: `backup-worker`.
 
-VPS database dumps and optional Neon recovery synchronisation are separate server operations, not copies of a user's personal applications. Their schedule is displayed only to the configured operations owner.
+Production service: `jobapply-drive-backup-worker.service`.
+
+Server PostgreSQL dumps and optional Neon recovery sync are separate operational backups and are not the user's personal Drive backup feature.
 
 ## Telegram bot
 
-Telegram is optional. Linking a bot from **Services → Telegram** can use the normal Telegram redirect or a one-time code entered in the bot.
+Telegram is optional and linked from **Services → Telegram**. A user can connect through the normal Telegram flow or a short-lived link code.
 
-The bot uses command scopes, so ordinary private chats see only:
+Normal private-chat commands include:
 
 - `/help`
 - `/ping`
 - `/gmail`
 - `/applications`
 
-`/gmail` opens the Gmail Assistant review page and `/applications` provides a compact application summary with a hidden link to JobApply. It does not expose infrastructure data or mass action buttons.
-
-The configured owner additionally sees:
+The configured owner additionally has administrative commands including:
 
 - `/admin`
 - `/status`
@@ -205,9 +298,20 @@ The configured owner additionally sees:
 - `/doctor`
 - `/deploy`
 
-`/newusers` shows active registered users from the last seven days by email and date, plus a separate `Demo workspaces` count for demo-mode sessions created during the same period.
+The bot and notification layer also handle operational events such as:
 
-Administrative commands require both the configured owner user ID and private chat ID. The bot rate-limits inbound updates and `/ping` gives a user-visible liveness response. Telegram failures are isolated from Gmail and application processing. A systemd failure hook can alert the owner if the bot service fails.
+- Gmail Assistant summaries
+- Gmail OAuth/sync errors
+- relevant proposal notifications
+- demo-mode starts
+- service/deployment alerts
+- app-level AI quota exhaustion
+
+User-facing Gmail/application links are rendered as Telegram inline buttons where supported instead of exposing raw URLs in notification text.
+
+Administrative commands require the configured owner identity/private chat. Bot failures are isolated from Gmail/application writes. Notifications use deduplication keys where repeated delivery would otherwise cause alert spam.
+
+Core configuration:
 
 ```env
 TELEGRAM_BOT_ENABLED=1
@@ -217,43 +321,104 @@ TELEGRAM_ALLOWED_CHAT_IDS=...
 TELEGRAM_ALLOWED_USER_IDS=...
 TELEGRAM_OWNER_USER_ID=...
 TELEGRAM_OWNER_EMAIL=owner@example.com
+TELEGRAM_ENV_LABEL=PRODUCTION
 TELEGRAM_NOTIFICATIONS_ENABLED=1
 TELEGRAM_CALLBACK_TTL_SECONDS=900
 TELEGRAM_RATE_LIMIT_COUNT=20
 TELEGRAM_RATE_LIMIT_WINDOW_SECONDS=60
-TELEGRAM_LINK_TOKEN_COOLDOWN_SECONDS=60
+TELEGRAM_DEPLOY_ENABLED=0
+TELEGRAM_DEPLOY_CONFIRMATION_TTL_SECONDS=300
+JOBAPPLY_PRODUCTION_BRANCH=master
 ```
 
-Never commit a Telegram token or real account/chat IDs.
+Never commit a real Telegram token, private account IDs or chat IDs.
 
-## Abuse controls and resource limits
+## Reports and staff administration
 
-Expensive or destructive operations are bounded per user before work starts. The database reservation used for CSV imports and Drive operations is atomic, so concurrent requests cannot bypass the daily limit. Gmail syncs use a separate per-user lock.
+The reports layer exposes application statistics and AI/token usage. Token reporting is based on persisted `OpenAITokenUsage`, not estimates inferred from email counts.
+
+The Django administration area can be deployed behind a non-obvious path and optional IP restriction. Administrative user views are intended for active account oversight and AI usage visibility; they are separate from ordinary user-facing reports.
 
 ```env
-# Application records and bulk deletion
+ADMIN_URL=backoffice
+ADMIN_ALLOWED_IPS=
+ADMIN_TRUST_X_FORWARDED_FOR=0
+```
+
+### Staff AI audit API
+
+A read-only OpenAPI/Swagger-compatible audit surface exists for staff diagnostics and is disabled by default.
+
+```env
+AI_AUDIT_URL=
+AI_AUDIT_API_MAX_PAGE_SIZE=100
+```
+
+For production, configure an unguessable single path segment. The API exposes processing/application metadata needed for AI-assistant diagnostics while intentionally excluding Gmail bodies, OAuth credentials and other secrets. Incorrect paths and unauthorized users receive `404`.
+
+## Abuse controls and security boundaries
+
+Expensive/destructive operations are bounded before work starts. Gmail sync uses a per-user lock; AI reservations and other resource limits use atomic database state where appropriate.
+
+Important boundaries include:
+
+- Gmail scope is read-only.
+- Google Drive uses `drive.file`.
+- OAuth tokens are encrypted at rest.
+- AI receives sanitized bounded email text; attachments are never sent.
+- OpenAI requests use `store=False` in the Gmail analysis path.
+- AI output is validated as structured data before it is used.
+- Cross-user application, Gmail proposal and backup access is blocked.
+- Unmatched Gmail events do not mutate arbitrary applications.
+- User AI quotas are atomically reserved.
+- Telegram owner commands use explicit user/chat allowlists.
+- Turnstile can protect anonymous OAuth/demo entry points.
+- Admin access can use a custom URL and IP restriction.
+- Production deployment is fixed to `master` and rejects a dirty/non-fast-forward checkout.
+
+Example application/operation limits supported by the deployment configuration include:
+
+```env
 APPLICATIONS_PER_USER_LIMIT=1000
 APPLICATION_BULK_DELETE_MAX_IDS=200
-
-# CSV imports per user
 CSV_IMPORT_DAILY_LIMIT=3
 CSV_IMPORT_COOLDOWN_SECONDS=60
-
-# Manual Google Drive save/restore operations per user
 DRIVE_MANUAL_OPERATION_DAILY_LIMIT=20
 DRIVE_MANUAL_OPERATION_COOLDOWN_SECONDS=30
 ```
 
-The Google OAuth entry point is protected by Turnstile for anonymous visitors when enabled. Do not add broad URL exemptions for `/accounts/google/`: the verification gate must remain in front of the OAuth redirect.
+## Legal pages and privacy
+
+JobApply includes localized:
+
+- Impressum
+- privacy policy
+- terms of use
+- cookie-consent UI
+- account deletion flow
+
+Production legal values are environment-driven:
+
+```env
+LEGAL_PROVIDER_NAME=...
+LEGAL_PROVIDER_ADDRESS=...
+LEGAL_CONTACT_EMAIL=...
+LEGAL_PRIVACY_CONTACT_EMAIL=...
+LEGAL_SUPERVISORY_AUTHORITY=...
+LEGAL_LOG_RETENTION=14 Tage
+```
+
+The privacy documentation covers Gmail processing, optional Google Drive backup, AI processing and service-side logging. Final production legal wording should still be reviewed for the operator's actual jurisdiction and deployment.
 
 ## Development with Docker Compose
 
 ### Requirements
 
-- Docker and Docker Compose v2
-- Google OAuth credentials
+- Docker
+- Docker Compose v2
+- Google OAuth credentials for connected-account features
 
-Create `.env` from `.env.example`, then configure at least:
+Create `.env` from `.env.example` and configure at least:
 
 ```env
 DJANGO_SECRET_KEY=change-me
@@ -274,88 +439,63 @@ DJANGO_SITE_DOMAIN=localhost:8000
 TURNSTILE_ENABLED=0
 ```
 
-Start all development services:
+Start development services:
 
 ```bash
 docker compose up --build
 ```
 
-Open <http://localhost:8000>. The Compose profile includes PostgreSQL, the web service, Gmail Assistant worker and personal Drive backup worker.
+Current Compose services are:
+
+- `db` — PostgreSQL 18
+- `web` — Django development web service
+- `gmail-assistant-worker` — automatic Gmail Assistant worker
+- `backup-worker` — Google Drive personal-backup worker
+
+Open <http://localhost:8000>.
 
 Useful logs:
 
 ```bash
+docker compose logs -f web
 docker compose logs -f gmail-assistant-worker
 docker compose logs -f backup-worker
 ```
 
 ## Production VPS deployment
 
-Production is designed for Caddy, Gunicorn, local PostgreSQL and systemd. The detailed bootstrap guide is [deploy/vps/README.md](deploy/vps/README.md).
+The production layout targets Caddy, Gunicorn, local PostgreSQL and systemd. Detailed bootstrap/operations documentation is in [deploy/vps/README.md](deploy/vps/README.md).
 
-Core services:
+Core units include:
 
 - `jobapply-web.service` — Gunicorn/Django
 - `jobapply-gmail-worker.service` — automatic Gmail Assistant sync
 - `jobapply-drive-backup-worker.service` — personal Drive backup loop
-- `jobapply-telegram-bot.service` — optional Telegram polling
-- `jobapply-demo-cleanup.timer` — periodic deletion of expired demo workspaces
-- `jobapply-backup.timer` — server PostgreSQL dump and off-site upload
-- `jobapply-neon-sync.timer` — optional recovery-database sync
+- `jobapply-telegram-bot.service` — Telegram long polling
+- `jobapply-deploy.service` — fixed deployment job
+- `jobapply-demo-cleanup.timer` — expired demo cleanup
+- `jobapply-backup.timer` — PostgreSQL backup
+- `jobapply-neon-sync.timer` — optional recovery database sync
 
-After deploying a version containing new operations files, install/update the units once as root:
+Install/update operational units after deployment changes:
 
 ```bash
 cd /opt/jobapply
 sudo bash deploy/vps/install-ops.sh
 ```
 
-The script is intentionally invoked through `bash`; it is not required to have an executable bit. It installs systemd units, scripts, Caddy configuration, journal retention and the shared job lock permissions.
+Production deployment is intentionally constrained:
 
-Check the personal backup worker:
+- source branch must be `master`;
+- working tree must be clean;
+- update must be fast-forward;
+- locked dependencies are installed;
+- tests and Django checks run before activation;
+- migrations and static collection run as part of deploy;
+- known services are restarted;
+- a health check runs after restart.
 
-```bash
-sudo systemctl status jobapply-drive-backup-worker.service --no-pager -l
-sudo journalctl -u jobapply-drive-backup-worker.service -n 80 --no-pager -l
-```
-
-Check demo cleanup:
-
-```bash
-sudo systemctl status jobapply-demo-cleanup.timer --no-pager -l
-systemctl list-timers --all | grep jobapply-demo-cleanup
-```
-
-Minimum production configuration:
-
-```env
-DJANGO_DEBUG=0
-DJANGO_ALLOWED_HOSTS=your-domain.example,127.0.0.1
-DJANGO_CSRF_TRUSTED_ORIGINS=https://your-domain.example
-DJANGO_SITE_DOMAIN=your-domain.example
-DJANGO_USE_X_FORWARDED_HOST=1
-DJANGO_SECURE_PROXY_SSL_HEADER=1
-OAUTH_TOKEN_ENCRYPTION_KEY=replace-with-a-separate-long-random-value
-TURNSTILE_ENABLED=1
-TURNSTILE_SITE_KEY=...
-TURNSTILE_SECRET_KEY=...
-DEMO_ACCOUNT_TTL_HOURS=12
-# Leave empty to allow any Google account. To restrict access, provide a comma-separated list.
-ALLOWED_ACCOUNT_EMAILS=
-# Keep the admin URL non-obvious. Optionally restrict it to known IP addresses.
-ADMIN_URL=backoffice
-ADMIN_ALLOWED_IPS=
-# Enable only when Caddy overwrites X-Forwarded-For.
-ADMIN_TRUST_X_FORWARDED_FOR=0
-```
-
-`ALLOWED_ACCOUNT_EMAILS` is optional. When empty, any Google account may sign in. When set, only the comma-separated listed accounts may sign in.
-
-### Safe deploys
-
-Production deploys only from `master`. The fixed deploy script rejects a dirty working tree, another branch and non-fast-forward history. It installs locked dependencies, runs the test suite and Django checks, applies migrations, collects static files, restarts known services and runs a health check.
-
-The owner-only Telegram `/deploy` flow has a one-time confirmation and cannot accept a branch or shell arguments. It can start only the fixed `jobapply-deploy.service` through the installed minimal sudoers rule.
+The owner-only Telegram `/deploy` command uses a one-time confirmation and can only start the fixed deployment service; it cannot inject an arbitrary branch or shell command.
 
 Manual emergency deploy:
 
@@ -363,41 +503,16 @@ Manual emergency deploy:
 sudo /usr/local/sbin/jobapply-deploy
 ```
 
-Inspect a deployment:
+Inspect deployment output:
 
 ```bash
 sudo journalctl -u jobapply-deploy.service -n 100 --no-pager -l
 sudo tail -n 180 /var/log/jobapply/deploy-last.log
 ```
 
-### Staff AI audit API
-
-The read-only OpenAPI (Swagger-compatible) audit API is disabled by default. To enable it for staff users only, generate an unguessable path segment and add it to the production `.env`:
-
-```bash
-python3 -c 'import secrets; print(f"AI_AUDIT_URL=ai-audit-{secrets.token_urlsafe(24)}")'
-```
-
-After restarting the web service, open `https://your-domain.example/<AI_AUDIT_URL>/`. The page opens each JSON resource in a separate browser tab and links to the OpenAPI schema. Available read-only datasets are all applications, applications with pending proposals, high-confidence pending creates, AI proposals, Gmail analyses and the AI history for a selected application. They expose only processing metadata and linked application fields; they never return Gmail subjects, bodies, OAuth credentials or private review notes. The endpoint returns `404` for anonymous users, non-staff users and incorrect URLs.
-
-## Legal pages and privacy
-
-Before publishing a public demo, complete the legal values in the environment:
-
-```env
-LEGAL_PROVIDER_NAME=...
-LEGAL_PROVIDER_ADDRESS=...
-LEGAL_CONTACT_EMAIL=...
-LEGAL_PRIVACY_CONTACT_EMAIL=...
-LEGAL_SUPERVISORY_AUTHORITY=...
-LEGAL_LOG_RETENTION=14 Tage
-```
-
-JobApply includes localized **Impressum**, privacy policy and terms pages, a functional cookie-consent dialog and account deletion from profile settings with a confirmation alert. The privacy policy documents Gmail and optional Google Drive access. Obtain qualified legal advice for the final information and jurisdiction-specific requirements.
-
 ## Testing
 
-Run the quality gate in the same environment that will run the application:
+Run the project quality gate in the same environment used by the application:
 
 ```bash
 poetry run pytest -ra -vv
@@ -416,29 +531,31 @@ docker compose exec web poetry run python manage.py check
 docker compose exec web poetry run python manage.py makemigrations --check --dry-run
 ```
 
-On the VPS, use the deployment test command or the project virtualenv under the `jobapply` system user. The deploy process temporarily grants the database role only the `CREATEDB` permission required by Django test database creation, then revokes it again.
+On the VPS, the deploy test phase temporarily grants only the PostgreSQL `CREATEDB` permission required to create the Django test database and revokes it afterwards.
 
-After changing translatable UI text:
+After changing translatable UI strings:
 
 ```bash
 python manage.py makemessages -l de
 python manage.py compilemessages
 ```
 
-## Security model
+## Configuration reference
 
-- Google OAuth is the standard sign-in path; demo workspaces are isolated, temporary and rate-limited.
-- Gmail permission is read-only; Drive uses the narrow `drive.file` scope.
-- OAuth access and refresh tokens are encrypted at rest, using `OAUTH_TOKEN_ENCRYPTION_KEY` when configured (otherwise the required Django secret key).
-- Attachments are never sent to AI; requests use `store=False`.
-- AI output is validated against a strict structured schema.
-- Cross-user access to applications, Gmail proposals and Drive backups is blocked.
-- Gmail syncs are serialized per account; AI quotas and operation limits are reserved atomically.
-- Admin sign-in is throttled and can be restricted to explicit IP addresses.
-- Gmail/AI/provider failures are isolated to a message or user and do not roll back existing data.
-- Telegram command access requires configured private user and chat allowlists.
-- Deployment is fixed to `master`, confirmation-gated and rejects local changes.
-- Secrets belong in `.env`, never in Git, logs or screenshots.
+`.env.example` is the source-controlled baseline for environment configuration. Important groups are:
+
+- Django host/security settings
+- PostgreSQL
+- Google OAuth
+- Turnstile
+- demo lifetime/rate limits
+- Gmail Assistant and OpenAI
+- personal Drive backup interval
+- Telegram bot/notifications/deploy
+- legal provider/privacy values
+- staff AI audit API
+
+Do not put production secrets in the repository, screenshots, test fixtures or logs.
 
 ## Author
 
