@@ -82,10 +82,10 @@ def record_proposal_less_sent_activity(
 ) -> None:
     """Materialize processed direct Sent applications after a successful sync.
 
-    The normal proposal builder remains authoritative. This only creates an
-    accepted history record when a direct outbound application was analyzed but
-    produced no proposal at all, so processed Gmail activity cannot disappear
-    from the UI while Pending stays free of no-op suggestions.
+    The normal proposal builder remains authoritative. If an accepted create
+    proposal lost its application because that application was deleted, restore
+    a new pending create proposal for review. Otherwise create an accepted
+    activity record only when no proposal exists at all.
     """
     if created or not instance.last_successful_run_at:
         return
@@ -108,6 +108,37 @@ def record_proposal_less_sent_activity(
             message=analysis.message,
             analysis=analysis,
         )
+
+        stale_accepted_create = (
+            existing.filter(
+                proposal_type=ProposalType.CREATE_APPLICATION,
+                status=ProposalStatus.ACCEPTED,
+                application__isnull=True,
+            )
+            .order_by("-reviewed_at", "-pk")
+            .first()
+        )
+        has_pending_create = existing.filter(
+            proposal_type=ProposalType.CREATE_APPLICATION,
+            status=ProposalStatus.PENDING,
+        ).exists()
+        if stale_accepted_create is not None and not has_pending_create:
+            application_changes = stale_accepted_create.changes.get("application")
+            if isinstance(application_changes, dict) and application_changes.get("operation") == "create":
+                ApplicationUpdateProposal.objects.create(
+                    user=instance.user,
+                    message=analysis.message,
+                    analysis=analysis,
+                    application=None,
+                    proposal_type=ProposalType.CREATE_APPLICATION,
+                    status=ProposalStatus.PENDING,
+                    match_score=0,
+                    match_method="recreated_after_application_deletion",
+                    changes={"application": dict(application_changes)},
+                    review_note="",
+                )
+                continue
+
         if existing.exclude(proposal_type=ProposalType.ACTIVITY).exists() or existing.filter(
             proposal_type=ProposalType.ACTIVITY
         ).exists():
