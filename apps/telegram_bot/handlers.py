@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from apps.accounts.telegram_linking import bind_telegram_from_start
 
 from .audit import is_rate_limited, record_command_audit
-from .client import TelegramClient
+from .client import TelegramClient, telegram_error_detail
 from .config import TelegramConfig
 from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
@@ -41,8 +41,22 @@ from .texts import (
 
 logger = logging.getLogger(__name__)
 COMMAND_TIMEOUT_SECONDS = 8
-UNLINKED_REPLY_LIMIT = 1
-UNLINKED_REPLY_WINDOW_SECONDS = 300
+
+CONNECTED_TEXT = (
+    "✅ <b>Telegram connected</b>\n\n"
+    "This chat is now connected to JobApply."
+)
+DISCONNECTED_TEXT = (
+    "🔌 <b>Telegram disconnected</b>\n\n"
+    "This chat is no longer connected to JobApply."
+)
+NOT_CONNECTED_TEXT = (
+    "🔗 <b>Connect Telegram</b>\n\n"
+    "This chat is not connected to JobApply yet.\n\n"
+    "1. Open <b>Settings → Telegram</b> in JobApply.\n"
+    "2. Generate a one-time code.\n"
+    "3. Send <code>/link YOUR_CODE</code> here."
+)
 
 
 class CommandTimedOut(Exception):
@@ -238,7 +252,7 @@ def _finish_callback(
         try:
             client.edit_message_text(chat_id, int(message_id), message)
         except Exception as error:
-            logger.warning("Could not update Telegram callback message: %s", type(error).__name__)
+            logger.warning("Could not update Telegram callback message: %s", telegram_error_detail(error))
 
 
 def _answer_callback(client: TelegramClient, callback_id: str, text: str) -> None:
@@ -247,7 +261,7 @@ def _answer_callback(client: TelegramClient, callback_id: str, text: str) -> Non
     try:
         client.answer_callback_query(callback_id, text)
     except Exception as error:
-        logger.warning("Could not answer Telegram callback: %s", type(error).__name__)
+        logger.warning("Could not answer Telegram callback: %s", telegram_error_detail(error))
 
 
 def _record_audit(user_id: int, chat_id: int, command: str, result: str, started: float) -> None:
@@ -268,7 +282,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
     text_raw = str(message.get("text", "")).strip()
 
     if text_raw == "/start disconnected":
-        client.send_message(_chat_id(update), "Telegram disconnected from JobApply.")
+        client.send_message(_chat_id(update), DISCONNECTED_TEXT)
         return
 
     if text_raw:
@@ -278,25 +292,14 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             logger.exception("Telegram account binding failed")
             profile = None
         if profile is not None:
-            client.send_message(_chat_id(update), "Telegram connected to JobApply.")
+            client.send_message(_chat_id(update), CONNECTED_TEXT)
             return
 
     if not is_update_allowed(update, config):
         if (message.get("chat") or {}).get("type") == "private":
             user_id = _user_id(update)
             chat_id = _chat_id(update)
-            if is_rate_limited(
-                user_id=user_id,
-                chat_id=chat_id,
-                limit=UNLINKED_REPLY_LIMIT,
-                window_seconds=UNLINKED_REPLY_WINDOW_SECONDS,
-            ):
-                logger.info("Throttled Telegram linking instruction")
-                return
-            client.send_message(
-                chat_id,
-                "This Telegram chat is not connected to JobApply yet. Generate a one-time code in Settings → Telegram, then send <code>/link YOUR_CODE</code> or paste the code here.",
-            )
+            client.send_message(chat_id, NOT_CONNECTED_TEXT)
             _record_audit(user_id, chat_id, "link_instruction", "not_linked", time.monotonic())
             return
         logger.warning("Rejected unauthorized Telegram update")
@@ -327,7 +330,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         window_seconds=config.rate_limit_window_seconds,
     ):
         _record_audit(user_id, chat_id, text or "unknown", "rate_limited", started)
-        client.send_message(chat_id, "Too many requests. Please wait a moment.")
+        client.send_message(chat_id, "⏳ <b>Too many requests</b>\n\nPlease wait a moment and try again.")
         return
     reply_markup = None
     result = "ok"
@@ -337,25 +340,25 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             if text in {"/start", "/help"}:
                 reply = help_text(config.environment_label, is_admin=_is_owner(user_id, chat_id, config))
             elif text == "/ping":
-                reply = "🟢 JobApply bot is online."
+                reply = "🟢 <b>JobApply bot is online</b>"
             elif text == "/admin":
                 if not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 else:
                     reply = admin_text()
             elif text == "/status":
                 if not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 else:
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
             elif text == "/newusers":
                 if not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 elif has_arguments:
-                    reply = "New users does not accept command arguments."
+                    reply = "⚠️ <b>Invalid command</b>\n\n<code>/newusers</code> does not accept arguments."
                     result = "invalid"
                 else:
                     reply = new_users_text(get_new_users(days=7), days=7)
@@ -375,25 +378,25 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                 reply_markup = url_keyboard("📋 Open applications", applications_url)
             elif text == "/health":
                 if not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 else:
                     reply = health_text(config.environment_label, get_health_snapshot())
             elif text == "/doctor":
                 if not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 else:
                     reply = doctor_text(config.environment_label, get_doctor_snapshot())
             elif text == "/deploy":
                 if has_arguments:
-                    reply = "Deploy does not accept branch names or command arguments."
+                    reply = "⚠️ <b>Invalid command</b>\n\n<code>/deploy</code> does not accept branch names or arguments."
                     result = "invalid"
                 elif not _is_owner(user_id, chat_id, config):
-                    reply = "This command is available only to the bot owner."
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 elif not config.deploy_enabled:
-                    reply = "Deploy is disabled by configuration."
+                    reply = "⚠️ <b>Deploy disabled</b>\n\nProduction deploy is disabled by configuration."
                     result = "disabled"
                 else:
                     deployment = prepare_deploy_request(
@@ -407,20 +410,20 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     if deployment.request is not None:
                         reply_markup = deploy_keyboard(deployment.request.pk)
             else:
-                reply = "Unknown command. Use /help."
+                reply = "❓ <b>Unknown command</b>\n\nUse <code>/help</code> to see available commands."
     except CommandTimedOut:
         logger.warning("Telegram command timed out: %s", text)
-        reply = "Command timed out. Try again later."
+        reply = "⏱ <b>Command timed out</b>\n\nPlease try again in a moment."
         reply_markup = None
         result = "timeout"
     except ObjectDoesNotExist:
         logger.warning("Telegram owner account was not found")
-        reply = "JobApply owner account is not configured."
+        reply = "⚠️ <b>Account unavailable</b>\n\nThe JobApply owner account is not configured."
         reply_markup = None
         result = "not_found"
     except Exception as error:
         logger.warning("Telegram command failed: %s", type(error).__name__)
-        reply = "Command failed. Check JobApply logs."
+        reply = "❌ <b>Command failed</b>\n\nPlease try again. If the problem continues, check JobApply logs."
         reply_markup = None
         result = "failed"
 
