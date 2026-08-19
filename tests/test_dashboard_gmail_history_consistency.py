@@ -80,7 +80,7 @@ def test_dashboard_action_history_uses_assistant_action_semantics(client, monkey
     assert "Create application" in content
     assert "Application sent" not in content
     assert "Accepted ·" not in content
-    assert received_at.strftime("%d.%m.%Y %H:%M") in content
+    assert timezone.localtime(received_at).strftime("%d.%m.%Y %H:%M") in content
     assert reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk]) in content
 
 
