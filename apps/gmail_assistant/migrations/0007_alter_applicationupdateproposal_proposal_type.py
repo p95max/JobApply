@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("gmail_assistant", "0006_telegramdeployrequest_target_description") if False else ("gmail_assistant", "0006_gmailanalysis_application_draft_reminder"),
+        ("gmail_assistant", "0006_gmailanalysis_application_draft_reminder"),
     ]
 
     operations = [
