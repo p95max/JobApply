@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 from html import escape
@@ -13,6 +14,8 @@ from django.utils import timezone
 
 from .models import TelegramDeployRequest, TelegramDeployRequestStatus
 
+
+logger = logging.getLogger(__name__)
 
 DEPLOY_SERVICE = "jobapply-deploy.service"
 DEPLOY_REQUEST_MARKER = Path(os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/run/jobapply/deploy.requested"))
@@ -111,7 +114,18 @@ def apply_deploy_callback(
             return DeployActionResult(request, "Deploy canceled.", "canceled")
         if action != "confirm":
             return DeployActionResult(request, "This deploy action is not available.", "invalid")
-        if not _claim_deploy_request():
+
+        claim = _claim_deploy_request()
+        if claim is None:
+            request.status = TelegramDeployRequestStatus.FAILED
+            request.decided_at = timezone.now()
+            request.save(update_fields=["status", "decided_at"])
+            return DeployActionResult(
+                request,
+                "Could not create the deploy runtime marker. Check the Telegram bot service configuration.",
+                "failed",
+            )
+        if not claim:
             request.status = TelegramDeployRequestStatus.BUSY
             request.decided_at = timezone.now()
             request.save(update_fields=["status", "decided_at"])
@@ -180,11 +194,26 @@ def _git_output(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _claim_deploy_request() -> bool:
+def _claim_deploy_request() -> bool | None:
+    """Atomically claim a deploy, returning None for runtime filesystem errors.
+
+    systemd owns /run/jobapply in production via RuntimeDirectory. Creating the
+    parent here keeps custom/test marker paths self-contained, while any
+    permission or filesystem problem is reported to the callback instead of
+    terminating the Telegram polling process.
+    """
     try:
+        DEPLOY_REQUEST_MARKER.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(DEPLOY_REQUEST_MARKER, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError:
         return False
+    except OSError as error:
+        logger.error(
+            "Could not claim Telegram deploy marker path=%s error=%s",
+            DEPLOY_REQUEST_MARKER,
+            type(error).__name__,
+        )
+        return None
     with os.fdopen(fd, "w", encoding="utf-8") as marker:
         marker.write(str(os.getpid()))
     return True
@@ -195,6 +224,12 @@ def _release_deploy_request() -> None:
         DEPLOY_REQUEST_MARKER.unlink()
     except FileNotFoundError:
         pass
+    except OSError as error:
+        logger.warning(
+            "Could not release Telegram deploy marker path=%s error=%s",
+            DEPLOY_REQUEST_MARKER,
+            type(error).__name__,
+        )
 
 
 def _start_deploy_service() -> bool:
