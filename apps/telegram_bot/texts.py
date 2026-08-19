@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from .diagnostics import DoctorSnapshot, HealthSnapshot
 from .deployments import deploy_callback_data
-from .selectors import ApplicationSummary, StatusSnapshot
+from .selectors import AIUsageSummary, ApplicationSummary, StatusSnapshot
 
 
 def _format_dt(value) -> str:
@@ -85,14 +85,25 @@ def status_text(environment: str, snapshot: StatusSnapshot) -> str:
     return "\n".join(lines)
 
 
-def gmail_text(total: int, *, assistant_url: str = "") -> str:
-    if not total:
-        return "📨 <b>Gmail Assistant</b>\n\n✅ No pending proposals."
-    return (
-        "📨 <b>Gmail Assistant</b>\n\n"
-        f"Pending proposals: <b>{total}</b>\n"
-        "Review the source emails and proposed changes in JobApply."
+def gmail_text(total: int, *, ai_usage: AIUsageSummary, assistant_url: str = "") -> str:
+    lines = ["📨 <b>Gmail Assistant</b>", ""]
+    if total:
+        lines.extend(
+            [
+                f"Pending proposals: <b>{total}</b>",
+                "Review the source emails and proposed changes in JobApply.",
+            ]
+        )
+    else:
+        lines.append("✅ No pending proposals.")
+    lines.extend(
+        [
+            "",
+            f"⚡ AI quota left: <b>{ai_usage.calls_left}/{ai_usage.daily_limit} calls</b>",
+            f"🪙 OpenAI tokens used today: <b>{ai_usage.tokens_used_today:,}</b>",
+        ]
     )
+    return "\n".join(lines)
 
 
 def applications_text(summary: ApplicationSummary, *, applications_url: str = "") -> str:
