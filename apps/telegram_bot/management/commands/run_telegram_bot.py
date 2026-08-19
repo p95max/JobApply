@@ -7,7 +7,7 @@ import time
 import requests
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.telegram_bot.client import TelegramClient
+from apps.telegram_bot.client import TelegramClient, telegram_error_detail
 from apps.telegram_bot.config import TelegramConfig
 from apps.telegram_bot.handlers import handle_update
 from apps.telegram_bot.heartbeat import TELEGRAM_BOT, record_heartbeat
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             client.set_commands(admin_chat_id=config.default_chat_id)
             self.stdout.write(self.style.SUCCESS("Telegram command menu published."))
         except (requests.RequestException, RuntimeError, ValueError) as error:
-            logger.warning("Telegram command menu publication failed: %s", type(error).__name__)
+            logger.warning("Telegram command menu publication failed: %s", telegram_error_detail(error))
 
         self.stdout.write(self.style.SUCCESS("Telegram Bot polling started."))
 
@@ -55,24 +55,14 @@ class Command(BaseCommand):
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60)
                     updates = client.get_updates(offset)
                     for update in updates:
+                        # Keep offset advancement before command execution: commands such as
+                        # /deploy have side effects and must not be replayed after a reply error.
                         offset = int(update["update_id"]) + 1
                         handle_update(update, client, config)
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=True)
                 except (requests.RequestException, RuntimeError, ValueError) as error:
                     record_heartbeat(TELEGRAM_BOT, expected_interval_seconds=60, success=False, error=error)
-                    error_kind = type(error).__name__
-                    if isinstance(error, requests.HTTPError) and error.response is not None:
-                        response = error.response
-                        description = ""
-                        try:
-                            payload = response.json()
-                            description = str(payload.get("description") or "").strip()
-                        except ValueError:
-                            description = response.text.strip()[:300]
-                        error_kind = f"HTTP {response.status_code}"
-                        if description:
-                            error_kind = f"{error_kind}: {description}"
-                    logger.warning("Telegram polling iteration failed: %s", error_kind)
+                    logger.warning("Telegram polling iteration failed: %s", telegram_error_detail(error))
                     time.sleep(5)
         finally:
             client.close()
