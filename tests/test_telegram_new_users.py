@@ -85,4 +85,5 @@ def test_newusers_rejects_arguments():
 
     handle_update(update(200, "/newusers 30"), client, config())
 
-    assert "does not accept command arguments" in client.messages[0][1]
+    assert "Invalid command" in client.messages[0][1]
+    assert "does not accept arguments" in client.messages[0][1]
