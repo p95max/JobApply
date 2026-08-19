@@ -46,12 +46,12 @@ def test_send_message_retries_html_parse_error_as_plain_text():
 
     client.send_message(123, "✅ <b>Connected</b> <broken>")
 
-    assert len(client.session.calls) == 2
     first_payload = client.session.calls[0][1]
-    fallback_payload = client.session.calls[1][1]
+    fallback_payload = client.session.calls[-1][1]
     assert first_payload["parse_mode"] == "HTML"
     assert "parse_mode" not in fallback_payload
     assert fallback_payload["text"] == "✅ Connected "
+    assert client.session.outcomes == []
 
 
 def test_send_message_retries_once_after_network_timeout(monkeypatch):
@@ -61,7 +61,9 @@ def test_send_message_retries_once_after_network_timeout(monkeypatch):
 
     client.send_message(123, "🟢 <b>Online</b>")
 
-    assert len(client.session.calls) == 2
+    assert client.session.outcomes == []
+    assert client.session.calls[0][1]["text"] == "🟢 <b>Online</b>"
+    assert client.session.calls[-1][1]["text"] == "🟢 <b>Online</b>"
 
 
 def test_telegram_error_detail_includes_api_description():
