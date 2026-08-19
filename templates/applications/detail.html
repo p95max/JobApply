@@ -13,9 +13,10 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h1 class="h4 mb-1">{{ app.title }}</h1>
-      <div class="text-body-secondary">
-        {{ app.company }}{% if app.location %}{% endif %}
-        {% if ai_processed %}<span class="badge text-bg-info ms-1" title="{% trans 'Created or updated from an accepted AI suggestion' %}">🤖 AI</span>{% endif %}
+      <div class="text-body-secondary d-flex flex-wrap align-items-center gap-1">
+        <span>{{ app.company }}{% if app.location %}{% endif %}</span>
+        {% if ai_processed %}<span class="badge text-bg-info" title="{% trans 'Created or updated from an accepted AI suggestion' %}">🤖 AI</span>{% endif %}
+        {% if sent_by_user %}<span class="badge text-bg-primary" title="{% trans 'Application was originally sent from your mailbox' %}">✉ {% trans "Sent by me" %}</span>{% endif %}
       </div>
     </div>
 
@@ -42,10 +43,12 @@
         {{ app.applied_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
       </dd>
 
-      <dt class="col-sm-4 text-body-secondary">{% trans "HR reply" %}</dt>
-      <dd class="col-sm-8">
-        {{ app.recruiter_reply_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
-      </dd>
+      {% if app.recruiter_reply_at %}
+        <dt class="col-sm-4 text-body-secondary">{% trans "HR reply" %}</dt>
+        <dd class="col-sm-8">
+          {{ app.recruiter_reply_at|date:"H:i - d.m.Y" }}
+        </dd>
+      {% endif %}
 
       {% if rejection_at %}
         <dt class="col-sm-4 text-danger">{% trans "Rejection" %}</dt>
@@ -56,7 +59,7 @@
 
       <dt class="col-sm-4 text-body-secondary">{% trans "Last update" %}</dt>
       <dd class="col-sm-8">
-        {{ app.updated_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
+        {{ last_activity_at|date:"H:i - d.m.Y"|default_if_none:"—" }}
       </dd>
 
       <dt class="col-sm-4 text-body-secondary">{% trans "Status" %}</dt>
