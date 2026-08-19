@@ -74,5 +74,7 @@ def test_production_telegram_unit_declares_runtime_directory():
 def test_deploy_script_resynchronizes_telegram_systemd_unit():
     script = (deployments.settings.BASE_DIR / "deploy/vps/jobapply-deploy.sh").read_text(encoding="utf-8")
 
-    assert 'jobapply-telegram-bot.service" \\\n  "$SYSTEMD_DIR/jobapply-telegram-bot.service"' in script
+    assert "Synchronizing Telegram bot systemd unit" in script
+    assert 'deploy/vps/systemd/jobapply-telegram-bot.service"' in script
+    assert '"$SYSTEMD_DIR/jobapply-telegram-bot.service"' in script
     assert "systemctl daemon-reload" in script
