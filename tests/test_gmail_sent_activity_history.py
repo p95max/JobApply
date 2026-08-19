@@ -199,3 +199,98 @@ def test_deleted_application_restores_pending_create_after_successful_reanalysis
         analysis=analysis,
         proposal_type=ProposalType.ACTIVITY,
     ).exists()
+
+
+@pytest.mark.django_db
+def test_recreated_sent_application_collapses_to_one_canonical_action_history_event(client):
+    user = get_user_model().objects.create_user(username="sent-canonical", password="test-pass")
+    current_application = JobApplication.objects.create(
+        user=user,
+        title="im Bereich Softwareentwicklung",
+        company="Klengel",
+        location="Chemnitz, Deutschland",
+        status="applied",
+    )
+    message = GmailMessage.objects.create(
+        user=user,
+        message_id="gmail-sent-canonical-klengel",
+        thread_id="thread-canonical-klengel",
+        direction=GmailDirection.OUTBOUND,
+        received_at=timezone.now(),
+        from_email="owner@example.com",
+        to_emails=["info@klengel.de", "career@sns.digital"],
+        subject="Bewerbung im Bereich Softwareentwicklung",
+        application=current_application,
+    )
+    analysis = GmailAnalysis.objects.create(
+        user=user,
+        message=message,
+        event_type=GmailEventType.APPLICATION_SENT,
+        is_job_related=True,
+        confidence=95,
+        extracted_data={
+            "sent_kind": "direct_application",
+            "company": "Klengel",
+            "position_title": "im Bereich Softwareentwicklung",
+        },
+    )
+    stale = ApplicationUpdateProposal.objects.create(
+        user=user,
+        message=message,
+        analysis=analysis,
+        application=None,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.ACCEPTED,
+        match_score=0,
+        match_method="unmatched",
+        changes={
+            "application": {
+                "operation": "create",
+                "title": "im Bereich Softwareentwicklung",
+                "company": "Klengel",
+                "location": "Chemnitz, Deutschland",
+                "source": "other",
+                "status": "applied",
+                "applied_at": message.received_at.isoformat(),
+            }
+        },
+        reviewed_at=timezone.now(),
+    )
+    current = ApplicationUpdateProposal.objects.create(
+        user=user,
+        message=message,
+        analysis=analysis,
+        application=current_application,
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.ACCEPTED,
+        match_score=100,
+        match_method="recreated_after_application_deletion",
+        changes=stale.changes,
+        reviewed_at=timezone.now(),
+    )
+    settings = GmailAssistantSettings.objects.create(user=user, ai_enabled=True)
+
+    settings.last_successful_run_at = timezone.now()
+    settings.save(update_fields=["last_successful_run_at", "updated_at"])
+
+    stale.refresh_from_db()
+    current.refresh_from_db()
+    assert stale.status == ProposalStatus.IGNORED
+    assert "Superseded" in stale.review_note
+    assert current.status == ProposalStatus.ACCEPTED
+    assert current.proposal_type == ProposalType.ACTIVITY
+    assert current.application_id == current_application.pk
+    assert current.changes["activity"] == {"kind": "application_sent", "source": "gmail_sent"}
+    assert ApplicationUpdateProposal.objects.filter(
+        user=user,
+        message=message,
+        analysis=analysis,
+        status=ProposalStatus.ACCEPTED,
+    ).count() == 1
+
+    client.force_login(user)
+    response = client.get(reverse("gmail_assistant:gmail_assistant"), {"status": ProposalStatus.ACCEPTED})
+    content = response.content.decode()
+    assert content.count("Bewerbung im Bereich Softwareentwicklung") == 1
+    assert "Gmail activity" in content
+    assert "Klengel" in content
