@@ -2,7 +2,7 @@
   "job_context": ["bewerbung", "application", "position", "stelle", "vacancy", "job opportunity", "kandidatur"],
   "noise": ["newsletter", "job alert", "unsubscribe", "marketing", "rabatt"],
   "withdrawal": ["withdrawal confirmed", "application withdrawal confirmed", "application withdrawn", "bewerbung zurückgezogen"],
-  "rejection": ["absage", "nicht berücksichtigen", "haben uns für andere kandidaten entschieden", "leider müssen wir ihnen jedoch mitteilen", "leider müssen wir dir jedoch mitteilen", "unfortunately", "we regret", "other candidates", "cannot offer you"],
+  "rejection": ["absage", "nicht berücksichtigen", "haben uns für andere kandidaten entschieden", "leider müssen wir ihnen jedoch mitteilen", "leider müssen wir dir jedoch mitteilen", "keine offenen jobs", "keine offenen stellen", "keine passende stelle", "keine passende position", "keine geeignete stelle", "keine vakanz", "keine vakante stelle", "keine position, die ihren qualifikationen entspricht", "keine stelle, die ihren qualifikationen entspricht", "unfortunately", "we regret", "other candidates", "cannot offer you", "no open positions", "no open roles", "no suitable position", "no suitable role", "no suitable vacancy", "no positions matching your qualifications"],
   "offer": ["job offer", "offer for the position", "angebot für die position"],
   "interview_cancelled": ["interview cancelled", "interview canceled", "gespräch wurde abgesagt", "gespräch abgesagt", "termin abgesagt"],
   "interview_rescheduled": ["interview rescheduled", "reschedule the interview", "termin verschieben", "gespräch verschieben"],
