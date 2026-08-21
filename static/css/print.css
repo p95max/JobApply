@@ -17,9 +17,40 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    background-image: none !important;
     color: #000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: economy !important;
+    print-color-adjust: economy !important;
+  }
+
+  .dashboard-page,
+  .applications-page,
+  .dashboard-shell,
+  .applications-table-card,
+  #print-area,
+  #print-area .table-responsive {
+    background: #fff !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  html::before,
+  html::after,
+  body::before,
+  body::after,
+  .dashboard-page::before,
+  .dashboard-page::after,
+  .applications-page::before,
+  .applications-page::after,
+  .dashboard-shell::before,
+  .dashboard-shell::after,
+  .applications-table-card::before,
+  .applications-table-card::after,
+  #print-area::before,
+  #print-area::after {
+    display: none !important;
+    content: none !important;
+    background: transparent !important;
   }
 
   .dashboard-page,
@@ -31,7 +62,6 @@
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: #fff !important;
   }
 
   .applications-page .dashboard-shell > :not(#print-area) {
@@ -60,8 +90,6 @@
     overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
-    box-shadow: none !important;
-    background: #fff !important;
   }
 
   #print-area .table-responsive {
@@ -69,7 +97,10 @@
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: visible !important;
+    border: 0 !important;
   }
 
   #print-area .apps-table {
@@ -98,6 +129,7 @@
   #print-area tr {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    background: #fff !important;
   }
 
   #print-area .apps-table th,
@@ -113,6 +145,8 @@
     vertical-align: top !important;
     color: #000 !important;
     background: #fff !important;
+    background-image: none !important;
+    box-shadow: none !important;
   }
 
   #print-area .apps-table th {
