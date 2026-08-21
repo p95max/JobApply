@@ -97,6 +97,12 @@ GMAIL_ASSISTANT_FIXTURES = (
         GmailEventType.REJECTION,
     ),
     GmailAssistantFixture(
+        "rejection_no_open_vacancy",
+        "AW: Initiativbewerbung Softwareentwicklung / Automation",
+        "Vielen Dank für die Übermittlung Ihrer Unterlagen. Leider haben wir momentan keine offenen Jobs, die Ihren Qualifikationen entsprechen.",
+        GmailEventType.REJECTION,
+    ),
+    GmailAssistantFixture(
         "unrelated_noise",
         "Newsletter",
         "Unsubscribe to receive a discount on our courses.",
