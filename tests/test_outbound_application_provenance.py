@@ -46,22 +46,23 @@ def sent_application(db, django_user_model):
         confidence=95,
         extracted_data={"sent_kind": "direct_application"},
     )
-    ApplicationUpdateProposal.objects.create(
+    proposal = ApplicationUpdateProposal.objects.create(
         user=user,
         message=message,
         analysis=analysis,
         application=application,
         proposal_type=ProposalType.CREATE_APPLICATION,
         status=ProposalStatus.ACCEPTED,
+        reviewed_at=sent_at + timedelta(minutes=1),
     )
     JobApplication.objects.filter(pk=application.pk).update(updated_at=sent_at + timedelta(days=2))
     application.refresh_from_db()
-    return user, application, sent_at
+    return user, application, sent_at, proposal
 
 
 @pytest.mark.django_db
 def test_application_list_marks_application_as_sent_by_user(client, sent_application):
-    user, application, _ = sent_application
+    user, application, _, _ = sent_application
     client.force_login(user)
 
     response = client.get(reverse("applications:list"))
@@ -75,7 +76,7 @@ def test_application_list_marks_application_as_sent_by_user(client, sent_applica
 
 @pytest.mark.django_db
 def test_application_detail_uses_business_activity_and_hides_missing_hr_reply(client, sent_application):
-    user, application, sent_at = sent_application
+    user, application, sent_at, _ = sent_application
     client.force_login(user)
 
     response = client.get(reverse("applications:detail", args=[application.pk]))
@@ -88,14 +89,15 @@ def test_application_detail_uses_business_activity_and_hides_missing_hr_reply(cl
 
 
 @pytest.mark.django_db
-def test_application_detail_links_gmail_activity_to_source_message(client, sent_application):
-    user, application, _ = sent_application
+def test_application_detail_links_gmail_activity_to_resolved_assistant_case(client, sent_application):
+    user, application, _, proposal = sent_application
     client.force_login(user)
 
     response = client.get(reverse("applications:detail", args=[application.pk]))
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert 'href="https://mail.google.com/mail/u/0/#all/sent-application-message"' in content
-    assert 'target="_blank"' in content
+    expected_url = reverse("gmail_assistant:gmail_proposal_detail", args=[proposal.pk])
+    assert f'href="{expected_url}"' in content
+    assert "mail.google.com" not in content
     assert "Bewerbung im Bereich Softwareentwicklung" in content
