@@ -85,3 +85,17 @@ def test_application_detail_uses_business_activity_and_hides_missing_hr_reply(cl
     assert response.context["last_activity_at"] == sent_at
     assert b"Sent by me" in response.content
     assert b"HR reply" not in response.content
+
+
+@pytest.mark.django_db
+def test_application_detail_links_gmail_activity_to_source_message(client, sent_application):
+    user, application, _ = sent_application
+    client.force_login(user)
+
+    response = client.get(reverse("applications:detail", args=[application.pk]))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'href="https://mail.google.com/mail/u/0/#all/sent-application-message"' in content
+    assert 'target="_blank"' in content
+    assert "Bewerbung im Bereich Softwareentwicklung" in content
