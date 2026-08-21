@@ -1,5 +1,7 @@
 # JobApply
 
+> **Project value:** JobApply has been developed for almost a year across roughly **1,000 commits** and is continuously validated against real data from an active personal job search. Its Gmail/ATS workflow has been shaped by real application receipts, ATS confirmations, recruiter follow-ups, non-standard HR replies, rejections, interview messages and other edge cases that do not fit clean demo datasets.
+
 [![CI](https://github.com/p95max/JobApply/actions/workflows/ci.yml/badge.svg)](https://github.com/p95max/JobApply/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/p95max/JobApply/branch/master/graph/badge.svg)](https://codecov.io/gh/p95max/JobApply)
 
