@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -315,11 +315,17 @@ def application_detail(request, pk: int):
             message__direction=GmailDirection.OUTBOUND,
             analysis__event_type=GmailEventType.APPLICATION_SENT,
         ).exists()
+        resolved_proposals = ApplicationUpdateProposal.objects.filter(
+            user=request.user,
+        ).exclude(status=ProposalStatus.PENDING).order_by("-reviewed_at", "-pk")
         gmail_messages = (
             GmailMessage.objects.filter(user=request.user)
             .filter(Q(application=app) | Q(proposals__application=app))
             .select_related("analysis")
-            .prefetch_related("proposals")
+            .prefetch_related(
+                "proposals",
+                Prefetch("proposals", queryset=resolved_proposals, to_attr="resolved_proposals"),
+            )
             .distinct()
             .order_by("-received_at")
         )
