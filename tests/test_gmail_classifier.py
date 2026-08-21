@@ -70,6 +70,21 @@ def test_indeed_confirmation_is_classified_as_an_application_sent():
     assert result.event_type == GmailEventType.APPLICATION_SENT
 
 
+def test_kix_no_vacancy_reply_is_classified_as_rejection_not_application_received():
+    result = classify_event(
+        "RE: Initiativbewerbung im Bereich Backend-Entwicklung [T#2026082071000132]",
+        (
+            "Hallo, vielen Dank für Ihre Bewerbung und Ihr Interesse an einer Anstellung in unserem Unternehmen. "
+            "Leider müssen wir Ihnen mitteilen, dass wir Ihnen derzeit keine Ihren Vorstellungen und Kenntnissen "
+            "entsprechende vakante Position anbieten können."
+        ),
+    )
+
+    assert result.event_type == GmailEventType.REJECTION
+    assert result.detected_type == "rejection"
+    assert any("keine ihren vorstellungen und kenntnissen entsprechende vakante position" in item for item in result.evidence)
+
+
 @pytest.mark.parametrize(
     "fixture",
     GMAIL_ASSISTANT_FIXTURES,
