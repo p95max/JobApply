@@ -36,6 +36,11 @@ _LEGACY_TYPE_BY_EVENT = {
     GmailEventType.UNKNOWN: "unknown",
 }
 
+_REJECTION_PATTERNS = (
+    re.compile(r"\bkeine\b.{0,140}\bvakante(?:n|r|s)?\s+(?:position|stelle)\b"),
+    re.compile(r"\bkeine\b.{0,140}\bentsprechende(?:n|r|s)?\s+(?:vakante(?:n|r|s)?\s+)?(?:position|stelle)\b"),
+)
+
 
 @lru_cache(maxsize=1)
 def _phrases() -> dict[str, tuple[str, ...]]:
@@ -56,6 +61,16 @@ def _normalize(text: str) -> str:
 
 def _matching_terms(text: str, terms: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(term for term in terms if term in text)
+
+
+def _matching_rejection_patterns(text: str) -> tuple[str, ...]:
+    """Match common rejection wording where decisive words are separated by modifiers."""
+    matches: list[str] = []
+    for pattern in _REJECTION_PATTERNS:
+        match = pattern.search(text)
+        if match:
+            matches.append(match.group(0))
+    return tuple(matches)
 
 
 def _result(
@@ -87,7 +102,7 @@ def classify_event(subject: str, snippet: str, text: str = "") -> RuleClassifica
     if withdrawal:
         return _result(GmailEventType.WITHDRAWAL_CONFIRMATION, 95, withdrawal)
 
-    rejection = _matching_terms(content, phrases["rejection"])
+    rejection = _matching_terms(content, phrases["rejection"]) + _matching_rejection_patterns(content)
     if context and rejection:
         return _result(GmailEventType.REJECTION, 92, context + rejection)
 
