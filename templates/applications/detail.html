@@ -93,7 +93,13 @@
         {% for message in gmail_messages %}
           <li class="list-group-item gmail-timeline-item {% if message.analysis.event_type == 'rejection' %}is-rejection{% endif %}">
             <div class="d-flex justify-content-between align-items-start gap-3">
-              <span>{{ message.subject|default:"—" }}</span>
+              <a
+                href="https://mail.google.com/mail/u/0/#all/{{ message.message_id|urlencode }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-body-emphasis text-decoration-none"
+                title="{% trans 'Open this email in Gmail' %}"
+              >{{ message.subject|default:"—" }}</a>
               <time class="gmail-timeline-time">{{ message.received_at|date:"d.m.Y H:i" }}</time>
             </div>
             <small class="gmail-timeline-meta {% if message.analysis.event_type == 'rejection' %}text-danger fw-semibold{% else %}text-muted{% endif %}">
