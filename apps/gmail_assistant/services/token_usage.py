@@ -65,6 +65,10 @@ def estimate_model_cost(model_name: str, input_tokens: int, output_tokens: int) 
     return ((Decimal(input_tokens) * input_price) + (Decimal(output_tokens) * output_price)) / million
 
 
+# Backwards-compatible alias for callers/tests that used the former private helper.
+_estimate_model_cost = estimate_model_cost
+
+
 def load_token_usage(*, user, days: int = 30) -> TokenUsageSummary:
     since = timezone.now() - timedelta(days=days)
     queryset = OpenAITokenUsage.objects.filter(user=user, created_at__gte=since)
