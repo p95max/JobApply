@@ -20,6 +20,7 @@ from .notifications import url_keyboard
 from .permissions import is_update_allowed, linked_profile_for_update
 from .proposal_actions import apply_callback_action, parse_callback_data
 from .selectors import (
+    get_ai_usage_digest,
     get_ai_usage_summary,
     get_application_summary,
     get_gmail_summary,
@@ -29,6 +30,7 @@ from .selectors import (
 )
 from .texts import (
     admin_text,
+    ai_usage_digest_text,
     applications_text,
     deploy_keyboard,
     doctor_text,
@@ -353,6 +355,17 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     result = "forbidden"
                 else:
                     reply = status_text(config.environment_label, get_status_snapshot(config.owner_email))
+            elif text == "/aiusage":
+                if has_arguments:
+                    reply = "⚠️ <b>Invalid command</b>\n\n<code>/aiusage</code> does not accept arguments."
+                    result = "invalid"
+                elif not _is_owner(user_id, chat_id, config):
+                    reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
+                    result = "forbidden"
+                else:
+                    report_url = _jobapply_url("/reports/ai-statistics/")
+                    reply = ai_usage_digest_text(get_ai_usage_digest(hours=24), scheduled=False)
+                    reply_markup = url_keyboard("📊 Open AI statistics", report_url)
             elif text == "/newusers":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
