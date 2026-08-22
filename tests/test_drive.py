@@ -183,6 +183,14 @@ def test_wrap_drive_call_passthrough_permission_denied():
         _wrap_drive_call("x", lambda: (_ for _ in ()).throw(PermissionDenied("no")))
 
 
+def test_wrap_drive_call_preserves_classified_drive_error():
+    original = DriveError("Reconnect Google Drive.", code="auth")
+    with pytest.raises(DriveError) as exc:
+        _wrap_drive_call("outer", lambda: (_ for _ in ()).throw(original))
+    assert exc.value is original
+    assert exc.value.code == "auth"
+
+
 def test_wrap_drive_call_http_error():
     with pytest.raises(DriveError) as e:
         _wrap_drive_call("x", lambda: (_ for _ in ()).throw(_make_http_error(403)))
