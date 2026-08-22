@@ -13,6 +13,7 @@ from apps.accounts.telegram_linking import bind_telegram_from_start
 
 from .audit import is_rate_limited, record_command_audit
 from .client import TelegramClient, telegram_error_detail
+from .client_digest import build_client_digest, client_digest_text, parse_digest_callback
 from .config import TelegramConfig
 from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
@@ -118,13 +119,52 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
     callback_id = str(callback.get("id") or "")
     proposal_callback = parse_callback_data(callback.get("data"))
     deploy_callback = parse_deploy_callback(callback.get("data"))
-    if proposal_callback is None and deploy_callback is None:
+    digest_hours = parse_digest_callback(callback.get("data"))
+    if proposal_callback is None and deploy_callback is None and digest_hours is None:
         _answer_callback(client, callback_id, "This action is not available.")
         return
 
     user_id = _callback_user_id(update)
     chat_id = _callback_chat_id(update)
     started = time.monotonic()
+
+    if digest_hours is not None:
+        if not is_update_allowed(update, config):
+            _record_audit(user_id, chat_id, "digest_callback", "forbidden", started)
+            _answer_callback(client, callback_id, "Connect this Telegram chat to JobApply first.")
+            return
+        profile = linked_profile_for_update(update)
+        if profile is None and not _is_owner(user_id, chat_id, config):
+            _record_audit(user_id, chat_id, "digest_callback", "forbidden", started)
+            _answer_callback(client, callback_id, "This digest belongs to another JobApply account.")
+            return
+        if is_rate_limited(
+            user_id=user_id,
+            chat_id=chat_id,
+            limit=config.rate_limit_count,
+            window_seconds=config.rate_limit_window_seconds,
+        ):
+            _record_audit(user_id, chat_id, "digest_callback", "rate_limited", started)
+            _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
+            return
+        try:
+            digest_user = profile.user if profile is not None else get_owner(config.owner_email)
+            digest = build_client_digest(user=digest_user, hours=digest_hours)
+            message_id = (callback.get("message") or {}).get("message_id")
+            if message_id is None:
+                raise ValueError("Digest callback message is missing")
+            client.edit_message_text(
+                chat_id,
+                int(message_id),
+                client_digest_text(digest, scheduled=False),
+            )
+            _record_audit(user_id, chat_id, "digest_callback", "ok", started)
+            _answer_callback(client, callback_id, "Digest updated.")
+        except Exception as error:
+            logger.warning("Telegram digest callback failed: %s", type(error).__name__)
+            _record_audit(user_id, chat_id, "digest_callback", "failed", started)
+            _answer_callback(client, callback_id, "Could not build the digest. Please try again.")
+        return
 
     if deploy_callback is not None:
         if not _is_owner(user_id, chat_id, config):
