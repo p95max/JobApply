@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
+from django.conf import settings
+from django.core.management import call_command
 from django.utils import timezone
 
 from apps.gmail_assistant.usage_models import OpenAITokenUsage
@@ -170,3 +173,44 @@ def test_aiusage_command_rejects_non_owner(monkeypatch):
 def test_aiusage_is_published_only_in_admin_command_menu():
     assert not any(item["command"] == "aiusage" for item in CLIENT_COMMANDS)
     assert any(item["command"] == "aiusage" for item in ADMIN_COMMANDS)
+
+
+def test_daily_digest_management_command_uses_deduplicated_owner_notification(monkeypatch):
+    captured = {}
+    monkeypatch.setenv("TELEGRAM_BOT_ENABLED", "1")
+    monkeypatch.setenv("TELEGRAM_NOTIFICATIONS_ENABLED", "1")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    monkeypatch.setenv("TELEGRAM_OWNER_EMAIL", "owner@example.test")
+    monkeypatch.setenv("TELEGRAM_DEFAULT_CHAT_ID", "20")
+    monkeypatch.setattr(
+        "apps.telegram_bot.management.commands.send_ai_usage_digest.get_ai_usage_digest",
+        lambda **kwargs: _digest(),
+    )
+
+    def fake_send_notification_once(**kwargs):
+        captured.update(kwargs)
+        return True
+
+    monkeypatch.setattr(
+        "apps.telegram_bot.management.commands.send_ai_usage_digest.send_notification_once",
+        fake_send_notification_once,
+    )
+
+    call_command("send_ai_usage_digest")
+
+    assert captured["event_key"].startswith("ai_usage_daily_digest:")
+    assert captured["event_type"] == "ai_usage_daily_digest"
+    assert captured["recipient_email"] == "owner@example.test"
+    assert "Daily AI usage · rolling last 24h" in captured["text"]
+    assert captured["reply_markup"]["inline_keyboard"][0][0]["text"] == "📊 Open AI statistics"
+
+
+def test_daily_digest_timer_is_0800_berlin_and_deploy_enables_it():
+    timer = (Path(settings.BASE_DIR) / "deploy/vps/systemd/jobapply-ai-usage-digest.timer").read_text()
+    deploy = (Path(settings.BASE_DIR) / "deploy/vps/jobapply-deploy.sh").read_text()
+
+    assert "OnCalendar=*-*-* 08:00:00 Europe/Berlin" in timer
+    assert "Persistent=true" in timer
+    assert "jobapply-ai-usage-digest.service" in timer
+    assert "jobapply-ai-usage-digest.timer" in deploy
+    assert "systemctl enable --now jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer" in deploy
