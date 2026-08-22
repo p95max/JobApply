@@ -101,16 +101,17 @@ install -m 0644 \
   "$APP_DIR/deploy/vps/systemd/jobapply-telegram-bot.service" \
   "$SYSTEMD_DIR/jobapply-telegram-bot.service"
 
-# Demo cleanup was added after some VPS installations. Keep these units in
-# sync on every normal deploy so production does not depend on re-running the
-# one-time install-ops bootstrap script.
-echo "==> Synchronizing demo cleanup timer"
+# Timers added after initial VPS bootstrap must be synchronized by every normal
+# deploy so production does not depend on re-running install-ops.sh manually.
+echo "==> Synchronizing scheduled JobApply timers"
 install -m 0644 \
   "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.service" \
   "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.timer" \
+  "$APP_DIR/deploy/vps/systemd/jobapply-ai-usage-digest.service" \
+  "$APP_DIR/deploy/vps/systemd/jobapply-ai-usage-digest.timer" \
   "$SYSTEMD_DIR/"
 systemctl daemon-reload
-systemctl enable --now jobapply-demo-cleanup.timer
+systemctl enable --now jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer
 
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
@@ -200,10 +201,12 @@ for service in "${installed_services[@]}"; do
   echo "  active: $service"
 done
 
-systemctl is-enabled --quiet jobapply-demo-cleanup.timer || {
-  echo "Demo cleanup timer is not enabled." >&2
-  exit 1
-}
+for timer in jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer; do
+  systemctl is-enabled --quiet "$timer" || {
+    echo "Required timer is not enabled: $timer" >&2
+    exit 1
+  }
+done
 
 echo "==> Running HTTP health check"
 curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
