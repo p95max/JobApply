@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from .diagnostics import DoctorSnapshot, HealthSnapshot
 from .deployments import deploy_callback_data
-from .selectors import AIUsageSummary, ApplicationSummary, StatusSnapshot
+from .selectors import AIUsageDigest, AIUsageSummary, ApplicationSummary, StatusSnapshot
 
 
 def _format_dt(value) -> str:
@@ -38,6 +38,7 @@ def admin_text() -> str:
     return (
         "🛠 <b>Administrator commands</b>\n\n"
         "📊 /status — service summary\n"
+        "🪙 /aiusage — AI usage for the rolling last 24 hours\n"
         "👥 /newusers — users registered in the last 7 days\n"
         "🩺 /health — runtime health checks\n"
         "🛠 /doctor — extended diagnostics\n"
@@ -103,6 +104,38 @@ def gmail_text(total: int, *, ai_usage: AIUsageSummary, assistant_url: str = "")
             f"🪙 OpenAI tokens used today: <b>{ai_usage.tokens_used_today:,}</b>",
         ]
     )
+    return "\n".join(lines)
+
+
+def ai_usage_digest_text(digest: AIUsageDigest, *, scheduled: bool = False) -> str:
+    """Render the owner-only rolling AI usage report in the normal Telegram notification style."""
+    title = "Daily AI usage" if scheduled else "AI usage"
+    lines = [
+        f"📊 <b>{title} · rolling last 24h</b>",
+        "",
+        f"🕒 Window: <b>{escape(_format_dt(digest.since))} → {escape(_format_dt(digest.until))}</b>",
+        f"👥 AI-active users: <b>{digest.active_user_count}</b>",
+        f"🤖 Successful AI requests: <b>{digest.requests:,}</b>",
+        f"🪙 Tokens: <b>{digest.total_tokens:,}</b>",
+        f"↳ Input: <b>{digest.input_tokens:,}</b>",
+        f"↳ Output: <b>{digest.output_tokens:,}</b>",
+    ]
+    if digest.estimated_cost_usd is None:
+        lines.append("💰 Estimated API cost: <b>not available</b>")
+    else:
+        lines.append(f"💰 Estimated API cost: <b>${digest.estimated_cost_usd:.4f}</b>")
+
+    if digest.top_users:
+        lines.extend(["", "🏆 <b>Top users</b>"])
+        for index, item in enumerate(digest.top_users, start=1):
+            lines.append(
+                f"{index}. <code>{escape(item.email)}</code> — "
+                f"<b>{item.total_tokens:,}</b> tokens · {item.requests:,} calls · "
+                f"quota {item.calls_left}/{item.daily_limit} left"
+            )
+    else:
+        lines.extend(["", "✅ No recorded OpenAI usage in this window."])
+
     return "\n".join(lines)
 
 
