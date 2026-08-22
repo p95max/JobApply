@@ -109,9 +109,11 @@ install -m 0644 \
   "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.timer" \
   "$APP_DIR/deploy/vps/systemd/jobapply-ai-usage-digest.service" \
   "$APP_DIR/deploy/vps/systemd/jobapply-ai-usage-digest.timer" \
+  "$APP_DIR/deploy/vps/systemd/jobapply-client-digest.service" \
+  "$APP_DIR/deploy/vps/systemd/jobapply-client-digest.timer" \
   "$SYSTEMD_DIR/"
 systemctl daemon-reload
-systemctl enable --now jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer
+systemctl enable --now jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer jobapply-client-digest.timer
 
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
@@ -201,7 +203,7 @@ for service in "${installed_services[@]}"; do
   echo "  active: $service"
 done
 
-for timer in jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer; do
+for timer in jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer jobapply-client-digest.timer; do
   systemctl is-enabled --quiet "$timer" || {
     echo "Required timer is not enabled: $timer" >&2
     exit 1
