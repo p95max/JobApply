@@ -1,0 +1,10 @@
+[Unit]
+Description=Send JobApply client Telegram digest daily at 09:00 Europe/Berlin
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 Europe/Berlin
+Persistent=true
+Unit=jobapply-client-digest.service
+
+[Install]
+WantedBy=timers.target
