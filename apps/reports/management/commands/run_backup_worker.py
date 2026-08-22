@@ -15,7 +15,7 @@ from apps.applications.models import JobApplication
 from apps.reports.drive import DriveError, get_drive_status, upload_backup_rotate_3
 from apps.reports.models import CloudBackupSettings
 from apps.reports.services import export_csv
-from apps.telegram_bot.notifications import send_notification_once
+from apps.telegram_bot.notifications import send_notification_once, url_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,15 @@ _QUERY_SECRET_RE = re.compile(
 )
 
 
+def _jobapply_url(path: str) -> str:
+    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
+    if domain.startswith(("http://", "https://")):
+        base_url = domain
+    else:
+        base_url = f"https://{domain}"
+    return f"{base_url}{path}"
+
+
 def _safe_error_detail(detail: object, *, max_length: int = 240) -> str:
     """Return a short Telegram-safe diagnostic without credentials or multiline noise."""
     text = " ".join(str(detail or "Unknown error").split())
@@ -50,7 +59,7 @@ def _safe_error_detail(detail: object, *, max_length: int = 240) -> str:
 
 
 def _notify_backup_failure(user, *, code: str, detail: str) -> None:
-    """Notify the affected linked Telegram chat at most once per error/day."""
+    """Notify only the affected user's linked Telegram chat, at most once per error/day."""
     today = timezone.localdate().isoformat()
     auth_failure = code in {"auth", "refresh", "disconnected", "missing_refresh_token"}
     safe_code = escape(str(code or "unknown"))
@@ -64,6 +73,7 @@ def _notify_backup_failure(user, *, code: str, detail: str) -> None:
             f"\n\n🔎 Error: <code>{safe_code}</code>"
             f"\n📝 Details: <code>{safe_detail}</code>"
         )
+        button_text = "🔗 Reconnect Google Drive"
     else:
         text = (
             "⚠️ <b>Google Drive backup failed</b>\n\n"
@@ -72,12 +82,14 @@ def _notify_backup_failure(user, *, code: str, detail: str) -> None:
             f"\n\n🔎 Error: <code>{safe_code}</code>"
             f"\n📝 Details: <code>{safe_detail}</code>"
         )
+        button_text = "⚙️ Open backup settings"
 
     send_notification_once(
         event_key=f"drive_backup_failed:{user.pk}:{code}:{today}",
         event_type="drive_backup_failed",
         recipient_email=getattr(user, "email", None),
         text=text,
+        reply_markup=url_keyboard(button_text, _jobapply_url("/reports/drive/")),
     )
     logger.warning(
         "Personal Drive backup failure user=%s code=%s detail=%s",
