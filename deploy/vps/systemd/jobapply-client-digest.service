@@ -1,0 +1,13 @@
+[Unit]
+Description=JobApply client Telegram daily digest
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+User=jobapply
+Group=jobapply
+WorkingDirectory=/opt/jobapply
+EnvironmentFile=/opt/jobapply/.env
+ExecStart=/opt/jobapply/.venv/bin/python manage.py send_client_digest
