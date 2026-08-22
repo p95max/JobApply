@@ -58,6 +58,11 @@ def _wrap_drive_call(action: str, fn):
         return fn()
     except PermissionDenied:
         raise
+    except DriveError:
+        # Nested Drive helpers already converted the original Google exception
+        # into a safe, classified DriveError. Preserve that classification
+        # instead of replacing it with the generic "unexpected" error.
+        raise
     except RefreshError as e:
         logger.exception("Drive refresh error during %s", action)
         raise DriveError("Google session expired. Reconnect Google Drive.", code="refresh") from e
