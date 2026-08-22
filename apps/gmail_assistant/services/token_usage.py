@@ -55,7 +55,8 @@ def _model_prices(model_name: str) -> tuple[Decimal, Decimal] | None:
     return input_price, output_price
 
 
-def _estimate_model_cost(model_name: str, input_tokens: int, output_tokens: int) -> Decimal | None:
+def estimate_model_cost(model_name: str, input_tokens: int, output_tokens: int) -> Decimal | None:
+    """Estimate API cost for persisted token usage using the shared model price table."""
     prices = _model_prices(model_name)
     if prices is None:
         return None
@@ -120,7 +121,7 @@ def load_token_usage(*, user, days: int = 30) -> TokenUsageSummary:
             "input_tokens": row["input_tokens"] or 0,
             "output_tokens": row["output_tokens"] or 0,
             "total_tokens": (row["input_tokens"] or 0) + (row["output_tokens"] or 0),
-            "estimated_cost_usd": _estimate_model_cost(
+            "estimated_cost_usd": estimate_model_cost(
                 row["model_name"],
                 row["input_tokens"] or 0,
                 row["output_tokens"] or 0,
