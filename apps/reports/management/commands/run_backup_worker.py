@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from html import escape
 import logging
+import re
 import time
 
 from django.conf import settings
@@ -24,24 +26,48 @@ def _ts() -> str:
 
 INTERVAL_SECONDS = 300
 BACKUP_EVERY = timedelta(seconds=settings.PERSONAL_DRIVE_BACKUP_INTERVAL_SECONDS)
+_SECRET_VALUE_RE = re.compile(
+    r"(?i)(?P<prefix>\b(?:access[_ -]?token|refresh[_ -]?token|id[_ -]?token|client[_ -]?secret|api[_ -]?key|authorization|password)\b\s*[:=]\s*)(?P<value>[^\s,;]+)"
+)
+_BEARER_RE = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
+_QUERY_SECRET_RE = re.compile(
+    r"(?i)(?P<prefix>[?&](?:access_token|refresh_token|token|key|client_secret)=)(?P<value>[^&#\s]+)"
+)
+
+
+def _safe_error_detail(detail: object, *, max_length: int = 240) -> str:
+    """Return a short Telegram-safe diagnostic without credentials or multiline noise."""
+    text = " ".join(str(detail or "Unknown error").split())
+    text = _SECRET_VALUE_RE.sub(lambda match: f"{match.group('prefix')}[REDACTED]", text)
+    text = _BEARER_RE.sub("Bearer [REDACTED]", text)
+    text = _QUERY_SECRET_RE.sub(lambda match: f"{match.group('prefix')}[REDACTED]", text)
+    if len(text) > max_length:
+        text = text[: max_length - 1].rstrip() + "…"
+    return escape(text)
 
 
 def _notify_backup_failure(user, *, code: str, detail: str) -> None:
     """Notify the affected linked Telegram chat at most once per error/day."""
     today = timezone.localdate().isoformat()
     auth_failure = code in {"auth", "refresh", "disconnected", "missing_refresh_token"}
+    safe_code = escape(str(code or "unknown"))
+    safe_detail = _safe_error_detail(detail)
 
     if auth_failure:
         text = (
             "🚨 <b>Google Drive backup stopped</b>\n\n"
             "JobApply can no longer access your Google Drive. "
             "Reconnect Google Drive in JobApply to resume automatic backups."
+            f"\n\n🔎 Error: <code>{safe_code}</code>"
+            f"\n📝 Details: <code>{safe_detail}</code>"
         )
     else:
         text = (
             "⚠️ <b>Google Drive backup failed</b>\n\n"
             "The scheduled JobApply backup could not be uploaded. "
             "Automatic backup will retry on the next cycle."
+            f"\n\n🔎 Error: <code>{safe_code}</code>"
+            f"\n📝 Details: <code>{safe_detail}</code>"
         )
 
     send_notification_once(
@@ -174,5 +200,5 @@ class Command(BaseCommand):
                 _notify_backup_failure(
                     user,
                     code="unexpected",
-                    detail=type(error).__name__,
+                    detail=f"{type(error).__name__}: {error}",
                 )
