@@ -3,17 +3,19 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from apps.applications.models import ApplicationStatus, JobApplication
 from apps.gmail_assistant.models import ApplicationUpdateProposal, ProposalStatus
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
+from apps.gmail_assistant.services.token_usage import estimate_model_cost
 from apps.gmail_assistant.usage_models import OpenAITokenUsage
 from apps.gmail_stats.models import GmailSyncState
 from apps.interviews.models import InterviewEvent, InterviewStatus
@@ -49,6 +51,30 @@ class AIUsageSummary:
     calls_left: int
     daily_limit: int
     tokens_used_today: int
+
+
+@dataclass(frozen=True)
+class AIUsageUserSummary:
+    email: str
+    requests: int
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    calls_left: int
+    daily_limit: int
+
+
+@dataclass(frozen=True)
+class AIUsageDigest:
+    since: datetime
+    until: datetime
+    requests: int
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    estimated_cost_usd: Decimal | None
+    active_user_count: int
+    top_users: tuple[AIUsageUserSummary, ...]
 
 
 def get_owner(email: str):
@@ -152,6 +178,79 @@ def get_ai_usage_summary(email: str) -> AIUsageSummary:
         calls_left=max(0, policy.daily_limit - used_calls),
         daily_limit=policy.daily_limit,
         tokens_used_today=tokens_used_today,
+    )
+
+
+def get_ai_usage_digest(*, hours: int = 24, top_limit: int = 5) -> AIUsageDigest:
+    """Return persisted successful OpenAI usage for a rolling time window across all users."""
+    until = timezone.now()
+    since = until - timedelta(hours=hours)
+    queryset = OpenAITokenUsage.objects.filter(created_at__gte=since, created_at__lte=until)
+    totals = queryset.aggregate(
+        requests=Count("id"),
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+    )
+    input_tokens = int(totals["input_tokens"] or 0)
+    output_tokens = int(totals["output_tokens"] or 0)
+
+    model_rows = queryset.values("model_name").annotate(
+        input_tokens=Sum("input_tokens"),
+        output_tokens=Sum("output_tokens"),
+    )
+    model_costs = [
+        estimate_model_cost(
+            str(row["model_name"] or ""),
+            int(row["input_tokens"] or 0),
+            int(row["output_tokens"] or 0),
+        )
+        for row in model_rows
+    ]
+    estimated_cost = None if any(cost is None for cost in model_costs) else sum(model_costs, Decimal("0"))
+
+    raw_users = list(
+        queryset.values("user_id", "user__email").annotate(
+            requests=Count("id"),
+            input_tokens=Sum("input_tokens"),
+            output_tokens=Sum("output_tokens"),
+        )
+    )
+    raw_users.sort(
+        key=lambda row: int(row["input_tokens"] or 0) + int(row["output_tokens"] or 0),
+        reverse=True,
+    )
+    policy = AIUsagePolicy.from_environment()
+    users_by_id = get_user_model().objects.in_bulk(
+        [int(row["user_id"]) for row in raw_users[:top_limit]]
+    )
+    top_users: list[AIUsageUserSummary] = []
+    for row in raw_users[:top_limit]:
+        user = users_by_id.get(int(row["user_id"]))
+        used_calls = policy.daily_usage(user=user) if user is not None else 0
+        row_input = int(row["input_tokens"] or 0)
+        row_output = int(row["output_tokens"] or 0)
+        top_users.append(
+            AIUsageUserSummary(
+                email=str(row["user__email"] or "no email"),
+                requests=int(row["requests"] or 0),
+                input_tokens=row_input,
+                output_tokens=row_output,
+                total_tokens=row_input + row_output,
+                calls_left=max(0, policy.daily_limit - used_calls),
+                daily_limit=policy.daily_limit,
+            )
+        )
+
+    return AIUsageDigest(
+        since=since,
+        until=until,
+        requests=int(totals["requests"] or 0),
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=input_tokens + output_tokens,
+        estimated_cost_usd=estimated_cost,
+        active_user_count=len(raw_users),
+        top_users=tuple(top_users),
     )
 
 
