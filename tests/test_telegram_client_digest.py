@@ -7,6 +7,7 @@ import pytest
 from django.conf import settings
 from django.utils import timezone
 
+from apps.accounts.models import UserProfile
 from apps.telegram_bot.client_digest import (
     ClientDigest,
     client_digest_keyboard,
@@ -103,18 +104,23 @@ def test_scheduled_digest_targets_each_linked_user_and_skips_unlinked_and_demo(
     monkeypatch,
 ):
     linked = django_user_model.objects.create_user("linked", email="linked@example.test")
-    linked.userprofile.telegram_user_id = 101
-    linked.userprofile.telegram_chat_id = 201
-    linked.userprofile.telegram_linked_at = timezone.now()
-    linked.userprofile.save(update_fields=["telegram_user_id", "telegram_chat_id", "telegram_linked_at"])
+    UserProfile.objects.create(
+        user=linked,
+        telegram_user_id=101,
+        telegram_chat_id=201,
+        telegram_linked_at=timezone.now(),
+    )
 
-    django_user_model.objects.create_user("unlinked", email="unlinked@example.test")
+    unlinked = django_user_model.objects.create_user("unlinked", email="unlinked@example.test")
+    UserProfile.objects.create(user=unlinked)
 
     demo = django_user_model.objects.create_user("demo", email="demo@example.test")
-    demo.userprofile.is_demo_user = True
-    demo.userprofile.telegram_user_id = 102
-    demo.userprofile.telegram_chat_id = 202
-    demo.userprofile.save(update_fields=["is_demo_user", "telegram_user_id", "telegram_chat_id"])
+    UserProfile.objects.create(
+        user=demo,
+        is_demo_user=True,
+        telegram_user_id=102,
+        telegram_chat_id=202,
+    )
 
     calls = []
     monkeypatch.setattr(
@@ -142,11 +148,12 @@ def test_weekly_digest_callback_uses_linked_account_and_edits_same_message(
     monkeypatch,
 ):
     user = django_user_model.objects.create_user("client", email="client@example.test")
-    profile = user.userprofile
-    profile.telegram_user_id = 321
-    profile.telegram_chat_id = 654
-    profile.telegram_linked_at = timezone.now()
-    profile.save(update_fields=["telegram_user_id", "telegram_chat_id", "telegram_linked_at"])
+    UserProfile.objects.create(
+        user=user,
+        telegram_user_id=321,
+        telegram_chat_id=654,
+        telegram_linked_at=timezone.now(),
+    )
 
     observed = {}
 
