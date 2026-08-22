@@ -1,0 +1,10 @@
+[Unit]
+Description=Send JobApply Telegram AI usage digest daily at 08:00 Europe/Berlin
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Europe/Berlin
+Persistent=true
+Unit=jobapply-ai-usage-digest.service
+
+[Install]
+WantedBy=timers.target
