@@ -163,15 +163,25 @@ class TelegramClient:
         )
         response.raise_for_status()
 
-    def edit_message_text(self, chat_id: int, message_id: int, text: str) -> None:
+    def edit_message_text(
+        self,
+        chat_id: int,
+        message_id: int,
+        text: str,
+        *,
+        reply_markup: dict[str, Any] | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": "HTML",
+        }
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         response = self.session.post(
             f"{self.base_url}/editMessageText",
-            json={
-                "chat_id": chat_id,
-                "message_id": message_id,
-                "text": text,
-                "parse_mode": "HTML",
-            },
+            json=payload,
             timeout=10,
         )
         response.raise_for_status()
