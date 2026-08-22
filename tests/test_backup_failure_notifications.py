@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from django.core.management import call_command
 
-from apps.reports.management.commands.run_backup_worker import Command as BackupWorkerCommand
+from apps.reports.management.commands.run_backup_worker import (
+    Command as BackupWorkerCommand,
+    _safe_error_detail,
+)
 from apps.reports.models import CloudBackupSettings
 from apps.telegram_bot.heartbeat import BACKUP_WORKER
 from apps.telegram_bot.models import WorkerHeartbeat
@@ -85,8 +88,11 @@ def test_personal_drive_worker_alerts_when_refresh_token_is_missing(
     assert len(calls) == 1
     assert calls[0]["event_type"] == "drive_backup_failed"
     assert calls[0]["recipient_email"] == "backup@example.com"
-    assert "Google Drive backup stopped" in str(calls[0]["text"])
-    assert "Reconnect Google Drive" in str(calls[0]["text"])
+    text = str(calls[0]["text"])
+    assert "Google Drive backup stopped" in text
+    assert "Reconnect Google Drive" in text
+    assert "missing_refresh_token" in text
+    assert "Google refresh token is missing" in text
 
 
 def test_personal_drive_worker_alerts_on_drive_auth_error(
@@ -131,4 +137,22 @@ def test_personal_drive_worker_alerts_on_drive_auth_error(
     assert len(calls) == 1
     assert calls[0]["event_type"] == "drive_backup_failed"
     assert "drive_backup_failed:" in str(calls[0]["event_key"])
-    assert "Google Drive backup stopped" in str(calls[0]["text"])
+    text = str(calls[0]["text"])
+    assert "Google Drive backup stopped" in text
+    assert "Error: <code>refresh</code>" in text
+    assert "Google session expired" in text
+
+
+def test_drive_error_detail_redacts_credentials_and_escapes_html():
+    detail = (
+        "HttpError 403 <forbidden> access_token=secret-token "
+        "Authorization: Bearer abc.def refresh_token=refresh-secret"
+    )
+
+    safe = _safe_error_detail(detail)
+
+    assert "secret-token" not in safe
+    assert "abc.def" not in safe
+    assert "refresh-secret" not in safe
+    assert "[REDACTED]" in safe
+    assert "&lt;forbidden&gt;" in safe
