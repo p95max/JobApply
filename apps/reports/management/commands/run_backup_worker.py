@@ -38,8 +38,11 @@ _QUERY_SECRET_RE = re.compile(
 def _safe_error_detail(detail: object, *, max_length: int = 240) -> str:
     """Return a short Telegram-safe diagnostic without credentials or multiline noise."""
     text = " ".join(str(detail or "Unknown error").split())
-    text = _SECRET_VALUE_RE.sub(lambda match: f"{match.group('prefix')}[REDACTED]", text)
+    # Redact complete Authorization/Bearer credentials before the generic
+    # key/value pass; otherwise `Authorization: Bearer abc...` would replace
+    # only the word `Bearer` and leave the credential behind.
     text = _BEARER_RE.sub("Bearer [REDACTED]", text)
+    text = _SECRET_VALUE_RE.sub(lambda match: f"{match.group('prefix')}[REDACTED]", text)
     text = _QUERY_SECRET_RE.sub(lambda match: f"{match.group('prefix')}[REDACTED]", text)
     if len(text) > max_length:
         text = text[: max_length - 1].rstrip() + "…"
