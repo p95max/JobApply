@@ -82,11 +82,11 @@ def test_client_digest_text_and_keyboard_are_compact_and_actionable():
     assert "Interviews: <b>1</b>" in text
     assert "Tokens: <b>12,345</b>" in text
     assert "Last backup: ✅" in text
-    assert keyboard["inline_keyboard"][0][0] == {
+    assert keyboard["inline_keyboard"][0][0]["url"].endswith("/gmail_stats/gmail/assistant/")
+    assert keyboard["inline_keyboard"][1][0] == {
         "text": "📅 Digest for 7 days",
         "callback_data": "digest:168",
     }
-    assert keyboard["inline_keyboard"][1][0]["url"].endswith("/gmail_stats/gmail/assistant/")
 
 
 def test_client_digest_without_activity_uses_short_form():
@@ -139,7 +139,9 @@ def test_scheduled_digest_targets_each_linked_user_and_skips_unlinked_and_demo(
     assert calls[0]["recipient_email"] == "linked@example.test"
     assert calls[0]["event_type"] == "client_daily_digest"
     assert calls[0]["event_key"].startswith(f"client_daily_digest:{linked.pk}:")
-    assert calls[0]["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "digest:168"
+    keyboard = calls[0]["reply_markup"]["inline_keyboard"]
+    assert keyboard[0][0]["url"].endswith("/gmail_stats/gmail/assistant/")
+    assert keyboard[1][0]["callback_data"] == "digest:168"
 
 
 @pytest.mark.django_db
@@ -178,7 +180,7 @@ def test_weekly_digest_callback_uses_linked_account_and_edits_same_message(
     assert observed == {"user_id": user.pk, "hours": 168}
     assert client.edits[0][0:2] == (654, 77)
     assert "JobApply digest · last 7 days" in client.edits[0][2]
-    assert client.edits[0][3]["inline_keyboard"][0][0]["callback_data"] == "digest:24"
+    assert client.edits[0][3]["inline_keyboard"][1][0]["callback_data"] == "digest:24"
     assert client.answers[-1] == ("digest-callback", "Digest updated.")
 
 
@@ -215,7 +217,7 @@ def test_digest_command_builds_current_linked_users_24h_digest(django_user_model
     chat_id, text, keyboard = client.messages[0]
     assert chat_id == 8765
     assert "JobApply digest · last 24h" in text
-    assert keyboard["inline_keyboard"][0][0]["callback_data"] == "digest:168"
+    assert keyboard["inline_keyboard"][1][0]["callback_data"] == "digest:168"
 
 
 @pytest.mark.django_db
