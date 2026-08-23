@@ -20,7 +20,13 @@ from .client_digest import (
     parse_digest_callback,
 )
 from .config import TelegramConfig
-from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
+from .deployments import (
+    apply_deploy_callback,
+    get_deploy_menu,
+    parse_deploy_callback,
+    parse_deploy_menu_callback,
+    prepare_deploy_request,
+)
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
 from .notifications import url_keyboard
 from .permissions import is_update_allowed, linked_profile_for_update
@@ -38,7 +44,6 @@ from .texts import (
     admin_text,
     ai_usage_digest_text,
     applications_text,
-    deploy_keyboard,
     doctor_text,
     gmail_text,
     health_text,
@@ -119,13 +124,30 @@ def _is_owner(user_id: int, chat_id: int, config: TelegramConfig) -> bool:
     )
 
 
+def _deploy_confirmation_keyboard(request) -> dict[str, list[list[dict[str, str]]]]:
+    confirm_text = "✅ Confirm rollback" if request.operation == "rollback" else "🚀 Confirm deploy"
+    return {
+        "inline_keyboard": [[
+            {"text": confirm_text, "callback_data": f"deploy:{request.pk}:confirm"},
+            {"text": "✖️ Cancel", "callback_data": f"deploy:{request.pk}:cancel"},
+        ]]
+    }
+
+
 def _handle_callback(update: dict[str, Any], client: TelegramClient, config: TelegramConfig) -> None:
     callback = update.get("callback_query") or {}
     callback_id = str(callback.get("id") or "")
-    proposal_callback = parse_callback_data(callback.get("data"))
-    deploy_callback = parse_deploy_callback(callback.get("data"))
-    digest_hours = parse_digest_callback(callback.get("data"))
-    if proposal_callback is None and deploy_callback is None and digest_hours is None:
+    callback_data = callback.get("data")
+    proposal_callback = parse_callback_data(callback_data)
+    deploy_callback = parse_deploy_callback(callback_data)
+    deploy_menu_operation = parse_deploy_menu_callback(callback_data)
+    digest_hours = parse_digest_callback(callback_data)
+    if (
+        proposal_callback is None
+        and deploy_callback is None
+        and deploy_menu_operation is None
+        and digest_hours is None
+    ):
         _answer_callback(client, callback_id, "This action is not available.")
         return
 
@@ -166,6 +188,56 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
             logger.warning("Telegram digest callback failed: %s", type(error).__name__)
             _record_audit(user_id, chat_id, "digest_callback", "failed", started)
             _answer_callback(client, callback_id, "Could not build the digest. Please try again.")
+        return
+
+    if deploy_menu_operation is not None:
+        if not _is_owner(user_id, chat_id, config):
+            _record_audit(user_id, chat_id, "deploy_menu", "forbidden", started)
+            _answer_callback(client, callback_id, "This action is available only to the bot owner.")
+            return
+        if not config.deploy_enabled:
+            _record_audit(user_id, chat_id, "deploy_menu", "disabled", started)
+            _answer_callback(client, callback_id, "Deploy is disabled by configuration.")
+            return
+        if is_rate_limited(
+            user_id=user_id,
+            chat_id=chat_id,
+            limit=config.rate_limit_count,
+            window_seconds=config.rate_limit_window_seconds,
+        ):
+            _record_audit(user_id, chat_id, "deploy_menu", "rate_limited", started)
+            _answer_callback(client, callback_id, "Too many requests. Please wait a moment.")
+            return
+        prepared = prepare_deploy_request(
+            telegram_user_id=user_id,
+            chat_id=chat_id,
+            branch=config.production_branch,
+            ttl_seconds=config.deploy_confirmation_ttl_seconds,
+            operation=deploy_menu_operation,
+        )
+        message_id = (callback.get("message") or {}).get("message_id")
+        try:
+            if message_id is not None:
+                client.edit_message_text(
+                    chat_id,
+                    int(message_id),
+                    prepared.message,
+                    reply_markup=(
+                        _deploy_confirmation_keyboard(prepared.request)
+                        if prepared.request is not None
+                        else None
+                    ),
+                )
+            _record_audit(user_id, chat_id, "deploy_menu", prepared.outcome, started)
+            _answer_callback(
+                client,
+                callback_id,
+                "Confirmation required." if prepared.request is not None else prepared.message,
+            )
+        except Exception as error:
+            logger.warning("Telegram deploy menu callback failed: %s", type(error).__name__)
+            _record_audit(user_id, chat_id, "deploy_menu", "failed", started)
+            _answer_callback(client, callback_id, "Could not prepare production operation.")
         return
 
     if deploy_callback is not None:
@@ -464,16 +536,25 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     reply = "⚠️ <b>Deploy disabled</b>\n\nProduction deploy is disabled by configuration."
                     result = "disabled"
                 else:
-                    deployment = prepare_deploy_request(
-                        telegram_user_id=user_id,
-                        chat_id=chat_id,
-                        branch=config.production_branch,
-                        ttl_seconds=config.deploy_confirmation_ttl_seconds,
-                    )
-                    reply = deployment.message
-                    result = deployment.outcome
-                    if deployment.request is not None:
-                        reply_markup = deploy_keyboard(deployment.request.pk)
+                    menu = get_deploy_menu(config.production_branch)
+                    if menu is None:
+                        reply = "❌ <b>Production control unavailable</b>\n\nCould not read Git commits."
+                        result = "failed"
+                    else:
+                        rollback = menu.rollback_commit[:12] if menu.rollback_commit else "not available yet"
+                        reply = (
+                            "🚀 <b>Production control</b>\n\n"
+                            f"Current: <code>{menu.current_commit}</code>\n"
+                            f"Latest master: <code>{menu.latest_commit[:12]}</code>\n"
+                            f"Rollback target: <code>{rollback}</code>\n\n"
+                            "Choose an operation. A separate confirmation is required."
+                        )
+                        reply_markup = {
+                            "inline_keyboard": [
+                                [{"text": "🚀 Deploy latest", "callback_data": "deploymenu:deploy"}],
+                                [{"text": "↩️ Rollback last successful", "callback_data": "deploymenu:rollback"}],
+                            ]
+                        }
             else:
                 reply = "❓ <b>Unknown command</b>\n\nUse <code>/help</code> to see available commands."
     except CommandTimedOut:
