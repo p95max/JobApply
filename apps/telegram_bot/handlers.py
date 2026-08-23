@@ -13,7 +13,12 @@ from apps.accounts.telegram_linking import bind_telegram_from_start
 
 from .audit import is_rate_limited, record_command_audit
 from .client import TelegramClient, telegram_error_detail
-from .client_digest import build_client_digest, client_digest_text, parse_digest_callback
+from .client_digest import (
+    build_client_digest,
+    client_digest_keyboard,
+    client_digest_text,
+    parse_digest_callback,
+)
 from .config import TelegramConfig
 from .deployments import apply_deploy_callback, parse_deploy_callback, prepare_deploy_request
 from .diagnostics import get_doctor_snapshot, get_health_snapshot
@@ -157,6 +162,7 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
                 chat_id,
                 int(message_id),
                 client_digest_text(digest, scheduled=False),
+                reply_markup=client_digest_keyboard(hours=digest_hours),
             )
             _record_audit(user_id, chat_id, "digest_callback", "ok", started)
             _answer_callback(client, callback_id, "Digest updated.")
@@ -381,8 +387,18 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
         with _command_timeout():
             if text in {"/start", "/help"}:
                 reply = help_text(config.environment_label, is_admin=_is_owner(user_id, chat_id, config))
+                reply += "\n📊 /digest — your JobApply activity for the last 24 hours"
             elif text == "/ping":
                 reply = "🟢 <b>JobApply bot is online</b>"
+            elif text == "/digest":
+                if has_arguments:
+                    reply = "⚠️ <b>Invalid command</b>\n\n<code>/digest</code> does not accept arguments."
+                    result = "invalid"
+                else:
+                    digest_user = profile.user if profile is not None else get_owner(config.owner_email)
+                    digest = build_client_digest(user=digest_user, hours=24)
+                    reply = client_digest_text(digest, scheduled=False)
+                    reply_markup = client_digest_keyboard(hours=24)
             elif text == "/admin":
                 if not _is_owner(user_id, chat_id, config):
                     reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
