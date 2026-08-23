@@ -18,7 +18,7 @@ from .models import TelegramDeployRequest, TelegramDeployRequestStatus
 logger = logging.getLogger(__name__)
 
 DEPLOY_SERVICE = "jobapply-deploy.service"
-DEPLOY_REQUEST_MARKER = Path(os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/run/jobapply/deploy.requested"))
+DEPLOY_REQUEST_MARKER = Path(os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/var/tmp/jobapply-deploy.requested"))
 QUEUE_STATUS_FILE = Path("/var/tmp/jobapply-background-job.status")
 
 
@@ -195,12 +195,13 @@ def _git_output(*args: str) -> str:
 
 
 def _claim_deploy_request() -> bool | None:
-    """Atomically claim a deploy, returning None for runtime filesystem errors.
+    """Atomically claim a deploy, returning None for filesystem errors.
 
-    systemd owns /run/jobapply in production via RuntimeDirectory. Creating the
-    parent here keeps custom/test marker paths self-contained, while any
-    permission or filesystem problem is reported to the callback instead of
-    terminating the Telegram polling process.
+    The marker lives in /var/tmp because it coordinates two different systemd
+    services: the long-running bot (jobapply user) creates it, while the root
+    deploy service removes it. Unlike a unit-owned RuntimeDirectory under /run,
+    this shared path does not disappear or change ownership when either unit is
+    restarted.
     """
     try:
         DEPLOY_REQUEST_MARKER.parent.mkdir(parents=True, exist_ok=True)
