@@ -198,13 +198,13 @@ def client_digest_keyboard(*, hours: int) -> dict[str, list[list[dict[str, str]]
         period_button = {"text": "📅 Digest for 7 days", "callback_data": "digest:168"}
     return {
         "inline_keyboard": [
-            [period_button],
             [
                 {
                     "text": "📨 Open Gmail Assistant",
                     "url": _jobapply_url("/gmail_stats/gmail/assistant/"),
                 }
             ],
+            [period_button],
         ]
     }
 
