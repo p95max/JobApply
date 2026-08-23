@@ -61,14 +61,13 @@ def test_deploy_marker_failure_does_not_raise_or_start_service(monkeypatch):
     assert started == []
 
 
-def test_production_telegram_unit_uses_shared_var_tmp_deploy_marker():
+def test_production_telegram_unit_uses_shared_marker_outside_private_tmp():
     unit = (deployments.settings.BASE_DIR / "deploy/vps/systemd/jobapply-telegram-bot.service").read_text(
         encoding="utf-8"
     )
 
-    assert "RuntimeDirectory=jobapply" in unit
-    assert "RuntimeDirectoryMode=0750" in unit
-    assert "JOBAPPLY_DEPLOY_REQUEST_MARKER=/var/tmp/jobapply-deploy.requested" in unit
+    assert "PrivateTmp=true" in unit
+    assert "JOBAPPLY_DEPLOY_REQUEST_MARKER=/var/lib/jobapply/runtime/deploy.requested" in unit
 
 
 def test_deploy_script_resynchronizes_telegram_and_deploy_systemd_units():
@@ -81,3 +80,4 @@ def test_deploy_script_resynchronizes_telegram_and_deploy_systemd_units():
     assert "systemctl daemon-reload" in script
     assert "jobapply-rollback.sh" in script
     assert "/usr/local/sbin/jobapply-rollback" in script
+    assert 'install -d -o root -g jobapply -m 0770 "$STATE_DIR/runtime"' in script
