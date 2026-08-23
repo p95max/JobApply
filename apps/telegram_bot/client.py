@@ -15,6 +15,7 @@ CLIENT_COMMANDS: tuple[dict[str, str], ...] = (
     {"command": "ping", "description": "Check whether the bot is online"},
     {"command": "gmail", "description": "Show pending email events"},
     {"command": "applications", "description": "Show application statistics"},
+    {"command": "digest", "description": "Show your JobApply digest for the last 24 hours"},
 )
 
 ADMIN_COMMANDS: tuple[dict[str, str], ...] = CLIENT_COMMANDS + (
