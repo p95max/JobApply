@@ -16,6 +16,7 @@ sudo install -m 0644 deploy/vps/systemd/jobapply-*.service deploy/vps/systemd/jo
 sudo install -o root -g jobapply -m 0750 deploy/vps/scripts/jobapply-* "$BIN_DIR/"
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-run-background-job.sh "$BIN_DIR/jobapply-run-background-job.sh"
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy.sh /usr/local/sbin/jobapply-deploy
+sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-rollback.sh /usr/local/sbin/jobapply-rollback
 sudo install -o root -g jobapply -m 0750 deploy/vps/jobapply-deploy-notify.sh "$BIN_DIR/jobapply-deploy-notify.sh"
 sudo install -m 0440 deploy/vps/sudoers/jobapply-telegram /etc/sudoers.d/jobapply-telegram
 sudo visudo -cf /etc/sudoers.d/jobapply-telegram
@@ -24,6 +25,9 @@ sudo install -d -m 0755 "$JOURNALD_DROPIN_DIR"
 sudo install -m 0644 deploy/vps/systemd/journald-jobapply-retention.conf "$JOURNALD_DROPIN_DIR/60-jobapply-retention.conf"
 
 sudo install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply
+# Deploy state is written by root and read by the Telegram bot through the
+# jobapply group. It tracks only commits that completed all production checks.
+sudo install -d -o root -g jobapply -m 0750 /var/lib/jobapply
 # The deploy queue runs as root while backup jobs run as jobapply. Keep their
 # shared flock file writable for both through the jobapply group.
 sudo touch /var/tmp/jobapply-background-jobs.lock
