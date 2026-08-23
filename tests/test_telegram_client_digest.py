@@ -145,7 +145,7 @@ def test_scheduled_digest_targets_each_linked_user_and_skips_unlinked_and_demo(
 
 
 @pytest.mark.django_db
-def test_weekly_digest_callback_uses_linked_account_and_edits_same_message(
+def test_weekly_digest_callback_uses_linked_account_and_sends_new_message(
     django_user_model,
     monkeypatch,
 ):
@@ -178,10 +178,13 @@ def test_weekly_digest_callback_uses_linked_account_and_edits_same_message(
     handle_update(update, client, _config())
 
     assert observed == {"user_id": user.pk, "hours": 168}
-    assert client.edits[0][0:2] == (654, 77)
-    assert "JobApply digest · last 7 days" in client.edits[0][2]
-    assert client.edits[0][3]["inline_keyboard"][1][0]["callback_data"] == "digest:24"
-    assert client.answers[-1] == ("digest-callback", "Digest updated.")
+    assert client.edits == []
+    assert len(client.messages) == 1
+    chat_id, text, keyboard = client.messages[0]
+    assert chat_id == 654
+    assert "JobApply digest · last 7 days" in text
+    assert keyboard["inline_keyboard"][1][0]["callback_data"] == "digest:24"
+    assert client.answers[-1] == ("digest-callback", "Digest sent.")
 
 
 @pytest.mark.django_db
