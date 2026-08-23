@@ -78,14 +78,24 @@ class TelegramDeployRequestStatus(models.TextChoices):
     FAILED = "failed", "Failed to queue"
 
 
+class TelegramDeployOperation(models.TextChoices):
+    DEPLOY = "deploy", "Deploy latest"
+    ROLLBACK = "rollback", "Rollback"
+
+
 class TelegramDeployRequest(models.Model):
-    """A short-lived, one-time confirmation for a fixed production deploy."""
+    """A short-lived, one-time confirmation for a fixed production operation."""
 
     telegram_user_id = models.BigIntegerField()
     chat_id = models.BigIntegerField()
     current_commit = models.CharField(max_length=64)
     target_commit = models.CharField(max_length=64)
     target_description = models.CharField(max_length=255, blank=True)
+    operation = models.CharField(
+        max_length=16,
+        choices=TelegramDeployOperation.choices,
+        default=TelegramDeployOperation.DEPLOY,
+    )
     status = models.CharField(
         max_length=16,
         choices=TelegramDeployRequestStatus.choices,
@@ -105,4 +115,4 @@ class TelegramDeployRequest(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Deploy {self.pk}: {self.status}"
+        return f"{self.operation} {self.pk}: {self.status}"
