@@ -30,8 +30,8 @@ class FakeClient:
     def answer_callback_query(self, callback_id, text):
         self.answers.append((callback_id, text))
 
-    def edit_message_text(self, chat_id, message_id, text):
-        self.edits.append((chat_id, message_id, text))
+    def edit_message_text(self, chat_id, message_id, text, *, reply_markup=None):
+        self.edits.append((chat_id, message_id, text, reply_markup))
 
 
 def _config() -> TelegramConfig:
@@ -178,7 +178,68 @@ def test_weekly_digest_callback_uses_linked_account_and_edits_same_message(
     assert observed == {"user_id": user.pk, "hours": 168}
     assert client.edits[0][0:2] == (654, 77)
     assert "JobApply digest · last 7 days" in client.edits[0][2]
+    assert client.edits[0][3]["inline_keyboard"][0][0]["callback_data"] == "digest:24"
     assert client.answers[-1] == ("digest-callback", "Digest updated.")
+
+
+@pytest.mark.django_db
+def test_digest_command_builds_current_linked_users_24h_digest(django_user_model, monkeypatch):
+    user = django_user_model.objects.create_user("digest-client", email="digest@example.test")
+    UserProfile.objects.create(
+        user=user,
+        telegram_user_id=4321,
+        telegram_chat_id=8765,
+        telegram_linked_at=timezone.now(),
+    )
+    observed = {}
+
+    def fake_build_client_digest(*, user, hours, until=None):
+        observed["user_id"] = user.pk
+        observed["hours"] = hours
+        return _digest(hours=hours)
+
+    monkeypatch.setattr("apps.telegram_bot.handlers.build_client_digest", fake_build_client_digest)
+    client = FakeClient()
+    update = {
+        "message": {
+            "text": "/digest",
+            "from": {"id": 4321},
+            "chat": {"id": 8765, "type": "private"},
+        }
+    }
+
+    handle_update(update, client, _config())
+
+    assert observed == {"user_id": user.pk, "hours": 24}
+    assert len(client.messages) == 1
+    chat_id, text, keyboard = client.messages[0]
+    assert chat_id == 8765
+    assert "JobApply digest · last 24h" in text
+    assert keyboard["inline_keyboard"][0][0]["callback_data"] == "digest:168"
+
+
+@pytest.mark.django_db
+def test_help_mentions_digest_command(django_user_model):
+    user = django_user_model.objects.create_user("help-client", email="help@example.test")
+    UserProfile.objects.create(
+        user=user,
+        telegram_user_id=555,
+        telegram_chat_id=777,
+        telegram_linked_at=timezone.now(),
+    )
+    client = FakeClient()
+    update = {
+        "message": {
+            "text": "/help",
+            "from": {"id": 555},
+            "chat": {"id": 777, "type": "private"},
+        }
+    }
+
+    handle_update(update, client, _config())
+
+    assert "/digest" in client.messages[0][1]
+    assert "last 24 hours" in client.messages[0][1]
 
 
 def test_client_digest_timer_runs_at_09_berlin_and_is_persistent():
