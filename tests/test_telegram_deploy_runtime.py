@@ -61,20 +61,21 @@ def test_deploy_marker_failure_does_not_raise_or_start_service(monkeypatch):
     assert started == []
 
 
-def test_production_telegram_unit_declares_runtime_directory():
+def test_production_telegram_unit_uses_shared_var_tmp_deploy_marker():
     unit = (deployments.settings.BASE_DIR / "deploy/vps/systemd/jobapply-telegram-bot.service").read_text(
         encoding="utf-8"
     )
 
     assert "RuntimeDirectory=jobapply" in unit
     assert "RuntimeDirectoryMode=0750" in unit
-    assert "JOBAPPLY_DEPLOY_REQUEST_MARKER=/run/jobapply/deploy.requested" in unit
+    assert "JOBAPPLY_DEPLOY_REQUEST_MARKER=/var/tmp/jobapply-deploy.requested" in unit
 
 
-def test_deploy_script_resynchronizes_telegram_systemd_unit():
+def test_deploy_script_resynchronizes_telegram_and_deploy_systemd_units():
     script = (deployments.settings.BASE_DIR / "deploy/vps/jobapply-deploy.sh").read_text(encoding="utf-8")
 
-    assert "Synchronizing Telegram bot systemd unit" in script
+    assert "Synchronizing Telegram/deploy systemd units" in script
     assert 'deploy/vps/systemd/jobapply-telegram-bot.service"' in script
-    assert '"$SYSTEMD_DIR/jobapply-telegram-bot.service"' in script
+    assert 'deploy/vps/systemd/jobapply-deploy.service"' in script
+    assert '"$SYSTEMD_DIR/"' in script
     assert "systemctl daemon-reload" in script
