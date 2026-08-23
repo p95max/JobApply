@@ -58,6 +58,7 @@ record_success() {
   local new_commit old_commit=""
   new_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse HEAD)"
   install -d -o root -g jobapply -m 0750 "$STATE_DIR"
+  install -d -o root -g jobapply -m 0770 "$STATE_DIR/runtime"
   if [[ -f "$LAST_SUCCESSFUL_FILE" ]]; then
     old_commit="$(tr -d '[:space:]' <"$LAST_SUCCESSFUL_FILE")"
   fi
@@ -105,30 +106,14 @@ sudo -u "$APP_USER" git -C "$APP_DIR" merge-base --is-ancestor HEAD "origin/$BRA
 sudo -u "$APP_USER" git -C "$APP_DIR" merge --ff-only "origin/$BRANCH"
 
 echo "==> Synchronizing deploy operations scripts"
-install -o root -g jobapply -m 0750 \
-  "$APP_DIR/deploy/vps/jobapply-deploy-notify.sh" \
-  /usr/local/bin/jobapply-deploy-notify.sh
-install -o root -g jobapply -m 0750 \
-  "$APP_DIR/deploy/vps/scripts/jobapply-telegram-bot-failure-notify" \
-  /usr/local/bin/jobapply-telegram-bot-failure-notify
-install -o root -g jobapply -m 0750 \
-  "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
-  /usr/local/sbin/jobapply-deploy
-install -o root -g jobapply -m 0750 \
-  "$APP_DIR/deploy/vps/jobapply-rollback.sh" \
-  /usr/local/sbin/jobapply-rollback
+install -o root -g jobapply -m 0750 "$APP_DIR/deploy/vps/jobapply-deploy-notify.sh" /usr/local/bin/jobapply-deploy-notify.sh
+install -o root -g jobapply -m 0750 "$APP_DIR/deploy/vps/scripts/jobapply-telegram-bot-failure-notify" /usr/local/bin/jobapply-telegram-bot-failure-notify
+install -o root -g jobapply -m 0750 "$APP_DIR/deploy/vps/jobapply-deploy.sh" /usr/local/sbin/jobapply-deploy
+install -o root -g jobapply -m 0750 "$APP_DIR/deploy/vps/jobapply-rollback.sh" /usr/local/sbin/jobapply-rollback
 
-# Keep both sides of the Telegram deploy handoff synchronized on every deploy.
-# The bot creates /var/tmp/jobapply-deploy.requested as the jobapply user and
-# the root deploy service removes it after completion.
 echo "==> Synchronizing Telegram/deploy systemd units"
-install -m 0644 \
-  "$APP_DIR/deploy/vps/systemd/jobapply-telegram-bot.service" \
-  "$APP_DIR/deploy/vps/systemd/jobapply-deploy.service" \
-  "$SYSTEMD_DIR/"
+install -m 0644 "$APP_DIR/deploy/vps/systemd/jobapply-telegram-bot.service" "$APP_DIR/deploy/vps/systemd/jobapply-deploy.service" "$SYSTEMD_DIR/"
 
-# Timers added after initial VPS bootstrap must be synchronized by every normal
-# deploy so production does not depend on re-running install-ops.sh manually.
 echo "==> Synchronizing scheduled JobApply timers"
 install -m 0644 \
   "$APP_DIR/deploy/vps/systemd/jobapply-demo-cleanup.service" \
@@ -144,39 +129,21 @@ systemctl enable --now jobapply-demo-cleanup.timer jobapply-ai-usage-digest.time
 echo "==> Installing locked project dependencies"
 cd "$APP_DIR"
 if command -v poetry >/dev/null 2>&1; then
-  sudo -u "$APP_USER" env \
-    POETRY_VIRTUALENVS_CREATE=false \
-    VIRTUAL_ENV="$APP_DIR/.venv" \
-    PATH="$APP_DIR/.venv/bin:$PATH" \
-    poetry install --with dev --no-root --sync
+  sudo -u "$APP_USER" env POETRY_VIRTUALENVS_CREATE=false VIRTUAL_ENV="$APP_DIR/.venv" PATH="$APP_DIR/.venv/bin:$PATH" poetry install --with dev --no-root --sync
 else
-  sudo -u "$APP_USER" "$PYTHON" -m pip install \
-    --disable-pip-version-check \
-    "." pytest-django
+  sudo -u "$APP_USER" "$PYTHON" -m pip install --disable-pip-version-check "." pytest-django
 fi
 
-# Gunicorn is required by jobapply-web.service. Keep it present even while
-# Poetry --sync removes packages that are not yet represented in poetry.lock.
 echo "==> Ensuring Gunicorn ${GUNICORN_VERSION} is installed"
-sudo -u "$APP_USER" "$PYTHON" -m pip install \
-  --disable-pip-version-check \
-  "gunicorn==${GUNICORN_VERSION}"
-
-[[ -x "$APP_DIR/.venv/bin/gunicorn" ]] || {
-  echo "Gunicorn executable is missing after dependency installation." >&2
-  exit 1
-}
+sudo -u "$APP_USER" "$PYTHON" -m pip install --disable-pip-version-check "gunicorn==${GUNICORN_VERSION}"
+[[ -x "$APP_DIR/.venv/bin/gunicorn" ]] || { echo "Gunicorn executable is missing after dependency installation." >&2; exit 1; }
 
 echo "==> Granting temporary CREATEDB permission for pytest"
-sudo -u "$DB_ADMIN" psql -v ON_ERROR_STOP=1 \
-  -c "ALTER ROLE \"$DB_USER\" CREATEDB;"
+sudo -u "$DB_ADMIN" psql -v ON_ERROR_STOP=1 -c "ALTER ROLE \"$DB_USER\" CREATEDB;"
 createdb_granted=1
 
 echo "==> Running full test suite"
-sudo -u "$APP_USER" env \
-  DJANGO_SETTINGS_MODULE=config.settings \
-  "$PYTHON" -m pytest -ra
-
+sudo -u "$APP_USER" env DJANGO_SETTINGS_MODULE=config.settings "$PYTHON" -m pytest -ra
 cleanup
 
 echo "==> Running Django checks"
@@ -191,55 +158,32 @@ run_django collectstatic --noinput
 echo "==> Compiling German translations"
 run_django compilemessages -l de
 
-# Run one cleanup immediately after the new application code and migrations are
-# ready. The 12-hour timer handles subsequent expiry automatically.
 echo "==> Cleaning expired demo accounts"
 systemctl start jobapply-demo-cleanup.service
 
-services=(
-  jobapply-web.service
-  jobapply-gmail-assistant.service
-  jobapply-gmail-worker.service
-  jobapply-drive-backup-worker.service
-  jobapply-telegram-bot.service
-)
+services=(jobapply-web.service jobapply-gmail-assistant.service jobapply-gmail-worker.service jobapply-drive-backup-worker.service jobapply-telegram-bot.service)
 installed_services=()
-
 for service in "${services[@]}"; do
-  if systemctl cat "$service" >/dev/null 2>&1; then
-    installed_services+=("$service")
-  fi
+  if systemctl cat "$service" >/dev/null 2>&1; then installed_services+=("$service"); fi
 done
-
-if [[ "${#installed_services[@]}" -eq 0 ]]; then
-  echo "No JobApply systemd services were found; deployment completed without restart." >&2
-  exit 0
-fi
+[[ "${#installed_services[@]}" -gt 0 ]] || { echo "No JobApply systemd services were found; deployment completed without restart." >&2; exit 0; }
 
 echo "==> Restarting services"
 systemctl restart "${installed_services[@]}"
 
 echo "==> Verifying services"
 for service in "${installed_services[@]}"; do
-  systemctl is-active --quiet "$service" || {
-    systemctl --no-pager --full status "$service" || true
-    echo "Service failed after deployment: $service" >&2
-    exit 1
-  }
+  systemctl is-active --quiet "$service" || { systemctl --no-pager --full status "$service" || true; echo "Service failed after deployment: $service" >&2; exit 1; }
   echo "  active: $service"
 done
 
 for timer in jobapply-demo-cleanup.timer jobapply-ai-usage-digest.timer jobapply-client-digest.timer; do
-  systemctl is-enabled --quiet "$timer" || {
-    echo "Required timer is not enabled: $timer" >&2
-    exit 1
-  }
+  systemctl is-enabled --quiet "$timer" || { echo "Required timer is not enabled: $timer" >&2; exit 1; }
 done
 
 echo "==> Running HTTP health check"
 curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
 
-# Only a fully validated production deployment becomes the new known-good state.
 echo "==> Recording successful production commit"
 record_success
 
