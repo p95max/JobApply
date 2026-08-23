@@ -26,8 +26,10 @@ sudo install -m 0644 deploy/vps/systemd/journald-jobapply-retention.conf "$JOURN
 
 sudo install -d -o jobapply -g jobapply -m 0700 /var/backups/jobapply
 # Deploy state is written by root and read by the Telegram bot through the
-# jobapply group. It tracks only commits that completed all production checks.
+# jobapply group. The runtime subdirectory is group-writable so the bot can
+# atomically create a handoff marker despite PrivateTmp=true.
 sudo install -d -o root -g jobapply -m 0750 /var/lib/jobapply
+sudo install -d -o root -g jobapply -m 0770 /var/lib/jobapply/runtime
 # The deploy queue runs as root while backup jobs run as jobapply. Keep their
 # shared flock file writable for both through the jobapply group.
 sudo touch /var/tmp/jobapply-background-jobs.lock
