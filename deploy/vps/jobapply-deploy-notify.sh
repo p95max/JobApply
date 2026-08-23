@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 DEPLOY_COMMAND="${JOBAPPLY_DEPLOY_COMMAND:-/usr/local/sbin/jobapply-deploy}"
 ROLLBACK_COMMAND="${JOBAPPLY_ROLLBACK_COMMAND:-/usr/local/sbin/jobapply-rollback}"
-REQUEST_MARKER="${JOBAPPLY_DEPLOY_REQUEST_MARKER:-/var/tmp/jobapply-deploy.requested}"
+REQUEST_MARKER="${JOBAPPLY_DEPLOY_REQUEST_MARKER:-/var/lib/jobapply/runtime/deploy.requested}"
 STATE_DIR="${JOBAPPLY_DEPLOY_STATE_DIR:-/var/lib/jobapply}"
 LAST_SUCCESSFUL_FILE="$STATE_DIR/last-successful-commit"
 PREVIOUS_SUCCESSFUL_FILE="$STATE_DIR/previous-successful-commit"
