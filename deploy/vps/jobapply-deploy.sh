@@ -92,6 +92,9 @@ install -o root -g jobapply -m 0750 \
 install -o root -g jobapply -m 0750 \
   "$APP_DIR/deploy/vps/jobapply-deploy.sh" \
   /usr/local/sbin/jobapply-deploy
+install -o root -g jobapply -m 0750 \
+  "$APP_DIR/deploy/vps/jobapply-rollback.sh" \
+  /usr/local/sbin/jobapply-rollback
 
 # Keep both sides of the Telegram deploy handoff synchronized on every deploy.
 # The bot creates /var/tmp/jobapply-deploy.requested as the jobapply user and
