@@ -155,17 +155,13 @@ def _handle_callback(update: dict[str, Any], client: TelegramClient, config: Tel
         try:
             digest_user = profile.user if profile is not None else get_owner(config.owner_email)
             digest = build_client_digest(user=digest_user, hours=digest_hours)
-            message_id = (callback.get("message") or {}).get("message_id")
-            if message_id is None:
-                raise ValueError("Digest callback message is missing")
-            client.edit_message_text(
+            client.send_message(
                 chat_id,
-                int(message_id),
                 client_digest_text(digest, scheduled=False),
                 reply_markup=client_digest_keyboard(hours=digest_hours),
             )
             _record_audit(user_id, chat_id, "digest_callback", "ok", started)
-            _answer_callback(client, callback_id, "Digest updated.")
+            _answer_callback(client, callback_id, "Digest sent.")
         except Exception as error:
             logger.warning("Telegram digest callback failed: %s", type(error).__name__)
             _record_audit(user_id, chat_id, "digest_callback", "failed", started)
