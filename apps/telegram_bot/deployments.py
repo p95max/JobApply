@@ -21,7 +21,9 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 DEPLOY_SERVICE = "jobapply-deploy.service"
-DEPLOY_REQUEST_MARKER = Path(os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/var/tmp/jobapply-deploy.requested"))
+DEPLOY_REQUEST_MARKER = Path(
+    os.getenv("JOBAPPLY_DEPLOY_REQUEST_MARKER", "/var/lib/jobapply/runtime/deploy.requested")
+)
 QUEUE_STATUS_FILE = Path("/var/tmp/jobapply-background-job.status")
 DEPLOY_STATE_DIR = Path(os.getenv("JOBAPPLY_DEPLOY_STATE_DIR", "/var/lib/jobapply"))
 LAST_SUCCESSFUL_FILE = DEPLOY_STATE_DIR / "last-successful-commit"
@@ -127,7 +129,10 @@ def prepare_deploy_request(
             )
         if not _commit_exists(target_commit):
             return DeployPreparation(None, "Tracked rollback commit is not available in the local repository.", "failed")
-        target_description = (_git_output("show", "-s", "--format=%s", target_commit) or "previous successful production commit")[:255]
+        target_description = (
+            _git_output("show", "-s", "--format=%s", target_commit)
+            or "previous successful production commit"
+        )[:255]
         title = "Rollback confirmation required."
         final_line = "Confirm to roll application code back. Database migrations will not be reversed."
 
@@ -299,7 +304,10 @@ def _claim_deploy_request(*, operation: str, target_commit: str) -> bool | None:
     """Atomically claim one production operation and pin its immutable target."""
     if operation not in {TelegramDeployOperation.DEPLOY, TelegramDeployOperation.ROLLBACK}:
         return None
-    if not target_commit or any(ch not in "0123456789abcdefABCDEF" for ch in target_commit):
+    if (
+        not 7 <= len(target_commit) <= 40
+        or any(ch not in "0123456789abcdefABCDEF" for ch in target_commit)
+    ):
         return None
     try:
         DEPLOY_REQUEST_MARKER.parent.mkdir(parents=True, exist_ok=True)
