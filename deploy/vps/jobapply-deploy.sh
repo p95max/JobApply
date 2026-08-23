@@ -11,6 +11,9 @@ MANAGE="$APP_DIR/manage.py"
 GUNICORN_VERSION="${GUNICORN_VERSION:-26.0.0}"
 HEALTH_URL="${JOBAPPLY_HEALTH_URL:-http://127.0.0.1/}"
 SYSTEMD_DIR="/etc/systemd/system"
+STATE_DIR="${JOBAPPLY_DEPLOY_STATE_DIR:-/var/lib/jobapply}"
+LAST_SUCCESSFUL_FILE="$STATE_DIR/last-successful-commit"
+PREVIOUS_SUCCESSFUL_FILE="$STATE_DIR/previous-successful-commit"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this script as root: sudo $0" >&2
@@ -49,6 +52,25 @@ run_django() {
   sudo -u "$APP_USER" env \
     DJANGO_SETTINGS_MODULE=config.settings \
     "$PYTHON" "$MANAGE" "$@"
+}
+
+record_success() {
+  local new_commit old_commit=""
+  new_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse HEAD)"
+  install -d -o root -g jobapply -m 0750 "$STATE_DIR"
+  if [[ -f "$LAST_SUCCESSFUL_FILE" ]]; then
+    old_commit="$(tr -d '[:space:]' <"$LAST_SUCCESSFUL_FILE")"
+  fi
+  if [[ "$old_commit" =~ ^[0-9a-fA-F]{40}$ ]] && [[ "$old_commit" != "$new_commit" ]]; then
+    printf '%s\n' "$old_commit" >"$PREVIOUS_SUCCESSFUL_FILE.tmp"
+    chown root:jobapply "$PREVIOUS_SUCCESSFUL_FILE.tmp"
+    chmod 0640 "$PREVIOUS_SUCCESSFUL_FILE.tmp"
+    mv -f "$PREVIOUS_SUCCESSFUL_FILE.tmp" "$PREVIOUS_SUCCESSFUL_FILE"
+  fi
+  printf '%s\n' "$new_commit" >"$LAST_SUCCESSFUL_FILE.tmp"
+  chown root:jobapply "$LAST_SUCCESSFUL_FILE.tmp"
+  chmod 0640 "$LAST_SUCCESSFUL_FILE.tmp"
+  mv -f "$LAST_SUCCESSFUL_FILE.tmp" "$LAST_SUCCESSFUL_FILE"
 }
 
 [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || {
@@ -216,6 +238,10 @@ done
 
 echo "==> Running HTTP health check"
 curl --fail --silent --show-error --max-time 10 "$HEALTH_URL" >/dev/null
+
+# Only a fully validated production deployment becomes the new known-good state.
+echo "==> Recording successful production commit"
+record_success
 
 echo
 final_commit="$(sudo -u "$APP_USER" git -C "$APP_DIR" rev-parse --short HEAD)"
