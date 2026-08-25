@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from html import escape
 
-from django.conf import settings
 from django.db.models import Count, Sum
 from django.utils import timezone
 
@@ -20,6 +19,7 @@ from apps.gmail_assistant.models import (
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.usage_models import OpenAITokenUsage
 from apps.reports.models import CloudBackupSettings
+from apps.site_urls import jobapply_url
 
 from .notifications import send_notification_once
 
@@ -61,12 +61,6 @@ class ClientDigest:
                 self.ai_requests,
             )
         )
-
-
-def _jobapply_url(path: str) -> str:
-    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
-    base = domain if domain.startswith(("http://", "https://")) else f"https://{domain}"
-    return f"{base}{path}"
 
 
 def _format_dt(value: datetime | None) -> str:
@@ -201,7 +195,7 @@ def client_digest_keyboard(*, hours: int) -> dict[str, list[list[dict[str, str]]
             [
                 {
                     "text": "📨 Open Gmail Assistant",
-                    "url": _jobapply_url("/gmail_stats/gmail/assistant/"),
+                    "url": jobapply_url("/gmail_stats/gmail/assistant/"),
                 }
             ],
             [period_button],

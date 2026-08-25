@@ -43,26 +43,7 @@
         <div class="app-navigation__actions">
           <a class="app-create-action" href="{% url 'applications:create' %}"><span aria-hidden="true">＋</span><span>{% trans "Add" %}</span></a>
 
-          <button
-            class="app-theme-switch"
-            type="button"
-            data-theme-toggle
-            data-light-label="{% trans 'Switch to light theme' %}"
-            data-dark-label="{% trans 'Switch to dark theme' %}"
-            title="{% trans 'Switch to light theme' %}"
-            aria-label="{% trans 'Switch to light theme' %}"
-          ><span class="app-theme-switch__icon" data-theme-icon aria-hidden="true">☀️</span></button>
-
-          <form action="{% url 'set_language' %}" method="post" class="app-language-form">
-            {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}" aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
-              {% if LANGUAGE_CODE == 'de' %}
-                <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="">
-              {% else %}
-                <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1e9-1f1ea.svg" alt="">
-              {% endif %}
-            </button>
-          </form>
+          {% include "includes/theme_language_controls.html" %}
 
           <details class="app-dropdown app-profile" data-services-menu>
             <summary class="app-profile__trigger" aria-label="{% trans 'Open account menu' %}">
@@ -90,25 +71,7 @@
           <a class="app-nav-link" href="#features"><span>✨</span><span>{% trans "Features" %}</span></a>
         </div>
         <div class="app-navigation__actions">
-          <button
-            class="app-theme-switch"
-            type="button"
-            data-theme-toggle
-            data-light-label="{% trans 'Switch to light theme' %}"
-            data-dark-label="{% trans 'Switch to dark theme' %}"
-            title="{% trans 'Switch to light theme' %}"
-            aria-label="{% trans 'Switch to light theme' %}"
-          ><span class="app-theme-switch__icon" data-theme-icon aria-hidden="true">☀️</span></button>
-          <form action="{% url 'set_language' %}" method="post" class="app-language-form">
-            {% csrf_token %}<input name="next" type="hidden" value="{{ request.get_full_path }}">
-            <button type="submit" name="language" value="{% if LANGUAGE_CODE == 'de' %}en{% else %}de{% endif %}" class="app-language-switch" title="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}" aria-label="{% if LANGUAGE_CODE == 'de' %}{% trans 'Switch to English' %}{% else %}{% trans 'Switch to German' %}{% endif %}">
-              {% if LANGUAGE_CODE == 'de' %}
-                <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1ec-1f1e7.svg" alt="">
-              {% else %}
-                <img class="app-language-switch__flag" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1e9-1f1ea.svg" alt="">
-              {% endif %}
-            </button>
-          </form>
+          {% include "includes/theme_language_controls.html" %}
           <a class="app-signin-action" href="/accounts/google/login/?next=/dashboard/">{% trans "Sign in with Google" %}</a>
         </div>
       {% endif %}

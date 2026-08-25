@@ -51,21 +51,9 @@ def build_stats(qs) -> Stats:
 def export_csv(qs) -> bytes:
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["id", "title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at", "notes"])
+    w.writerow(EXPECTED_IMPORT_HEADERS)
     for a in qs:
-        w.writerow(
-            [
-                a.id,
-                sanitize_spreadsheet_cell(a.title),
-                sanitize_spreadsheet_cell(a.company),
-                sanitize_spreadsheet_cell(a.location),
-                sanitize_spreadsheet_cell(a.source),
-                sanitize_spreadsheet_cell(a.status),
-                a.applied_at.isoformat() if a.applied_at else "",
-                a.recruiter_reply_at.isoformat() if a.recruiter_reply_at else "",
-                sanitize_spreadsheet_cell(a.notes),
-            ]
-        )
+        w.writerow(_application_export_row(a))
     return buf.getvalue().encode("utf-8")
 
 
@@ -73,24 +61,26 @@ def export_xlsx(qs) -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "applications"
-    ws.append(["id", "title", "company", "location", "source", "status", "applied_at", "recruiter_reply_at", "notes"])
+    ws.append(EXPECTED_IMPORT_HEADERS)
     for a in qs:
-        ws.append(
-            [
-                a.id,
-                sanitize_spreadsheet_cell(a.title),
-                sanitize_spreadsheet_cell(a.company),
-                sanitize_spreadsheet_cell(a.location),
-                sanitize_spreadsheet_cell(a.source),
-                sanitize_spreadsheet_cell(a.status),
-                a.applied_at.isoformat() if a.applied_at else "",
-                a.recruiter_reply_at.isoformat() if a.recruiter_reply_at else "",
-                sanitize_spreadsheet_cell(a.notes),
-            ]
-        )
+        ws.append(_application_export_row(a))
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
+
+
+def _application_export_row(application: JobApplication) -> tuple[object, ...]:
+    return (
+        application.id,
+        sanitize_spreadsheet_cell(application.title),
+        sanitize_spreadsheet_cell(application.company),
+        sanitize_spreadsheet_cell(application.location),
+        sanitize_spreadsheet_cell(application.source),
+        sanitize_spreadsheet_cell(application.status),
+        application.applied_at.isoformat() if application.applied_at else "",
+        application.recruiter_reply_at.isoformat() if application.recruiter_reply_at else "",
+        sanitize_spreadsheet_cell(application.notes),
+    )
 
 
 def import_csv(user, raw_bytes: bytes) -> dict[str, int]:

@@ -39,11 +39,7 @@
         <label class="form-label small text-body-secondary mb-1">{% trans "Status" %}</label>
         <select class="form-select" name="status">
           <option value="" {% if not status %}selected{% endif %}>{% trans "All" %}</option>
-          <option value="applied" {% if status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
-          <option value="screen" {% if status == "screen" %}selected{% endif %}>{% trans "HR Screen" %}</option>
-          <option value="interview" {% if status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
-          <option value="offer" {% if status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
-          <option value="rejected" {% if status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
+          {% include "includes/application_status_options.html" with selected_status=status %}
         </select>
       </div>
       <div class="col-12 col-sm-6 col-lg-2">

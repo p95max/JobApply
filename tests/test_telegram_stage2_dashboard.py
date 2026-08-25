@@ -4,7 +4,8 @@ from django.test import override_settings
 from django.urls import resolve
 
 from apps.telegram_bot.config import TelegramConfig
-from apps.telegram_bot.handlers import CommandTimedOut, _jobapply_url, handle_update
+from apps.site_urls import jobapply_url
+from apps.telegram_bot.handlers import CommandTimedOut, handle_update
 from apps.telegram_bot.selectors import AIUsageSummary, ApplicationSummary
 
 
@@ -43,7 +44,7 @@ def _update(command: str) -> dict:
 @override_settings(DJANGO_SITE_DOMAIN="jobapply.p95max.dev")
 def test_jobapply_url_is_https_and_resolves():
     path = "/gmail_stats/gmail/assistant/"
-    assert _jobapply_url(path) == f"https://jobapply.p95max.dev{path}"
+    assert jobapply_url(path) == f"https://jobapply.p95max.dev{path}"
     assert resolve(path).url_name == "gmail_assistant"
 
 

@@ -95,8 +95,6 @@
 .interviews-empty h2 { margin: 0 0 .35rem; font-size: 1.12rem; }
 .interviews-empty p { margin: 0 0 1rem; color: #9da9b8; }
 
-.print-only { display: none !important; }
-@media print { .no-print { display: none !important; } .print-only { display: inline !important; } }
 @media (max-width: 600px) {
   .interviews-hero { align-items: stretch; flex-direction: column; padding: 1.25rem; }
   .interviews-hero .btn { width: 100%; }

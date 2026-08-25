@@ -1,0 +1,7 @@
+{% load i18n %}
+
+<option value="applied" {% if selected_status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
+<option value="screen" {% if selected_status == "screen" %}selected{% endif %}>{% trans "HR Screen" %}</option>
+<option value="interview" {% if selected_status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
+<option value="offer" {% if selected_status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
+<option value="rejected" {% if selected_status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>

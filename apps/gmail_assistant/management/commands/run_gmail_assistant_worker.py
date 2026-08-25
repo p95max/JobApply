@@ -15,14 +15,13 @@ from apps.gmail_assistant.usage_models import OpenAITokenUsage
 from apps.gmail_stats.services.credentials import get_google_credentials_for_user
 from apps.gmail_stats.services.gmail_client import GmailClient
 from apps.gmail_stats.services.sync_control import GmailSyncBusyError
+from apps.site_urls import jobapply_url
 from apps.telegram_bot.heartbeat import GMAIL_WORKER, record_heartbeat
 from apps.telegram_bot.notifications import send_notification_once, url_keyboard
 
 
 def _gmail_assistant_url() -> str:
-    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
-    base_url = domain if domain.startswith(("http://", "https://")) else f"https://{domain}"
-    return f"{base_url}/gmail_stats/gmail/assistant/"
+    return jobapply_url("/gmail_stats/gmail/assistant/")
 
 
 def _tokens_used_today(*, user) -> int:

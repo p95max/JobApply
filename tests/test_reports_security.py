@@ -59,6 +59,8 @@ def test_spreadsheet_exports_neutralize_formula_cells(user):
     xlsx_content = export_xlsx(JobApplication.objects.filter(pk=application.pk))
     worksheet = load_workbook(io.BytesIO(xlsx_content)).active
 
+    assert next(csv.reader(io.StringIO(csv_content))) == list(EXPECTED_IMPORT_HEADERS)
+    assert [cell.value for cell in worksheet[1]] == list(EXPECTED_IMPORT_HEADERS)
     assert "'=HYPERLINK" in csv_content
     assert "' @SUM(1,1)" in csv_content
     assert worksheet["B2"].value == "'=HYPERLINK(\"https://invalid.example\")"

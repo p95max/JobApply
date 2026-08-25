@@ -4,9 +4,9 @@ from typing import Any
 
 from django.conf import settings
 
+from apps.security.ownership import is_configured_owner
+
 
 def has_dev_tools_access(*, user: Any) -> bool:
     """Allow destructive/reanalysis development tools only to the configured owner."""
-    owner_email = settings.TELEGRAM_OWNER_EMAIL.strip().casefold()
-    user_email = str(getattr(user, "email", "") or "").strip().casefold()
-    return bool(settings.GMAIL_ASSISTANT_DEV_TOOLS and owner_email and user_email == owner_email)
+    return bool(settings.GMAIL_ASSISTANT_DEV_TOOLS and is_configured_owner(user=user))

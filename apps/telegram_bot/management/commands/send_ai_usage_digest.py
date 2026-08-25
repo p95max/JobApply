@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.telegram_bot.config import TelegramConfig
-from apps.telegram_bot.handlers import _jobapply_url
+from apps.site_urls import jobapply_url
 from apps.telegram_bot.notifications import send_notification_once, url_keyboard
 from apps.telegram_bot.selectors import get_ai_usage_digest
 from apps.telegram_bot.texts import ai_usage_digest_text
@@ -23,7 +23,7 @@ class Command(BaseCommand):
             return
 
         digest = get_ai_usage_digest(hours=24)
-        report_url = _jobapply_url("/reports/ai-statistics/")
+        report_url = jobapply_url("/reports/ai-statistics/")
         sent = send_notification_once(
             event_key=f"ai_usage_daily_digest:{timezone.localdate().isoformat()}",
             event_type="ai_usage_daily_digest",

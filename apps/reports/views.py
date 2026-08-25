@@ -25,6 +25,7 @@ from apps.gmail_assistant.models import (
 )
 from apps.gmail_assistant.services.ai_policy import AIUsagePolicy
 from apps.gmail_assistant.services.token_usage import load_token_usage
+from apps.security.ownership import is_configured_owner
 from apps.security.operation_limits import (
     OperationCooldownError,
     OperationDailyLimitError,
@@ -60,9 +61,7 @@ DRIVE_MUTATION_OPERATION = "drive_mutation"
 
 
 def _is_server_operations_owner(user) -> bool:
-    owner_email = settings.TELEGRAM_OWNER_EMAIL.strip().casefold()
-    user_email = str(getattr(user, "email", "") or "").strip().casefold()
-    return bool(owner_email and user_email == owner_email)
+    return is_configured_owner(user=user)
 
 
 def _personal_backup_interval_display() -> str:

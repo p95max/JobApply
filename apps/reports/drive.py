@@ -228,13 +228,7 @@ def list_backups(
 def download_file(user, file_id: str) -> bytes:
     def _do():
         service = _service(user)
-        req = service.files().get_media(fileId=file_id)
-        buf = io.BytesIO()
-        downloader = MediaIoBaseDownload(buf, req)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-        return buf.getvalue()
+        return _download_media(service, file_id)
 
     return _wrap_drive_call("download_file", _do)
 
@@ -251,15 +245,19 @@ def download_backup_file(user, file_id: str) -> bytes:
         ).execute()
         _validate_backup_metadata(metadata, folder_id)
 
-        req = service.files().get_media(fileId=file_id)
-        buf = io.BytesIO()
-        downloader = MediaIoBaseDownload(buf, req)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-        return buf.getvalue()
+        return _download_media(service, file_id)
 
     return _wrap_drive_call("download_backup_file", _do)
+
+
+def _download_media(service, file_id: str) -> bytes:
+    request = service.files().get_media(fileId=file_id)
+    buffer = io.BytesIO()
+    downloader = MediaIoBaseDownload(buffer, request)
+    done = False
+    while not done:
+        _, done = downloader.next_chunk()
+    return buffer.getvalue()
 
 
 def _validate_backup_metadata(metadata: dict, folder_id: str) -> None:

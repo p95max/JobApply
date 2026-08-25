@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import wraps
 
 from django.conf import settings
@@ -53,6 +54,50 @@ def _parse_positive_int(request: HttpRequest, name: str, *, default: int, maximu
     if value < 0 or value > maximum:
         raise ValueError(f"{name} must be between 0 and {maximum}.")
     return value
+
+
+@dataclass(frozen=True)
+class AuditPagination:
+    limit: int
+    offset: int
+    user_id: int = 0
+
+
+def _audit_pagination(request: HttpRequest, *, include_user_id: bool = True) -> AuditPagination:
+    return AuditPagination(
+        limit=_parse_positive_int(
+            request,
+            "limit",
+            default=50,
+            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
+        ),
+        offset=_parse_positive_int(request, "offset", default=0, maximum=1_000_000),
+        user_id=(
+            _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+            if include_user_id
+            else 0
+        ),
+    )
+
+
+def _pagination_openapi_parameters() -> list[dict[str, object]]:
+    return [
+        {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE},
+        },
+        {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0}},
+    ]
+
+
+def _audit_query_parameters(*, include_user_id: bool = True, include_status: bool = False):
+    parameters = []
+    if include_status:
+        parameters.append({"name": "status", "in": "query", "schema": {"type": "string"}})
+    if include_user_id:
+        parameters.append({"name": "user_id", "in": "query", "schema": {"type": "integer"}})
+    return [*parameters, *_pagination_openapi_parameters()]
 
 
 def _proposal_payload(proposal: ApplicationUpdateProposal) -> dict[str, object]:
@@ -246,23 +291,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
             "/api/ai-proposals/": {
                 "get": {
                     "summary": "List proposals processed by AI",
-                    "parameters": [
-                        {"name": "status", "in": "query", "schema": {"type": "string"}},
-                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "schema": {
-                                "type": "integer",
-                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-                            },
-                        },
-                        {
-                            "name": "offset",
-                            "in": "query",
-                            "schema": {"type": "integer", "minimum": 0},
-                        },
-                    ],
+                    "parameters": _audit_query_parameters(include_status=True),
                     "responses": {"200": {"description": "Paginated, redacted audit records."}},
                 }
             },
@@ -270,23 +299,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                 "get": {
                     "summary": "List all application records",
                     "description": "Includes applications with and without AI proposal history.",
-                    "parameters": [
-                        {"name": "status", "in": "query", "schema": {"type": "string"}},
-                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "schema": {
-                                "type": "integer",
-                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-                            },
-                        },
-                        {
-                            "name": "offset",
-                            "in": "query",
-                            "schema": {"type": "integer", "minimum": 0},
-                        },
-                    ],
+                    "parameters": _audit_query_parameters(include_status=True),
                     "responses": {"200": {"description": "Paginated application metadata."}},
                 }
             },
@@ -297,18 +310,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                         "Includes every pending proposal. Linked applications and extracted "
                         "proposed application values are included when available."
                     ),
-                    "parameters": [
-                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "schema": {
-                                "type": "integer",
-                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-                            },
-                        },
-                        {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0}},
-                    ],
+                    "parameters": _audit_query_parameters(),
                     "responses": {"200": {"description": "Paginated pending application metadata."}},
                 }
             },
@@ -322,19 +324,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                             "required": True,
                             "schema": {"type": "integer"},
                         },
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "schema": {
-                                "type": "integer",
-                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-                            },
-                        },
-                        {
-                            "name": "offset",
-                            "in": "query",
-                            "schema": {"type": "integer", "minimum": 0},
-                        },
+                        *_pagination_openapi_parameters(),
                     ],
                     "responses": {"200": {"description": "Redacted AI proposal history."}},
                 }
@@ -346,18 +336,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
                         "Includes proposal and matching outcomes, including analyses "
                         "that created no proposal."
                     ),
-                    "parameters": [
-                        {"name": "user_id", "in": "query", "schema": {"type": "integer"}},
-                        {
-                            "name": "limit",
-                            "in": "query",
-                            "schema": {
-                                "type": "integer",
-                                "maximum": settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-                            },
-                        },
-                        {"name": "offset", "in": "query", "schema": {"type": "integer", "minimum": 0}},
-                    ],
+                    "parameters": _audit_query_parameters(),
                     "responses": {"200": {"description": "Paginated redacted decision records."}},
                 }
             },
@@ -380,14 +359,7 @@ def openapi_schema(request: HttpRequest, *, audit_key: str):
 @never_cache
 def applications(request: HttpRequest, *, audit_key: str):
     try:
-        limit = _parse_positive_int(
-            request,
-            "limit",
-            default=50,
-            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-        )
-        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
-        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+        pagination = _audit_pagination(request)
     except ValueError as error:
         return JsonResponse({"detail": str(error)}, status=400)
 
@@ -398,15 +370,17 @@ def applications(request: HttpRequest, *, audit_key: str):
         if status not in valid_statuses:
             return JsonResponse({"detail": "status is not valid."}, status=400)
         queryset = queryset.filter(status=status)
-    if user_id:
-        queryset = queryset.filter(user_id=user_id)
+    if pagination.user_id:
+        queryset = queryset.filter(user_id=pagination.user_id)
 
     total = queryset.count()
     results = [
         _application_payload(application)
-        for application in queryset[offset : offset + limit]
+        for application in queryset[pagination.offset : pagination.offset + pagination.limit]
     ]
-    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
+    return JsonResponse(
+        {"count": total, "limit": pagination.limit, "offset": pagination.offset, "results": results}
+    )
 
 
 @_require_audit_access
@@ -415,14 +389,7 @@ def applications(request: HttpRequest, *, audit_key: str):
 def pending_applications(request: HttpRequest, *, audit_key: str):
     """List every pending proposal, including unlinked application suggestions."""
     try:
-        limit = _parse_positive_int(
-            request,
-            "limit",
-            default=50,
-            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-        )
-        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
-        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+        pagination = _audit_pagination(request)
     except ValueError as error:
         return JsonResponse({"detail": str(error)}, status=400)
 
@@ -431,11 +398,16 @@ def pending_applications(request: HttpRequest, *, audit_key: str):
         .select_related("application", "analysis")
         .order_by("-message__received_at", "-pk")
     )
-    if user_id:
-        queryset = queryset.filter(user_id=user_id)
+    if pagination.user_id:
+        queryset = queryset.filter(user_id=pagination.user_id)
     total = queryset.count()
-    results = [_pending_application_payload(proposal) for proposal in queryset[offset : offset + limit]]
-    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": results})
+    results = [
+        _pending_application_payload(proposal)
+        for proposal in queryset[pagination.offset : pagination.offset + pagination.limit]
+    ]
+    return JsonResponse(
+        {"count": total, "limit": pagination.limit, "offset": pagination.offset, "results": results}
+    )
 
 
 @_require_audit_access
@@ -443,14 +415,7 @@ def pending_applications(request: HttpRequest, *, audit_key: str):
 @never_cache
 def ai_proposals(request: HttpRequest, *, audit_key: str):
     try:
-        limit = _parse_positive_int(
-            request,
-            "limit",
-            default=50,
-            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-        )
-        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
-        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+        pagination = _audit_pagination(request)
     except ValueError as error:
         return JsonResponse({"detail": str(error)}, status=400)
 
@@ -460,12 +425,17 @@ def ai_proposals(request: HttpRequest, *, audit_key: str):
         if status not in ProposalStatus.values:
             return JsonResponse({"detail": "status is not valid."}, status=400)
         queryset = queryset.filter(status=status)
-    if user_id:
-        queryset = queryset.filter(user_id=user_id)
+    if pagination.user_id:
+        queryset = queryset.filter(user_id=pagination.user_id)
 
     total = queryset.count()
-    records = [_proposal_payload(proposal) for proposal in queryset[offset : offset + limit]]
-    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": records})
+    records = [
+        _proposal_payload(proposal)
+        for proposal in queryset[pagination.offset : pagination.offset + pagination.limit]
+    ]
+    return JsonResponse(
+        {"count": total, "limit": pagination.limit, "offset": pagination.offset, "results": records}
+    )
 
 
 @_require_audit_access
@@ -474,14 +444,7 @@ def ai_proposals(request: HttpRequest, *, audit_key: str):
 def gmail_analyses(request: HttpRequest, *, audit_key: str):
     """Expose every persisted analysis decision without email content or tokens."""
     try:
-        limit = _parse_positive_int(
-            request,
-            "limit",
-            default=50,
-            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-        )
-        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
-        user_id = _parse_positive_int(request, "user_id", default=0, maximum=2_147_483_647)
+        pagination = _audit_pagination(request)
     except ValueError as error:
         return JsonResponse({"detail": str(error)}, status=400)
 
@@ -490,11 +453,16 @@ def gmail_analyses(request: HttpRequest, *, audit_key: str):
         .prefetch_related("proposals")
         .order_by("-analyzed_at", "-pk")
     )
-    if user_id:
-        queryset = queryset.filter(user_id=user_id)
+    if pagination.user_id:
+        queryset = queryset.filter(user_id=pagination.user_id)
     total = queryset.count()
-    records = [_analysis_payload(analysis) for analysis in queryset[offset : offset + limit]]
-    return JsonResponse({"count": total, "limit": limit, "offset": offset, "results": records})
+    records = [
+        _analysis_payload(analysis)
+        for analysis in queryset[pagination.offset : pagination.offset + pagination.limit]
+    ]
+    return JsonResponse(
+        {"count": total, "limit": pagination.limit, "offset": pagination.offset, "results": records}
+    )
 
 
 @_require_audit_access
@@ -502,19 +470,16 @@ def gmail_analyses(request: HttpRequest, *, audit_key: str):
 @never_cache
 def application_ai_history(request: HttpRequest, *, audit_key: str, application_id: int):
     try:
-        limit = _parse_positive_int(
-            request,
-            "limit",
-            default=50,
-            maximum=settings.AI_AUDIT_API_MAX_PAGE_SIZE,
-        )
-        offset = _parse_positive_int(request, "offset", default=0, maximum=1_000_000)
+        pagination = _audit_pagination(request, include_user_id=False)
     except ValueError as error:
         return JsonResponse({"detail": str(error)}, status=400)
 
     application = get_object_or_404(JobApplication, pk=application_id)
     proposals = _ai_proposals_queryset().filter(application=application)
-    results = [_proposal_payload(proposal) for proposal in proposals[offset : offset + limit]]
+    results = [
+        _proposal_payload(proposal)
+        for proposal in proposals[pagination.offset : pagination.offset + pagination.limit]
+    ]
     return JsonResponse(
         {
             "application": {
@@ -525,8 +490,8 @@ def application_ai_history(request: HttpRequest, *, audit_key: str, application_
                 "status": application.status,
             },
             "count": proposals.count(),
-            "limit": limit,
-            "offset": offset,
+            "limit": pagination.limit,
+            "offset": pagination.offset,
             "results": results,
         }
     )

@@ -69,11 +69,7 @@
             data-id="{{ app.id }}"
             aria-label="{% trans 'Application status' %}"
           >
-            <option value="applied" {% if app.status == "applied" %}selected{% endif %}>{% trans "Applied" %}</option>
-            <option value="screen" {% if app.status == "screen" %}selected{% endif %}>{% trans "HR Screen" %}</option>
-            <option value="interview" {% if app.status == "interview" %}selected{% endif %}>{% trans "Interview" %}</option>
-            <option value="offer" {% if app.status == "offer" %}selected{% endif %}>{% trans "Offer" %}</option>
-            <option value="rejected" {% if app.status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
+            {% include "includes/application_status_options.html" with selected_status=app.status %}
           </select>
         </div>
 

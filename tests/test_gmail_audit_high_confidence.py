@@ -111,4 +111,20 @@ def test_gmail_audit_schema_uses_neutral_name_and_lists_high_confidence_endpoint
     assert response.status_code == 200
     payload = response.json()
     assert payload["info"]["title"] == "JobApply Gmail audit API"
-    assert "/api/high-confidence-applications/" in payload["paths"]
+    parameters = payload["paths"]["/api/high-confidence-applications/"]["get"]["parameters"]
+    assert [parameter["name"] for parameter in parameters] == ["user_id", "limit", "offset"]
+
+
+@pytest.mark.django_db
+@override_settings(AI_AUDIT_URL=AUDIT_KEY)
+def test_high_confidence_audit_endpoint_validates_shared_pagination_parameters(client):
+    staff = _staff_user()
+    client.force_login(staff)
+
+    response = client.get(
+        reverse("ai_audit:high_confidence_applications", kwargs={"audit_key": AUDIT_KEY}),
+        {"limit": "not-a-number"},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "limit must be an integer."}

@@ -6,7 +6,6 @@ import time
 from contextlib import contextmanager
 from typing import Any, Iterator
 
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from apps.accounts.telegram_linking import bind_telegram_from_start
@@ -40,6 +39,7 @@ from .selectors import (
     get_owner,
     get_status_snapshot,
 )
+from apps.site_urls import jobapply_url
 from .texts import (
     admin_text,
     ai_usage_digest_text,
@@ -104,15 +104,6 @@ def _callback_user_id(update: dict[str, Any]) -> int:
 
 def _callback_chat_id(update: dict[str, Any]) -> int:
     return int(update["callback_query"]["message"]["chat"]["id"])
-
-
-def _jobapply_url(path: str = "/") -> str:
-    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
-    if domain.startswith(("http://", "https://")):
-        base_url = domain
-    else:
-        base_url = f"https://{domain}"
-    return f"{base_url}{path}"
 
 
 def _is_owner(user_id: int, chat_id: int, config: TelegramConfig) -> bool:
@@ -487,7 +478,7 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
                     reply = "⛔ <b>Access denied</b>\n\nThis command is available only to the bot owner."
                     result = "forbidden"
                 else:
-                    report_url = _jobapply_url("/reports/ai-statistics/")
+                    report_url = jobapply_url("/reports/ai-statistics/")
                     reply = ai_usage_digest_text(get_ai_usage_digest(hours=24), scheduled=False)
                     reply_markup = url_keyboard("📊 Open AI statistics", report_url)
             elif text == "/newusers":
@@ -502,12 +493,12 @@ def handle_update(update: dict[str, Any], client: TelegramClient, config: Telegr
             elif text == "/gmail":
                 total, _proposals = get_gmail_summary(data_owner_email)
                 ai_usage = get_ai_usage_summary(data_owner_email)
-                assistant_url = _jobapply_url("/gmail_stats/gmail/assistant/")
+                assistant_url = jobapply_url("/gmail_stats/gmail/assistant/")
                 reply = gmail_text(total, ai_usage=ai_usage, assistant_url=assistant_url)
                 if total:
                     reply_markup = url_keyboard("📨 Open Gmail Assistant", assistant_url)
             elif text == "/applications":
-                applications_url = _jobapply_url("/applications/")
+                applications_url = jobapply_url("/applications/")
                 reply = applications_text(
                     get_application_summary(data_owner_email),
                     applications_url=applications_url,

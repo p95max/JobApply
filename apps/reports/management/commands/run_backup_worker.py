@@ -15,6 +15,7 @@ from apps.applications.models import JobApplication
 from apps.reports.drive import DriveError, get_drive_status, upload_backup_rotate_3
 from apps.reports.models import CloudBackupSettings
 from apps.reports.services import export_csv
+from apps.site_urls import jobapply_url
 from apps.telegram_bot.notifications import send_notification_once, url_keyboard
 
 logger = logging.getLogger(__name__)
@@ -33,15 +34,6 @@ _BEARER_RE = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+")
 _QUERY_SECRET_RE = re.compile(
     r"(?i)(?P<prefix>[?&](?:access_token|refresh_token|token|key|client_secret)=)(?P<value>[^&#\s]+)"
 )
-
-
-def _jobapply_url(path: str) -> str:
-    domain = str(getattr(settings, "DJANGO_SITE_DOMAIN", "jobapply.p95max.dev")).strip().strip("/")
-    if domain.startswith(("http://", "https://")):
-        base_url = domain
-    else:
-        base_url = f"https://{domain}"
-    return f"{base_url}{path}"
 
 
 def _safe_error_detail(detail: object, *, max_length: int = 240) -> str:
@@ -89,7 +81,7 @@ def _notify_backup_failure(user, *, code: str, detail: str) -> None:
         event_type="drive_backup_failed",
         recipient_email=getattr(user, "email", None),
         text=text,
-        reply_markup=url_keyboard(button_text, _jobapply_url("/reports/drive/")),
+        reply_markup=url_keyboard(button_text, jobapply_url("/reports/drive/")),
     )
     logger.warning(
         "Personal Drive backup failure user=%s code=%s detail=%s",
