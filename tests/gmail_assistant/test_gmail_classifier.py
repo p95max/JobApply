@@ -11,7 +11,7 @@ from apps.gmail_assistant.services import classifier
 from apps.gmail_assistant.services.classifier import classify, classify_event
 from apps.gmail_assistant.services.status_policy import proposed_status, should_set_recruiter_reply_at
 from apps.gmail_stats.services.direction import determine_direction
-from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
+from tests.gmail_assistant.corpus import GMAIL_ASSISTANT_FIXTURES
 
 
 @pytest.mark.parametrize(

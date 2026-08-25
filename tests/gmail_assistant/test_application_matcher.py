@@ -11,7 +11,7 @@ from apps.gmail_assistant.services.application_matcher import (
     normalize_company,
     normalize_position,
 )
-from tests.gmail_assistant_corpus import GMAIL_ASSISTANT_FIXTURES
+from tests.gmail_assistant.corpus import GMAIL_ASSISTANT_FIXTURES
 
 
 @dataclass(frozen=True)
