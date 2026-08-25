@@ -2,13 +2,13 @@ from pathlib import Path
 
 
 def test_deploy_script_rejects_untracked_files_even_when_git_hides_them():
-    script = (Path(__file__).parents[1] / "deploy" / "vps" / "jobapply-deploy.sh").read_text(encoding="utf-8")
+    script = (Path(__file__).parents[2] / "deploy" / "vps" / "jobapply-deploy.sh").read_text(encoding="utf-8")
 
     assert "status --porcelain --untracked-files=all" in script
 
 
 def test_deploy_marker_is_shared_between_telegram_and_deploy_services():
-    root = Path(__file__).parents[1]
+    root = Path(__file__).parents[2]
     deployments = (root / "apps" / "telegram_bot" / "deployments.py").read_text(encoding="utf-8")
     telegram_unit = (root / "deploy" / "vps" / "systemd" / "jobapply-telegram-bot.service").read_text(encoding="utf-8")
     deploy_unit = (root / "deploy" / "vps" / "systemd" / "jobapply-deploy.service").read_text(encoding="utf-8")
@@ -25,7 +25,7 @@ def test_deploy_marker_is_shared_between_telegram_and_deploy_services():
 
 
 def test_rollback_runner_is_installed_and_does_not_reverse_migrations():
-    root = Path(__file__).parents[1]
+    root = Path(__file__).parents[2]
     deploy_script = (root / "deploy" / "vps" / "jobapply-deploy.sh").read_text(encoding="utf-8")
     rollback_script = (root / "deploy" / "vps" / "jobapply-rollback.sh").read_text(encoding="utf-8")
 
