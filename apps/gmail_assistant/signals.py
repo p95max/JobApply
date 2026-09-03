@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from html import escape
 
 from django.db import transaction
@@ -122,6 +123,66 @@ def _canonicalize_accepted_sent_history(*, existing) -> bool:
     return True
 
 
+def _find_existing_recreated_application(*, user, message, application_changes: dict):
+    """Return one clearly equivalent persisted application for an orphaned Sent create.
+
+    Recovery runs only after an application previously created from this Gmail
+    message has been deleted.  Before proposing another create, check whether the
+    same application was already recreated through another path.  Matching is
+    deliberately conservative: company and title must both match by normalized
+    equality/containment, the application must be close to the Sent timestamp,
+    and exactly one candidate may qualify.
+    """
+    from apps.applications.models import JobApplication
+    from apps.gmail_assistant.services.application_matcher import normalize_company, normalize_position
+
+    company = normalize_company(str(application_changes.get("company") or ""))
+    title = normalize_position(str(application_changes.get("title") or ""))
+    if not company or not title:
+        return None
+
+    candidates = []
+    applications = JobApplication.objects.filter(user=user).exclude(status__in=("archived", "rejected"))
+    for application in applications:
+        application_company = normalize_company(application.company)
+        application_title = normalize_position(application.title)
+        company_matches = bool(
+            application_company
+            and (company == application_company or company in application_company or application_company in company)
+        )
+        title_matches = bool(
+            application_title
+            and (title == application_title or title in application_title or application_title in title)
+        )
+        if not company_matches or not title_matches:
+            continue
+        if abs(application.applied_at - message.received_at) > timedelta(days=7):
+            continue
+        candidates.append(application)
+
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def _relink_recreated_application(*, existing, stale_create, application, message) -> None:
+    """Attach canonical Sent history to an existing application and retire stale recovery UI."""
+    stale_create.application = application
+    stale_create.save(update_fields=["application", "updated_at"])
+
+    if message.application_id != application.pk:
+        message.application = application
+        message.save(update_fields=["application", "updated_at"])
+
+    existing.filter(
+        proposal_type=ProposalType.CREATE_APPLICATION,
+        status=ProposalStatus.PENDING,
+    ).update(
+        status=ProposalStatus.IGNORED,
+        review_note="Existing application matched; duplicate recovery proposal was retired automatically.",
+        reviewed_at=timezone.now(),
+        updated_at=timezone.now(),
+    )
+
+
 @receiver(post_save, sender=GmailAssistantSettings)
 def record_proposal_less_sent_activity(
     sender,
@@ -133,11 +194,12 @@ def record_proposal_less_sent_activity(
     """Materialize canonical direct-Sent history after a successful sync.
 
     The normal proposal builder remains authoritative. If an accepted create
-    proposal lost its application because that application was deleted, restore
-    a new pending create proposal for review. Accepted application actions keep
-    their semantic proposal type in Action history and receive Gmail provenance;
-    only direct-Sent messages with no application action become generic activity
-    rows.
+    proposal lost its application because that application was deleted, first
+    reconnect it to an equivalent application that already exists. Only when no
+    unique persisted match exists is a new pending create proposal restored for
+    review. Accepted application actions keep their semantic proposal type in
+    Action history and receive Gmail provenance; only direct-Sent messages with
+    no application action become generic activity rows.
     """
     if created or not instance.last_successful_run_at:
         return
@@ -178,26 +240,37 @@ def record_proposal_less_sent_activity(
             status=ProposalStatus.ACCEPTED,
             application__isnull=False,
         ).exists()
-        if (
-            stale_accepted_create is not None
-            and not has_pending_create
-            and not has_current_accepted_application
-        ):
+        if stale_accepted_create is not None and not has_current_accepted_application:
             application_changes = stale_accepted_create.changes.get("application")
             if isinstance(application_changes, dict) and application_changes.get("operation") == "create":
-                ApplicationUpdateProposal.objects.create(
+                recreated_application = _find_existing_recreated_application(
                     user=instance.user,
                     message=analysis.message,
-                    analysis=analysis,
-                    application=None,
-                    proposal_type=ProposalType.CREATE_APPLICATION,
-                    status=ProposalStatus.PENDING,
-                    match_score=0,
-                    match_method="recreated_after_application_deletion",
-                    changes={"application": dict(application_changes)},
-                    review_note="",
+                    application_changes=application_changes,
                 )
-                continue
+                if recreated_application is not None:
+                    _relink_recreated_application(
+                        existing=existing,
+                        stale_create=stale_accepted_create,
+                        application=recreated_application,
+                        message=analysis.message,
+                    )
+                    _canonicalize_accepted_sent_history(existing=existing)
+                    continue
+                if not has_pending_create:
+                    ApplicationUpdateProposal.objects.create(
+                        user=instance.user,
+                        message=analysis.message,
+                        analysis=analysis,
+                        application=None,
+                        proposal_type=ProposalType.CREATE_APPLICATION,
+                        status=ProposalStatus.PENDING,
+                        match_score=0,
+                        match_method="recreated_after_application_deletion",
+                        changes={"application": dict(application_changes)},
+                        review_note="",
+                    )
+                    continue
 
         if _canonicalize_accepted_sent_history(existing=existing):
             continue
